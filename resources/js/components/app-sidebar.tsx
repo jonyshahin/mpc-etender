@@ -4,6 +4,7 @@ import {
     BookOpen,
     Building2,
     ClipboardList,
+    FileText,
     FolderGit2,
     FolderKanban,
     LayoutGrid,
@@ -38,6 +39,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Tenders',
+        href: '/tenders',
+        icon: FileText,
     },
 ];
 

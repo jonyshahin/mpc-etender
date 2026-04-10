@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Tender;
 use App\Http\Controllers\Vendor;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -39,6 +40,59 @@ Route::middleware('auth:vendor')->prefix('vendor')->name('vendor.')->group(funct
 
     Route::get('categories', [Vendor\CategoryController::class, 'index'])->name('categories.index');
     Route::put('categories', [Vendor\CategoryController::class, 'update'])->name('categories.update');
+
+    // Tender browsing
+    Route::get('tenders', [Vendor\TenderBrowseController::class, 'index'])->name('tenders.index');
+    Route::get('tenders/{tender}', [Vendor\TenderBrowseController::class, 'show'])->name('tenders.show');
+
+    // Clarifications (vendor asking)
+    Route::post('tenders/{tender}/clarifications', [Tender\ClarificationController::class, 'store'])->name('tenders.clarifications.store');
+
+    // Bids
+    Route::get('bids', [Vendor\BidController::class, 'index'])->name('bids.index');
+    Route::get('bids/{bid}', [Vendor\BidController::class, 'show'])->name('bids.show');
+    Route::get('tenders/{tender}/bid', [Vendor\BidController::class, 'create'])->name('bids.create');
+    Route::post('tenders/{tender}/bid', [Vendor\BidController::class, 'store'])->name('bids.store');
+    Route::put('bids/{bid}', [Vendor\BidController::class, 'update'])->name('bids.update');
+    Route::post('bids/{bid}/submit', [Vendor\BidController::class, 'submit'])->name('bids.submit');
+    Route::post('bids/{bid}/withdraw', [Vendor\BidController::class, 'withdraw'])->name('bids.withdraw');
+});
+
+// ── Tender management routes (MPC users) ──
+Route::middleware(['auth', 'verified'])->prefix('tenders')->name('tenders.')->group(function () {
+    Route::get('/', [Tender\TenderController::class, 'index'])->name('index');
+    Route::get('create', [Tender\TenderController::class, 'create'])->name('create');
+    Route::post('/', [Tender\TenderController::class, 'store'])->name('store');
+    Route::get('{tender}', [Tender\TenderController::class, 'show'])->name('show');
+    Route::get('{tender}/edit', [Tender\TenderController::class, 'edit'])->name('edit');
+    Route::put('{tender}', [Tender\TenderController::class, 'update'])->name('update');
+    Route::post('{tender}/publish', [Tender\TenderController::class, 'publish'])->name('publish');
+    Route::post('{tender}/cancel', [Tender\TenderController::class, 'cancel'])->name('cancel');
+
+    // BOQ
+    Route::post('{tender}/boq-sections', [Tender\BoqController::class, 'storeSection'])->name('boq.sections.store');
+    Route::put('{tender}/boq-sections/{section}', [Tender\BoqController::class, 'updateSection'])->name('boq.sections.update');
+    Route::delete('{tender}/boq-sections/{section}', [Tender\BoqController::class, 'destroySection'])->name('boq.sections.destroy');
+    Route::post('{tender}/boq-sections/{section}/items', [Tender\BoqController::class, 'storeItem'])->name('boq.items.store');
+    Route::put('{tender}/boq-items/{item}', [Tender\BoqController::class, 'updateItem'])->name('boq.items.update');
+    Route::delete('{tender}/boq-items/{item}', [Tender\BoqController::class, 'destroyItem'])->name('boq.items.destroy');
+    Route::post('{tender}/boq-import', [Tender\BoqController::class, 'import'])->name('boq.import');
+
+    // Documents
+    Route::post('{tender}/documents', [Tender\TenderDocumentController::class, 'store'])->name('documents.store');
+    Route::delete('{tender}/documents/{doc}', [Tender\TenderDocumentController::class, 'destroy'])->name('documents.destroy');
+
+    // Addenda
+    Route::post('{tender}/addenda', [Tender\AddendumController::class, 'store'])->name('addenda.store');
+
+    // Clarifications (MPC answering)
+    Route::put('{tender}/clarifications/{clarification}/answer', [Tender\ClarificationController::class, 'answer'])->name('clarifications.answer');
+    Route::post('{tender}/clarifications/{clarification}/publish', [Tender\ClarificationController::class, 'publish'])->name('clarifications.publish');
+
+    // Evaluation criteria
+    Route::post('{tender}/evaluation-criteria', [Tender\EvaluationCriteriaController::class, 'store'])->name('criteria.store');
+    Route::put('{tender}/evaluation-criteria/{criterion}', [Tender\EvaluationCriteriaController::class, 'update'])->name('criteria.update');
+    Route::delete('{tender}/evaluation-criteria/{criterion}', [Tender\EvaluationCriteriaController::class, 'destroy'])->name('criteria.destroy');
 });
 
 // ── Admin routes ──

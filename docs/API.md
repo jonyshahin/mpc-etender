@@ -38,6 +38,36 @@
 | GET | `/settings/security` | `security.edit` | Security settings page |
 | PUT | `/settings/password` | `user-password.update` | Change password |
 
+## Tender Management (prefix: `/tenders`)
+
+All routes require `auth` + `verified` middleware. Project-scoped via user assignments.
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/tenders` | `tenders.index` | List tenders for user's projects |
+| GET | `/tenders/create` | `tenders.create` | Create tender form |
+| POST | `/tenders` | `tenders.store` | Store new tender (draft) |
+| GET | `/tenders/{tender}` | `tenders.show` | Tender detail with tabs |
+| GET | `/tenders/{tender}/edit` | `tenders.edit` | Edit tender form |
+| PUT | `/tenders/{tender}` | `tenders.update` | Update tender |
+| POST | `/tenders/{tender}/publish` | `tenders.publish` | Publish tender |
+| POST | `/tenders/{tender}/cancel` | `tenders.cancel` | Cancel tender |
+| POST | `/tenders/{tender}/boq-sections` | `tenders.boq.sections.store` | Add BOQ section |
+| PUT | `/tenders/{tender}/boq-sections/{section}` | `tenders.boq.sections.update` | Update BOQ section |
+| DELETE | `/tenders/{tender}/boq-sections/{section}` | `tenders.boq.sections.destroy` | Delete BOQ section |
+| POST | `/tenders/{tender}/boq-sections/{section}/items` | `tenders.boq.items.store` | Add BOQ item |
+| PUT | `/tenders/{tender}/boq-items/{item}` | `tenders.boq.items.update` | Update BOQ item |
+| DELETE | `/tenders/{tender}/boq-items/{item}` | `tenders.boq.items.destroy` | Delete BOQ item |
+| POST | `/tenders/{tender}/boq-import` | `tenders.boq.import` | Import BOQ from Excel |
+| POST | `/tenders/{tender}/documents` | `tenders.documents.store` | Upload tender document |
+| DELETE | `/tenders/{tender}/documents/{doc}` | `tenders.documents.destroy` | Delete tender document |
+| POST | `/tenders/{tender}/addenda` | `tenders.addenda.store` | Issue addendum |
+| PUT | `/tenders/{tender}/clarifications/{c}/answer` | `tenders.clarifications.answer` | Answer clarification |
+| POST | `/tenders/{tender}/clarifications/{c}/publish` | `tenders.clarifications.publish` | Publish clarification |
+| POST | `/tenders/{tender}/evaluation-criteria` | `tenders.criteria.store` | Add evaluation criterion |
+| PUT | `/tenders/{tender}/evaluation-criteria/{c}` | `tenders.criteria.update` | Update criterion |
+| DELETE | `/tenders/{tender}/evaluation-criteria/{c}` | `tenders.criteria.destroy` | Delete criterion |
+
 ## Vendor Portal (prefix: `/vendor`)
 
 ### Public (guest:vendor middleware)
@@ -62,6 +92,16 @@
 | DELETE | `/vendor/documents/{document}` | `vendor.documents.destroy` | Delete pending document |
 | GET | `/vendor/categories` | `vendor.categories.index` | View/select categories |
 | PUT | `/vendor/categories` | `vendor.categories.update` | Update category selections |
+| GET | `/vendor/tenders` | `vendor.tenders.index` | Browse open tenders |
+| GET | `/vendor/tenders/{tender}` | `vendor.tenders.show` | View tender details |
+| POST | `/vendor/tenders/{tender}/clarifications` | `vendor.tenders.clarifications.store` | Ask clarification |
+| GET | `/vendor/bids` | `vendor.bids.index` | List vendor's bids |
+| GET | `/vendor/bids/{bid}` | `vendor.bids.show` | View bid details |
+| GET | `/vendor/tenders/{tender}/bid` | `vendor.bids.create` | Start new bid |
+| POST | `/vendor/tenders/{tender}/bid` | `vendor.bids.store` | Create draft bid |
+| PUT | `/vendor/bids/{bid}` | `vendor.bids.update` | Update bid pricing |
+| POST | `/vendor/bids/{bid}/submit` | `vendor.bids.submit` | Submit (seal) bid |
+| POST | `/vendor/bids/{bid}/withdraw` | `vendor.bids.withdraw` | Withdraw bid |
 
 ## Vendor Management (admin, prefix: `/admin/vendors`)
 
