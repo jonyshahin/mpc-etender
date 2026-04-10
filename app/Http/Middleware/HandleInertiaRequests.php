@@ -48,6 +48,8 @@ class HandleInertiaRequests extends Middleware
                 'vendor' => $vendor ? $vendor->only('id', 'company_name', 'email', 'prequalification_status', 'language_pref') : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'locale' => app()->getLocale(),
+            'dir' => app()->getLocale() === 'ar' ? 'rtl' : 'ltr',
         ];
     }
 }
