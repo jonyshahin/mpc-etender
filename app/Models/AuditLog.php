@@ -43,7 +43,7 @@ class AuditLog extends Model
     protected function casts(): array
     {
         return [
-            'action' => AuditAction::class,
+            // action is not cast to enum — stores both AuditAction values and HTTP methods
             'old_values' => 'array',
             'new_values' => 'array',
             'created_at' => 'datetime',

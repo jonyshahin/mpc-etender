@@ -70,6 +70,7 @@ class User extends Authenticatable
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'user_project')
+            ->using(Concerns\UuidPivot::class)
             ->withPivot('project_role', 'assigned_at', 'assigned_by')
             ->withTimestamps();
     }

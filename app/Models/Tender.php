@@ -80,7 +80,8 @@ class Tender extends Model
 
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'tender_categories');
+        return $this->belongsToMany(Category::class, 'tender_categories')
+            ->using(Concerns\UuidPivot::class);
     }
 
     public function documents(): HasMany

@@ -39,7 +39,8 @@ class Role extends Model
 
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class, 'role_permissions');
+        return $this->belongsToMany(Permission::class, 'role_permissions')
+            ->using(Concerns\UuidPivot::class);
     }
 
     public function users(): HasMany

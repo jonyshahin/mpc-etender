@@ -74,7 +74,8 @@ class Vendor extends Authenticatable
 
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'vendor_categories');
+        return $this->belongsToMany(Category::class, 'vendor_categories')
+            ->using(Concerns\UuidPivot::class);
     }
 
     public function bids(): HasMany

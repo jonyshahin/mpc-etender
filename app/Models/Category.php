@@ -52,12 +52,14 @@ class Category extends Model
 
     public function vendors(): BelongsToMany
     {
-        return $this->belongsToMany(Vendor::class, 'vendor_categories');
+        return $this->belongsToMany(Vendor::class, 'vendor_categories')
+            ->using(Concerns\UuidPivot::class);
     }
 
     public function tenders(): BelongsToMany
     {
-        return $this->belongsToMany(Tender::class, 'tender_categories');
+        return $this->belongsToMany(Tender::class, 'tender_categories')
+            ->using(Concerns\UuidPivot::class);
     }
 
     public function scopeActive($query)

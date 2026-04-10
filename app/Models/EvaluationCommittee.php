@@ -51,6 +51,7 @@ class EvaluationCommittee extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'committee_members')
+            ->using(Concerns\UuidPivot::class)
             ->withPivot('role', 'has_scored', 'scored_at')
             ->withTimestamps();
     }
