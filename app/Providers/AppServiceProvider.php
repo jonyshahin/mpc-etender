@@ -45,10 +45,8 @@ class AppServiceProvider extends ServiceProvider
 
     protected function registerDashboardGates(): void
     {
-        Gate::define('viewPulse', function ($user = null) {
-            return in_array(optional($user)->email, [
-                'admin@mpc-group.com',
-            ]);
+        Gate::define('viewPulse', function ($user) {
+            return $user->role && $user->role->slug === 'super_admin';
         });
     }
 
