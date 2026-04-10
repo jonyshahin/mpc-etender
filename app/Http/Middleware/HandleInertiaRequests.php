@@ -35,6 +35,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $vendor = $request->user('vendor');
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -43,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                     $request->user()->only('id', 'name', 'email', 'language_pref'),
                     ['role_slug' => $request->user()->role?->slug]
                 ) : null,
+                'vendor' => $vendor ? $vendor->only('id', 'company_name', 'email', 'prequalification_status', 'language_pref') : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

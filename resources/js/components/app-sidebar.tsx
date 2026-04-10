@@ -45,6 +45,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Admin Dashboard', href: '/admin/dashboard', icon: ClipboardList },
     { title: 'Users', href: '/admin/users', icon: Users },
     { title: 'Projects', href: '/admin/projects', icon: FolderKanban },
+    { title: 'Vendors', href: '/admin/vendors', icon: Building2 },
     { title: 'Roles', href: '/admin/roles', icon: Shield },
     { title: 'Categories', href: '/admin/categories', icon: Tags },
     { title: 'Settings', href: '/admin/settings', icon: Settings },

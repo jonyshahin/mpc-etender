@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Vendor;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -10,6 +11,34 @@ Route::inertia('/', 'welcome', [
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+});
+
+// ── Vendor public routes (registration & login) ──
+Route::prefix('vendor')->name('vendor.')->group(function () {
+    Route::middleware('guest:vendor')->group(function () {
+        Route::get('register', [Vendor\RegisterController::class, 'create'])->name('register');
+        Route::post('register', [Vendor\RegisterController::class, 'store'])->name('register.store');
+        Route::get('login', [Vendor\LoginController::class, 'create'])->name('login');
+        Route::post('login', [Vendor\LoginController::class, 'store'])->name('login.store');
+    });
+
+    Route::post('logout', [Vendor\LoginController::class, 'destroy'])->name('logout')
+        ->middleware('auth:vendor');
+});
+
+// ── Vendor authenticated routes ──
+Route::middleware('auth:vendor')->prefix('vendor')->name('vendor.')->group(function () {
+    Route::get('dashboard', [Vendor\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('profile', [Vendor\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [Vendor\ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('documents', [Vendor\DocumentController::class, 'index'])->name('documents.index');
+    Route::post('documents', [Vendor\DocumentController::class, 'store'])->name('documents.store');
+    Route::delete('documents/{document}', [Vendor\DocumentController::class, 'destroy'])->name('documents.destroy');
+
+    Route::get('categories', [Vendor\CategoryController::class, 'index'])->name('categories.index');
+    Route::put('categories', [Vendor\CategoryController::class, 'update'])->name('categories.update');
 });
 
 // ── Admin routes ──
@@ -46,6 +75,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Settings
     Route::get('settings', [Admin\SettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [Admin\SettingController::class, 'update'])->name('settings.update');
+
+    // Vendors
+    Route::get('vendors', [Admin\VendorController::class, 'index'])->name('vendors.index');
+    Route::get('vendors/{vendor}', [Admin\VendorController::class, 'show'])->name('vendors.show');
+    Route::put('vendors/{vendor}/prequalify', [Admin\VendorController::class, 'prequalify'])->name('vendors.prequalify');
+    Route::put('vendors/{vendor}/reject', [Admin\VendorController::class, 'reject'])->name('vendors.reject');
+    Route::put('vendors/{vendor}/suspend', [Admin\VendorController::class, 'suspend'])->name('vendors.suspend');
 
     // Audit Logs
     Route::get('audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');

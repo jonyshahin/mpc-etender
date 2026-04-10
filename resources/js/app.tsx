@@ -5,6 +5,7 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import VendorLayout from '@/layouts/vendor-layout';
 import { configureEcho } from '@laravel/echo-react';
 
 configureEcho({
@@ -21,6 +22,10 @@ createInertiaApp({
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
+            case name === 'vendor/Login' || name === 'vendor/Register':
+                return AuthLayout;
+            case name.startsWith('vendor/'):
+                return VendorLayout;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
             default:

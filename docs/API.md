@@ -38,6 +38,41 @@
 | GET | `/settings/security` | `security.edit` | Security settings page |
 | PUT | `/settings/password` | `user-password.update` | Change password |
 
+## Vendor Portal (prefix: `/vendor`)
+
+### Public (guest:vendor middleware)
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/vendor/register` | `vendor.register` | Vendor registration form |
+| POST | `/vendor/register` | `vendor.register.store` | Submit registration |
+| GET | `/vendor/login` | `vendor.login` | Vendor login form |
+| POST | `/vendor/login` | `vendor.login.store` | Authenticate vendor |
+
+### Authenticated (auth:vendor middleware)
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| POST | `/vendor/logout` | `vendor.logout` | Vendor logout |
+| GET | `/vendor/dashboard` | `vendor.dashboard` | Vendor dashboard |
+| GET | `/vendor/profile` | `vendor.profile.edit` | Edit vendor profile |
+| PUT | `/vendor/profile` | `vendor.profile.update` | Update vendor profile |
+| GET | `/vendor/documents` | `vendor.documents.index` | List vendor documents |
+| POST | `/vendor/documents` | `vendor.documents.store` | Upload document |
+| DELETE | `/vendor/documents/{document}` | `vendor.documents.destroy` | Delete pending document |
+| GET | `/vendor/categories` | `vendor.categories.index` | View/select categories |
+| PUT | `/vendor/categories` | `vendor.categories.update` | Update category selections |
+
+## Vendor Management (admin, prefix: `/admin/vendors`)
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/admin/vendors` | `admin.vendors.index` | List all vendors |
+| GET | `/admin/vendors/{vendor}` | `admin.vendors.show` | Vendor detail view |
+| PUT | `/admin/vendors/{vendor}/prequalify` | `admin.vendors.prequalify` | Approve vendor |
+| PUT | `/admin/vendors/{vendor}/reject` | `admin.vendors.reject` | Reject vendor |
+| PUT | `/admin/vendors/{vendor}/suspend` | `admin.vendors.suspend` | Suspend vendor |
+
 ## Administration (prefix: `/admin`)
 
 All routes require `auth` + `verified` middleware. Permission checks via Form Requests.
