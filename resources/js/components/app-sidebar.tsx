@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { Activity, BookOpen, FolderGit2, LayoutGrid, MonitorDot } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -8,6 +8,8 @@ import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -38,6 +40,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const isSuperAdmin = auth.user?.role_slug === 'super_admin';
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -54,6 +59,30 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+
+                {isSuperAdmin && (
+                    <SidebarGroup className="px-2 py-0">
+                        <SidebarGroupLabel>Admin Tools</SidebarGroupLabel>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild tooltip={{ children: 'Horizon' }}>
+                                    <a href="/horizon" target="_blank" rel="noopener noreferrer">
+                                        <MonitorDot />
+                                        <span>Horizon</span>
+                                    </a>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild tooltip={{ children: 'Pulse' }}>
+                                    <a href="/pulse" target="_blank" rel="noopener noreferrer">
+                                        <Activity />
+                                        <span>Pulse</span>
+                                    </a>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroup>
+                )}
             </SidebarContent>
 
             <SidebarFooter>
