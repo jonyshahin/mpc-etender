@@ -38,6 +38,36 @@
 | GET | `/settings/security` | `security.edit` | Security settings page |
 | PUT | `/settings/password` | `user-password.update` | Change password |
 
+## Administration (prefix: `/admin`)
+
+All routes require `auth` + `verified` middleware. Permission checks via Form Requests.
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/admin/dashboard` | `admin.dashboard` | Admin dashboard with stats |
+| GET | `/admin/users` | `admin.users.index` | List users |
+| POST | `/admin/users` | `admin.users.store` | Create user |
+| GET | `/admin/users/{user}/edit` | `admin.users.edit` | Edit user form |
+| PUT | `/admin/users/{user}` | `admin.users.update` | Update user |
+| DELETE | `/admin/users/{user}` | `admin.users.destroy` | Deactivate user |
+| GET | `/admin/projects` | `admin.projects.index` | List projects |
+| POST | `/admin/projects` | `admin.projects.store` | Create project |
+| GET | `/admin/projects/{project}/edit` | `admin.projects.edit` | Edit project form |
+| PUT | `/admin/projects/{project}` | `admin.projects.update` | Update project |
+| POST | `/admin/projects/{project}/assign-users` | `admin.projects.assign-users` | Assign users to project |
+| GET | `/admin/roles` | `admin.roles.index` | List roles |
+| POST | `/admin/roles` | `admin.roles.store` | Create role |
+| PUT | `/admin/roles/{role}` | `admin.roles.update` | Update role |
+| GET | `/admin/roles/{role}/permissions` | `admin.roles.permissions` | View role permissions |
+| PUT | `/admin/roles/{role}/permissions` | `admin.roles.permissions.update` | Update role permissions |
+| GET | `/admin/categories` | `admin.categories.index` | List categories (tree) |
+| POST | `/admin/categories` | `admin.categories.store` | Create category |
+| PUT | `/admin/categories/{category}` | `admin.categories.update` | Update category |
+| DELETE | `/admin/categories/{category}` | `admin.categories.destroy` | Delete category |
+| GET | `/admin/settings` | `admin.settings.index` | View system settings |
+| PUT | `/admin/settings` | `admin.settings.update` | Update settings |
+| GET | `/admin/audit-logs` | `admin.audit-logs.index` | View audit logs |
+
 ## Package dashboards
 
 | URI | Package |
