@@ -67,6 +67,38 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | POST | `/tenders/{tender}/evaluation-criteria` | `tenders.criteria.store` | Add evaluation criterion |
 | PUT | `/tenders/{tender}/evaluation-criteria/{c}` | `tenders.criteria.update` | Update criterion |
 | DELETE | `/tenders/{tender}/evaluation-criteria/{c}` | `tenders.criteria.destroy` | Delete criterion |
+| POST | `/tenders/{tender}/open-bids` | `tenders.open-bids` | Open bids (dual auth) |
+| GET | `/tenders/{tender}/bid-summary` | `tenders.bid-summary` | Bid opening summary |
+| GET | `/tenders/{tender}/committees` | `tenders.committees.index` | List committees |
+| POST | `/tenders/{tender}/committees` | `tenders.committees.store` | Create committee |
+| PUT | `/tenders/{tender}/committees/{c}` | `tenders.committees.update` | Update committee |
+| POST | `/tenders/{tender}/committees/{c}/members` | `tenders.committees.members.store` | Add member |
+| DELETE | `/tenders/{tender}/committees/{c}/members/{m}` | `tenders.committees.members.destroy` | Remove member |
+| POST | `/tenders/{tender}/complete-technical` | `tenders.complete-technical` | Complete technical eval |
+| POST | `/tenders/{tender}/complete-financial` | `tenders.complete-financial` | Complete financial eval |
+| POST | `/tenders/{tender}/evaluation-report` | `tenders.report.generate` | Generate eval report |
+| GET | `/tenders/{tender}/evaluation-report` | `tenders.report.show` | View eval report |
+| GET | `/tenders/{tender}/evaluation-report/pdf` | `tenders.report.pdf` | Download report PDF |
+| POST | `/tenders/{tender}/request-approval` | `tenders.request-approval` | Submit for approval |
+
+## Evaluation Scoring (prefix: `/evaluations`)
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/evaluations/{tender}/score` | `evaluations.score.index` | Scoring dashboard |
+| GET | `/evaluations/{tender}/score/{bid}` | `evaluations.score.bid` | Score a bid |
+| POST | `/evaluations/{tender}/score/{bid}` | `evaluations.score.store` | Save scores |
+| GET | `/evaluations/{tender}/my-progress` | `evaluations.my-progress` | Evaluator progress |
+
+## Approval Workflows (prefix: `/approvals`)
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/approvals` | `approvals.index` | Pending approvals queue |
+| GET | `/approvals/{approval}` | `approvals.show` | Approval detail |
+| POST | `/approvals/{approval}/approve` | `approvals.approve` | Approve at level |
+| POST | `/approvals/{approval}/reject` | `approvals.reject` | Reject approval |
+| POST | `/approvals/{approval}/delegate` | `approvals.delegate` | Delegate to user |
 
 ## Vendor Portal (prefix: `/vendor`)
 

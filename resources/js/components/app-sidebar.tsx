@@ -3,6 +3,7 @@ import {
     Activity,
     BookOpen,
     Building2,
+    CheckSquare,
     ClipboardList,
     FileText,
     FolderGit2,
@@ -44,6 +45,11 @@ const mainNavItems: NavItem[] = [
         title: 'Tenders',
         href: '/tenders',
         icon: FileText,
+    },
+    {
+        title: 'Approvals',
+        href: '/approvals',
+        icon: CheckSquare,
     },
 ];
 

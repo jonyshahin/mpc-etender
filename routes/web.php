@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Approval;
+use App\Http\Controllers\Evaluation;
 use App\Http\Controllers\Tender;
 use App\Http\Controllers\Vendor;
 use Illuminate\Support\Facades\Route;
@@ -93,7 +95,47 @@ Route::middleware(['auth', 'verified'])->prefix('tenders')->name('tenders.')->gr
     Route::post('{tender}/evaluation-criteria', [Tender\EvaluationCriteriaController::class, 'store'])->name('criteria.store');
     Route::put('{tender}/evaluation-criteria/{criterion}', [Tender\EvaluationCriteriaController::class, 'update'])->name('criteria.update');
     Route::delete('{tender}/evaluation-criteria/{criterion}', [Tender\EvaluationCriteriaController::class, 'destroy'])->name('criteria.destroy');
+
+    // Bid opening & evaluation
+    Route::post('{tender}/open-bids', [Evaluation\BidOpeningController::class, 'open'])->name('open-bids');
+    Route::get('{tender}/bid-summary', [Evaluation\BidOpeningController::class, 'summary'])->name('bid-summary');
+
+    // Committees
+    Route::get('{tender}/committees', [Evaluation\CommitteeController::class, 'index'])->name('committees.index');
+    Route::post('{tender}/committees', [Evaluation\CommitteeController::class, 'store'])->name('committees.store');
+    Route::put('{tender}/committees/{committee}', [Evaluation\CommitteeController::class, 'update'])->name('committees.update');
+    Route::post('{tender}/committees/{committee}/members', [Evaluation\CommitteeController::class, 'addMember'])->name('committees.members.store');
+    Route::delete('{tender}/committees/{committee}/members/{member}', [Evaluation\CommitteeController::class, 'removeMember'])->name('committees.members.destroy');
+
+    // Two-envelope workflow
+    Route::post('{tender}/complete-technical', [Evaluation\EnvelopeController::class, 'completeTechnical'])->name('complete-technical');
+    Route::post('{tender}/complete-financial', [Evaluation\EnvelopeController::class, 'completeFinancial'])->name('complete-financial');
+
+    // Evaluation report
+    Route::post('{tender}/evaluation-report', [Evaluation\ReportController::class, 'generate'])->name('report.generate');
+    Route::get('{tender}/evaluation-report', [Evaluation\ReportController::class, 'show'])->name('report.show');
+    Route::get('{tender}/evaluation-report/pdf', [Evaluation\ReportController::class, 'downloadPdf'])->name('report.pdf');
 });
+
+// ── Evaluation scoring routes ──
+Route::middleware(['auth', 'verified'])->prefix('evaluations')->name('evaluations.')->group(function () {
+    Route::get('{tender}/score', [Evaluation\ScoringController::class, 'index'])->name('score.index');
+    Route::get('{tender}/score/{bid}', [Evaluation\ScoringController::class, 'scoreBid'])->name('score.bid');
+    Route::post('{tender}/score/{bid}', [Evaluation\ScoringController::class, 'storeScores'])->name('score.store');
+    Route::get('{tender}/my-progress', [Evaluation\ScoringController::class, 'myProgress'])->name('my-progress');
+});
+
+// ── Approval routes ──
+Route::middleware(['auth', 'verified'])->prefix('approvals')->name('approvals.')->group(function () {
+    Route::get('/', [Approval\ApprovalController::class, 'index'])->name('index');
+    Route::get('{approval}', [Approval\ApprovalController::class, 'show'])->name('show');
+    Route::post('{approval}/approve', [Approval\ApprovalController::class, 'approve'])->name('approve');
+    Route::post('{approval}/reject', [Approval\ApprovalController::class, 'reject'])->name('reject');
+    Route::post('{approval}/delegate', [Approval\ApprovalController::class, 'delegate'])->name('delegate');
+});
+
+// Request approval route (under tenders)
+Route::middleware(['auth', 'verified'])->post('tenders/{tender}/request-approval', [Approval\ApprovalController::class, 'requestApproval'])->name('tenders.request-approval');
 
 // ── Admin routes ──
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
