@@ -40,6 +40,16 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->registerPolicies();
+        $this->registerDashboardGates();
+    }
+
+    protected function registerDashboardGates(): void
+    {
+        Gate::define('viewPulse', function ($user = null) {
+            return in_array(optional($user)->email, [
+                'admin@mpc-group.com',
+            ]);
+        });
     }
 
     protected function registerPolicies(): void
