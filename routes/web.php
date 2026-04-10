@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Approval;
+use App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Evaluation;
+use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\Notification;
 use App\Http\Controllers\Tender;
 use App\Http\Controllers\Vendor;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +17,23 @@ Route::inertia('/', 'welcome', [
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+});
+
+// ── Language switch ──
+Route::put('user/language', [LanguageController::class, 'update'])->name('language.update');
+
+// ── Notifications (MPC users) ──
+Route::middleware(['auth', 'verified'])->prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [Notification\NotificationController::class, 'index'])->name('index');
+    Route::post('{notification}/read', [Notification\NotificationController::class, 'markRead'])->name('read');
+    Route::post('mark-all-read', [Notification\NotificationController::class, 'markAllRead'])->name('read-all');
+    Route::get('recent', [Notification\NotificationController::class, 'recent'])->name('recent');
+});
+
+// ── Dashboards ──
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('dashboard/portfolio', [Dashboard\DashboardController::class, 'portfolio'])->name('dashboard.portfolio');
+    Route::get('dashboard/project/{project}', [Dashboard\DashboardController::class, 'project'])->name('dashboard.project');
 });
 
 // ── Vendor public routes (registration & login) ──
@@ -42,6 +62,10 @@ Route::middleware('auth:vendor')->prefix('vendor')->name('vendor.')->group(funct
 
     Route::get('categories', [Vendor\CategoryController::class, 'index'])->name('categories.index');
     Route::put('categories', [Vendor\CategoryController::class, 'update'])->name('categories.update');
+
+    // Notifications
+    Route::get('notifications', [Notification\NotificationController::class, 'vendorIndex'])->name('notifications.index');
+    Route::post('notifications/{notification}/read', [Notification\NotificationController::class, 'vendorMarkRead'])->name('notifications.read');
 
     // Tender browsing
     Route::get('tenders', [Vendor\TenderBrowseController::class, 'index'])->name('tenders.index');

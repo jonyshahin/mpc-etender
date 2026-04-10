@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ClipboardList, FileText, Gavel, LayoutGrid, LogOut, Tags, UserCircle } from 'lucide-react';
+import { Bell, ClipboardList, FileText, Gavel, LayoutGrid, LogOut, Tags, UserCircle } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import {
     Sidebar,
@@ -19,6 +19,7 @@ const vendorNavItems: NavItem[] = [
     { title: 'Dashboard', href: '/vendor/dashboard', icon: LayoutGrid },
     { title: 'Open Tenders', href: '/vendor/tenders', icon: ClipboardList },
     { title: 'My Bids', href: '/vendor/bids', icon: Gavel },
+    { title: 'Notifications', href: '/vendor/notifications', icon: Bell },
     { title: 'Profile', href: '/vendor/profile', icon: UserCircle },
     { title: 'Documents', href: '/vendor/documents', icon: FileText },
     { title: 'Categories', href: '/vendor/categories', icon: Tags },

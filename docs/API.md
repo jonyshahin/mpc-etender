@@ -100,6 +100,28 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | POST | `/approvals/{approval}/reject` | `approvals.reject` | Reject approval |
 | POST | `/approvals/{approval}/delegate` | `approvals.delegate` | Delegate to user |
 
+## Notifications (prefix: `/notifications`)
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/notifications` | `notifications.index` | Notification list |
+| POST | `/notifications/{notification}/read` | `notifications.read` | Mark notification read |
+| POST | `/notifications/mark-all-read` | `notifications.read-all` | Mark all read |
+| GET | `/notifications/recent` | `notifications.recent` | Recent notifications (JSON) |
+
+## Dashboards
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| GET | `/dashboard/portfolio` | `dashboard.portfolio` | Portfolio-wide dashboard |
+| GET | `/dashboard/project/{project}` | `dashboard.project` | Project-level dashboard |
+
+## Language
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| PUT | `/user/language` | `language.update` | Switch language (en/ar) |
+
 ## Vendor Portal (prefix: `/vendor`)
 
 ### Public (guest:vendor middleware)
@@ -124,6 +146,8 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | DELETE | `/vendor/documents/{document}` | `vendor.documents.destroy` | Delete pending document |
 | GET | `/vendor/categories` | `vendor.categories.index` | View/select categories |
 | PUT | `/vendor/categories` | `vendor.categories.update` | Update category selections |
+| GET | `/vendor/notifications` | `vendor.notifications.index` | Vendor notifications |
+| POST | `/vendor/notifications/{n}/read` | `vendor.notifications.read` | Mark vendor notification read |
 | GET | `/vendor/tenders` | `vendor.tenders.index` | Browse open tenders |
 | GET | `/vendor/tenders/{tender}` | `vendor.tenders.show` | View tender details |
 | POST | `/vendor/tenders/{tender}/clarifications` | `vendor.tenders.clarifications.store` | Ask clarification |
