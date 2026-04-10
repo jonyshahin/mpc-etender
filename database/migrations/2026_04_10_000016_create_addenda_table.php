@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('file_path', 500)->nullable();
             $table->boolean('extends_deadline')->default(false);
             $table->timestamp('new_deadline')->nullable();
-            $table->timestamp('published_at');
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
     }
