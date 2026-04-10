@@ -21,16 +21,33 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     }
 
     /**
+     * Override Horizon's default authorization to bypass the environment check.
+     */
+    protected function authorization(): void
+    {
+        $this->gate();
+
+        Horizon::auth(function ($request) {
+            $user = $request->user();
+            if (! $user) {
+                return false;
+            }
+
+            return in_array($user->email, [
+                'admin@mpc-group.com',
+            ]);
+        });
+    }
+
+    /**
      * Register the Horizon gate.
-     *
-     * This gate determines who can access Horizon in non-local environments.
      */
     protected function gate(): void
     {
         Gate::define('viewHorizon', function ($user) {
-            \Log::info('Horizon gate check', ['user' => $user?->email, 'id' => $user?->id]);
-
-            return true; // temporarily allow everyone to isolate the issue
+            return in_array($user->email, [
+                'admin@mpc-group.com',
+            ]);
         });
     }
 }
