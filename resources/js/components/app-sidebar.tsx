@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
+    BarChart3,
+    Bell,
     BookOpen,
     Building2,
     CheckSquare,
@@ -50,6 +52,16 @@ const mainNavItems: NavItem[] = [
         title: 'Approvals',
         href: '/approvals',
         icon: CheckSquare,
+    },
+    {
+        title: 'Portfolio',
+        href: '/dashboard/portfolio',
+        icon: BarChart3,
+    },
+    {
+        title: 'Notifications',
+        href: '/notifications',
+        icon: Bell,
     },
 ];
 
