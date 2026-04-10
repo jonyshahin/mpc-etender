@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Tender;
+use App\Services\ApprovalService;
 use App\Services\TenderService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -16,3 +17,8 @@ Schedule::call(function () {
         ->where('submission_deadline', '<=', now())
         ->each(fn ($t) => app(TenderService::class)->closeSubmission($t));
 })->everyMinute()->name('close-expired-tenders');
+
+// Auto-escalate expired approvals
+Schedule::call(fn () => app(ApprovalService::class)->escalateExpired())
+    ->hourly()
+    ->name('escalate-expired-approvals');
