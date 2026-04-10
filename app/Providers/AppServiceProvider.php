@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Horizon\Horizon;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Horizon::auth(function ($request) {
+            return optional($request->user())->email === 'admin@mpc-group.com';
+        });
+
         $this->configureDefaults();
         $this->registerPolicies();
         $this->registerDashboardGates();
