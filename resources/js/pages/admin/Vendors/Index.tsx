@@ -49,12 +49,12 @@ type Props = {
 
 export default function Index({ vendors, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const [status, setStatus] = useState(filters.status ?? '');
+    const [status, setStatus] = useState(filters.status || 'all');
 
     function handleFilter() {
         router.get('/admin/vendors', {
             search: search || undefined,
-            status: status || undefined,
+            status: status === 'all' ? undefined : status,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -160,7 +160,7 @@ export default function Index({ vendors, filters }: Props) {
                             <SelectValue placeholder="All Statuses" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Statuses</SelectItem>
+                            <SelectItem value="all">All Statuses</SelectItem>
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="qualified">Qualified</SelectItem>
                             <SelectItem value="rejected">Rejected</SelectItem>
