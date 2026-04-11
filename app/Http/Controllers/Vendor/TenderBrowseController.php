@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\VendorStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentAccessLog;
 use App\Models\Tender;
@@ -72,12 +73,25 @@ class TenderBrowseController extends Controller
             'accessed_at' => now(),
         ]);
 
+        $existingBid = $tender->bids()
+            ->where('vendor_id', $vendor->id)
+            ->whereNot('status', 'withdrawn')
+            ->first();
+
+        $vendorCategoryIds = $vendor->categories()->pluck('categories.id');
+        $tenderCategoryIds = $tender->categories->pluck('id');
+        $hasMatchingCategory = $tenderCategoryIds->intersect($vendorCategoryIds)->isNotEmpty();
+
+        $canBid = $vendor->prequalification_status === VendorStatus::Qualified
+            && $tender->status === 'published'
+            && $tender->submission_deadline->isFuture()
+            && $hasMatchingCategory
+            && $existingBid === null;
+
         return Inertia::render('vendor/Tenders/Show', [
             'tender' => $tender,
-            'hasExistingBid' => $tender->bids()
-                ->where('vendor_id', $vendor->id)
-                ->whereNot('status', 'withdrawn')
-                ->exists(),
+            'canBid' => $canBid,
+            'existingBidId' => $existingBid?->id,
         ]);
     }
 }
