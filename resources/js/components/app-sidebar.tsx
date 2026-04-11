@@ -90,13 +90,15 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const page = usePage<{ dir?: string }>();
+    const { auth } = page.props;
     const { isCurrentUrl } = useCurrentUrl();
     const roleSlug = (auth as any).user?.role_slug;
     const isAdmin = roleSlug === 'super_admin' || roleSlug === 'admin';
+    const side = page.props.dir === 'rtl' ? 'right' : 'left';
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="inset" side={side}>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

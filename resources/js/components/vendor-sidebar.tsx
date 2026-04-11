@@ -27,11 +27,13 @@ const vendorNavItems: NavItem[] = [
 
 export function VendorSidebar() {
     const { isCurrentUrl } = useCurrentUrl();
-    const { auth } = usePage().props;
+    const page = usePage<{ dir?: string }>();
+    const { auth } = page.props;
     const vendor = (auth as any).vendor;
+    const side = page.props.dir === 'rtl' ? 'right' : 'left';
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="inset" side={side}>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
