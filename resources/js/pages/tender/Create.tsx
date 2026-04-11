@@ -309,6 +309,31 @@ export default function Create({ projects, categories }: Props) {
         form.transform((data) => ({
             ...data,
             category_ids: categoryIds,
+            boq_sections: boqSections
+                .filter((s) => s.title.trim() !== '')
+                .map((s, i) => ({
+                    title_en: s.title,
+                    title_ar: s.title_ar || null,
+                    sort_order: i,
+                    items: s.items
+                        .filter((it) => it.item_code.trim() !== '')
+                        .map((it, j) => ({
+                            item_code: it.item_code,
+                            description_en: it.description_en,
+                            unit: it.unit,
+                            quantity: it.quantity,
+                            sort_order: j,
+                        })),
+                })),
+            evaluation_criteria: criteria
+                .filter((c) => c.name_en.trim() !== '')
+                .map((c, i) => ({
+                    name_en: c.name_en,
+                    envelope: c.envelope,
+                    weight_percentage: c.weight_percentage,
+                    max_score: c.max_score,
+                    sort_order: i,
+                })),
             status,
         }));
         form.post('/tenders');

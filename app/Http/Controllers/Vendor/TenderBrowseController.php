@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\TenderStatus;
 use App\Enums\VendorStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentAccessLog;
@@ -83,7 +84,7 @@ class TenderBrowseController extends Controller
         $hasMatchingCategory = $tenderCategoryIds->intersect($vendorCategoryIds)->isNotEmpty();
 
         $canBid = $vendor->prequalification_status === VendorStatus::Qualified
-            && $tender->status === 'published'
+            && $tender->status === TenderStatus::Published
             && $tender->submission_deadline->isFuture()
             && $hasMatchingCategory
             && $existingBid === null;

@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Enums\TenderStatus;
 use App\Models\AuditLog;
+use App\Models\BoqItem;
+use App\Models\BoqSection;
+use App\Models\EvaluationCriterion;
 use App\Models\Project;
 use App\Models\Tender;
 use App\Models\User;
@@ -22,7 +25,9 @@ class TenderService
     {
         return DB::transaction(function () use ($data, $creator) {
             $categoryIds = $data['category_ids'] ?? [];
-            unset($data['category_ids']);
+            $boqSections = $data['boq_sections'] ?? [];
+            $criteria = $data['evaluation_criteria'] ?? [];
+            unset($data['category_ids'], $data['boq_sections'], $data['evaluation_criteria']);
 
             $data['created_by'] = $creator->id;
             $data['status'] = TenderStatus::Draft;
@@ -32,6 +37,37 @@ class TenderService
 
             if ($categoryIds) {
                 $tender->categories()->attach($categoryIds);
+            }
+
+            foreach ($boqSections as $sectionIndex => $sectionData) {
+                $section = BoqSection::create([
+                    'tender_id' => $tender->id,
+                    'title' => $sectionData['title_en'],
+                    'title_ar' => $sectionData['title_ar'] ?? null,
+                    'sort_order' => $sectionData['sort_order'] ?? $sectionIndex,
+                ]);
+
+                foreach ($sectionData['items'] ?? [] as $itemIndex => $itemData) {
+                    BoqItem::create([
+                        'section_id' => $section->id,
+                        'item_code' => $itemData['item_code'],
+                        'description_en' => $itemData['description_en'],
+                        'unit' => $itemData['unit'],
+                        'quantity' => $itemData['quantity'],
+                        'sort_order' => $itemData['sort_order'] ?? $itemIndex,
+                    ]);
+                }
+            }
+
+            foreach ($criteria as $criterionIndex => $criterionData) {
+                EvaluationCriterion::create([
+                    'tender_id' => $tender->id,
+                    'name_en' => $criterionData['name_en'],
+                    'envelope' => $criterionData['envelope'],
+                    'weight_percentage' => $criterionData['weight_percentage'],
+                    'max_score' => $criterionData['max_score'],
+                    'sort_order' => $criterionData['sort_order'] ?? $criterionIndex,
+                ]);
             }
 
             return $tender;
