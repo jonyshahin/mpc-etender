@@ -14,9 +14,8 @@ class AssignProjectUsersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'users' => ['required', 'array', 'min:1'],
-            'users.*.user_id' => ['required', 'uuid', 'exists:users,id'],
-            'users.*.project_role' => ['required', 'string', 'max:50'],
+            'user_id' => ['required', 'uuid', 'exists:users,id'],
+            'project_role' => ['required', 'string', 'max:50'],
         ];
     }
 }

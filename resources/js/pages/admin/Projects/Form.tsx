@@ -168,7 +168,6 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                                             <SelectValue placeholder="Select status" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="draft">Draft</SelectItem>
                                             <SelectItem value="active">Active</SelectItem>
                                             <SelectItem value="on_hold">On Hold</SelectItem>
                                             <SelectItem value="completed">Completed</SelectItem>

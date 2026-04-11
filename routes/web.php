@@ -177,7 +177,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('projects', [Admin\ProjectController::class, 'store'])->name('projects.store');
     Route::get('projects/{project}/edit', [Admin\ProjectController::class, 'edit'])->name('projects.edit');
     Route::put('projects/{project}', [Admin\ProjectController::class, 'update'])->name('projects.update');
-    Route::post('projects/{project}/assign-users', [Admin\ProjectController::class, 'assignUsers'])->name('projects.assign-users');
+    Route::post('projects/{project}/assign-users', [Admin\ProjectController::class, 'addUser'])->name('projects.assign-users');
+    Route::put('projects/{project}/users/{user}', [Admin\ProjectController::class, 'updateUserRole'])->name('projects.users.update');
+    Route::delete('projects/{project}/users/{user}', [Admin\ProjectController::class, 'removeUser'])->name('projects.users.destroy');
 
     // Roles & Permissions
     Route::get('roles', [Admin\RoleController::class, 'index'])->name('roles.index');

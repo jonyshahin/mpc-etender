@@ -78,18 +78,49 @@ class ProjectController extends Controller
             ->with('flash', ['type' => 'success', 'message' => __('Project updated successfully.')]);
     }
 
-    public function assignUsers(AssignProjectUsersRequest $request, Project $project): RedirectResponse
+    public function addUser(AssignProjectUsersRequest $request, Project $project): RedirectResponse
     {
-        $pivotData = collect($request->validated('users'))->mapWithKeys(fn ($item) => [
-            $item['user_id'] => [
-                'project_role' => $item['project_role'],
-                'assigned_at' => now(),
-                'assigned_by' => $request->user()->id,
-            ],
-        ])->all();
+        $data = $request->validated();
+        $userId = $data['user_id'];
 
-        $project->users()->sync($pivotData);
+        if ($project->users()->where('users.id', $userId)->exists()) {
+            return back()->withErrors(['user_id' => __('User is already assigned to this project.')]);
+        }
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Users assigned successfully.')]);
+        $project->users()->attach($userId, [
+            'project_role' => $data['project_role'],
+            'assigned_at' => now(),
+            'assigned_by' => $request->user()->id,
+        ]);
+
+        return back()->with('flash', ['type' => 'success', 'message' => __('User added to project.')]);
+    }
+
+    public function updateUserRole(Request $request, Project $project, User $user): RedirectResponse
+    {
+        $this->authorize('update', $project);
+
+        $data = $request->validate([
+            'project_role' => ['required', 'string', 'max:50'],
+        ]);
+
+        if (! $project->users()->where('users.id', $user->id)->exists()) {
+            return back()->withErrors(['user_id' => __('User is not assigned to this project.')]);
+        }
+
+        $project->users()->updateExistingPivot($user->id, [
+            'project_role' => $data['project_role'],
+        ]);
+
+        return back()->with('flash', ['type' => 'success', 'message' => __('User role updated.')]);
+    }
+
+    public function removeUser(Project $project, User $user): RedirectResponse
+    {
+        $this->authorize('update', $project);
+
+        $project->users()->detach($user->id);
+
+        return back()->with('flash', ['type' => 'success', 'message' => __('User removed from project.')]);
     }
 }
