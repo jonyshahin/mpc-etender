@@ -41,7 +41,7 @@ class BidController extends Controller
      */
     public function create(Request $request, Tender $tender): Response
     {
-        $tender->load(['boqSections.items', 'categories:id,name', 'project:id,name']);
+        $tender->load(['boqSections.items', 'categories:id,name_en,name_ar', 'project:id,name']);
 
         return Inertia::render('vendor/Tenders/Bid/Create', [
             'tender' => $tender,
