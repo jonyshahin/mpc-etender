@@ -25,10 +25,10 @@ class BidSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'boq_prices' => ['required', 'array', 'min:1'],
-            'boq_prices.*.boq_item_id' => ['required', 'uuid', 'exists:boq_items,id'],
-            'boq_prices.*.unit_price' => ['required', 'numeric', 'gt:0'],
-            'boq_prices.*.total_price' => ['required', 'numeric', 'gte:0'],
+            'boq_prices' => ['nullable', 'array', 'min:1'],
+            'boq_prices.*.boq_item_id' => ['required_with:boq_prices', 'uuid', 'exists:boq_items,id'],
+            'boq_prices.*.unit_price' => ['required_with:boq_prices', 'numeric', 'gt:0'],
+            'boq_prices.*.total_price' => ['required_with:boq_prices', 'numeric', 'gte:0'],
             'technical_notes' => ['nullable', 'string'],
         ];
     }
