@@ -69,7 +69,7 @@ function CreateProjectDialog({
         description: '',
         location: '',
         client_name: '',
-        status: 'draft',
+        status: 'active',
         start_date: '',
         end_date: '',
     });
@@ -81,6 +81,8 @@ function CreateProjectDialog({
         });
     };
 
+    const errorEntries = Object.entries(form.errors).filter(([, msg]) => Boolean(msg));
+
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -88,6 +90,22 @@ function CreateProjectDialog({
                     <DialogTitle>New Project</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={submit} className="space-y-4">
+                    {errorEntries.length > 0 && (
+                        <div
+                            role="alert"
+                            className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+                        >
+                            <p className="font-medium">Please correct the following:</p>
+                            <ul className="mt-1 list-inside list-disc">
+                                {errorEntries.map(([field, msg]) => (
+                                    <li key={field}>
+                                        <span className="font-medium">{field}:</span> {msg}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <Label htmlFor="create-name">Name</Label>
                         <Input
