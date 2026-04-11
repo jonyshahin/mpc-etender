@@ -37,14 +37,34 @@ class BidController extends Controller
     }
 
     /**
-     * Show bid form. Load tender BOQ sections/items.
+     * Show bid form. Creates a draft bid if one does not already exist,
+     * then loads BOQ sections/items for pricing.
      */
-    public function create(Request $request, Tender $tender): Response
+    public function create(Request $request, Tender $tender): RedirectResponse|Response
     {
+        $vendor = $request->user('vendor');
+
+        $bid = $tender->bids()
+            ->where('vendor_id', $vendor->id)
+            ->whereNot('status', 'withdrawn')
+            ->first();
+
+        if ($bid === null) {
+            try {
+                $bid = $this->bidService->createDraft($tender, $vendor);
+            } catch (\RuntimeException $e) {
+                return redirect()
+                    ->route('vendor.tenders.show', $tender)
+                    ->with('error', $e->getMessage());
+            }
+        }
+
         $tender->load(['boqSections.items', 'categories:id,name_en,name_ar', 'project:id,name']);
 
         return Inertia::render('vendor/Tenders/Bid/Create', [
             'tender' => $tender,
+            'bid' => $bid,
+            'boqSections' => $tender->boqSections,
         ]);
     }
 
