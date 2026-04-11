@@ -40,7 +40,7 @@ type ApprovalItem = {
 };
 
 type Props = {
-    approvals: ApprovalItem[];
+    approvals: { data: ApprovalItem[] };
 };
 
 function formatCurrency(value: string | null | undefined, currency: string): string {
@@ -76,6 +76,8 @@ function getDaysUntilDeadline(deadline: string): number {
 }
 
 export default function Index({ approvals }: Props) {
+    const items = approvals.data;
+
     return (
         <>
             <Head title="Pending Approvals" />
@@ -83,7 +85,7 @@ export default function Index({ approvals }: Props) {
             <div className="space-y-6">
                 <Heading title="Pending Approvals" />
 
-                {approvals.length === 0 ? (
+                {items.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <Clock className="text-muted-foreground mb-4 h-12 w-12" />
@@ -94,7 +96,7 @@ export default function Index({ approvals }: Props) {
                     </Card>
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {approvals.map((approval) => {
+                        {items.map((approval) => {
                             const daysLeft = getDaysUntilDeadline(approval.deadline);
                             const isUrgent = daysLeft < 2;
                             const vendorName =
