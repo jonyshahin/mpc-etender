@@ -15,7 +15,7 @@ type BidRow = {
 };
 
 type Props = {
-    bids: Array<BidRow>;
+    bids: { data: Array<BidRow> };
 };
 
 const columns = [
@@ -89,7 +89,7 @@ export default function Index({ bids }: Props) {
             <div className="space-y-6">
                 <Heading title="My Bids" />
 
-                <DataTable columns={columns} data={{ data: bids }} />
+                <DataTable columns={columns} data={bids} />
             </div>
         </>
     );
