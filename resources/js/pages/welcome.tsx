@@ -33,9 +33,7 @@ export default function Welcome({
                 <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
                     <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                <AppLogoIcon className="size-6 fill-current" />
-                            </div>
+                            <AppLogoIcon className="size-14 object-contain" />
                             <div>
                                 <p className="text-base font-semibold leading-tight">MPC e-Tender</p>
                                 <p className="text-xs text-muted-foreground">Digital Procurement Platform</p>
