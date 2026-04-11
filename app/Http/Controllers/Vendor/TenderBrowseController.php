@@ -27,13 +27,14 @@ class TenderBrowseController extends Controller
             })
             ->when($request->input('search'), function ($query, $search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
+                    $q->where('title_en', 'like', "%{$search}%")
+                        ->orWhere('title_ar', 'like', "%{$search}%")
                         ->orWhere('reference_number', 'like', "%{$search}%");
                 });
             })
-            ->with(['project:id,name', 'categories:id,name'])
+            ->with(['project:id,name', 'categories:id,name_en,name_ar'])
             ->withCount('bids')
-            ->latest('published_at')
+            ->latest('publish_date')
             ->paginate(15)
             ->withQueryString();
 
@@ -53,7 +54,7 @@ class TenderBrowseController extends Controller
 
         $tender->load([
             'project:id,name,description',
-            'categories:id,name',
+            'categories:id,name_en,name_ar',
             'boqSections.items',
             'documents',
             'addenda' => fn ($q) => $q->latest(),
@@ -62,13 +63,13 @@ class TenderBrowseController extends Controller
 
         // Log document access
         DocumentAccessLog::create([
-            'user_id' => $vendor->id,
-            'user_type' => get_class($vendor),
+            'vendor_id' => $vendor->id,
             'document_type' => Tender::class,
             'document_id' => $tender->id,
             'action' => 'viewed',
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
+            'accessed_at' => now(),
         ]);
 
         return Inertia::render('vendor/Tenders/Show', [

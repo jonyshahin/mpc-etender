@@ -14,13 +14,13 @@ type Props = {
     };
     documentWarnings: Array<{ id: string; title: string; expiry_date: string }>;
     expiredDocuments: Array<{ id: string; title: string; expiry_date: string }>;
-    openTenders: Array<{ id: string; title: string; reference_number: string; submission_deadline: string }>;
+    openTenders: Array<{ id: string; title_en: string; title_ar: string | null; reference_number: string; submission_deadline: string }>;
     submittedBids: Array<{
         id: string;
         tender_id: string;
         status: string;
         submitted_at: string | null;
-        tender?: { id: string; title: string; reference_number: string };
+        tender?: { id: string; title_en: string; title_ar: string | null; reference_number: string };
     }>;
 };
 
@@ -136,7 +136,7 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                             {openTenders.map((tender) => (
                                 <Card key={tender.id}>
                                     <CardHeader className="pb-2">
-                                        <CardTitle className="text-base">{tender.title}</CardTitle>
+                                        <CardTitle className="text-base">{tender.title_en}</CardTitle>
                                         <CardDescription>{tender.reference_number}</CardDescription>
                                     </CardHeader>
                                     <CardContent>
@@ -185,7 +185,7 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                                         <tbody>
                                             {submittedBids.map((bid) => (
                                                 <tr key={bid.id} className="border-b last:border-0">
-                                                    <td className="px-4 py-3">{bid.tender?.title ?? '-'}</td>
+                                                    <td className="px-4 py-3">{bid.tender?.title_en ?? '-'}</td>
                                                     <td className="px-4 py-3 text-muted-foreground">
                                                         {bid.tender?.reference_number ?? '-'}
                                                     </td>

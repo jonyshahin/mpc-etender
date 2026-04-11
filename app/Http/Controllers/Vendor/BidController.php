@@ -27,7 +27,7 @@ class BidController extends Controller
         $vendor = $request->user('vendor');
 
         $bids = Bid::where('vendor_id', $vendor->id)
-            ->with(['tender:id,title,reference_number,submission_deadline,status'])
+            ->with(['tender:id,title_en,title_ar,reference_number,submission_deadline,status'])
             ->latest()
             ->paginate(15);
 
@@ -143,7 +143,7 @@ class BidController extends Controller
         $this->ensureOwnership($bid, $vendor->id);
 
         $bid->load([
-            'tender:id,title,reference_number,submission_deadline,opening_date,status',
+            'tender:id,title_en,title_ar,reference_number,submission_deadline,opening_date,status',
             'boqPrices.boqItem',
             'documents',
         ]);
