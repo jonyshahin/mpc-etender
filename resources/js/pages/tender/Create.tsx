@@ -306,8 +306,11 @@ export default function Create({ projects, categories }: Props) {
     }
 
     function handleSubmit(status: 'draft' | 'published') {
-        form.setData('category_ids', categoryIds);
-        form.setData('status', status);
+        form.transform((data) => ({
+            ...data,
+            category_ids: categoryIds,
+            status,
+        }));
         form.post('/tenders');
     }
 

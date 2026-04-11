@@ -44,14 +44,14 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
     };
 
     const handleSaveProgress = () => {
-        form.setData('complete', false);
+        form.transform((data) => ({ ...data, complete: false }));
         form.post(`/evaluations/${tender.id}/score/${bid.id}`, {
             preserveScroll: true,
         });
     };
 
     const handleCompleteScoring = () => {
-        form.setData('complete', true);
+        form.transform((data) => ({ ...data, complete: true }));
         form.post(`/evaluations/${tender.id}/score/${bid.id}`, {
             preserveScroll: true,
         });
