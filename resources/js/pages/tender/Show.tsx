@@ -28,6 +28,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 type BoqItem = {
     id: string;
@@ -143,7 +150,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
     // Document upload form
     const docForm = useForm<{ title: string; doc_type: string; file: File | null }>({
         title: '',
-        doc_type: 'tender_document',
+        doc_type: 'specification',
         file: null,
     });
 
@@ -754,13 +761,24 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                         </div>
                                         <div className="w-48 space-y-2">
                                             <Label>Type</Label>
-                                            <Input
+                                            <Select
                                                 value={docForm.data.doc_type}
-                                                onChange={(e) =>
-                                                    docForm.setData('doc_type', e.target.value)
+                                                onValueChange={(value) =>
+                                                    docForm.setData('doc_type', value)
                                                 }
-                                                placeholder="tender_document"
-                                            />
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="specification">Specification</SelectItem>
+                                                    <SelectItem value="drawing">Drawing</SelectItem>
+                                                    <SelectItem value="contract_terms">Contract Terms</SelectItem>
+                                                    <SelectItem value="boq_template">BOQ Template</SelectItem>
+                                                    <SelectItem value="site_photo">Site Photo</SelectItem>
+                                                    <SelectItem value="other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div className="flex-1 space-y-2">
                                             <Label>File</Label>
@@ -1136,16 +1154,20 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                         </div>
                                         <div className="w-36 space-y-2">
                                             <Label>Envelope</Label>
-                                            <Input
+                                            <Select
                                                 value={criteriaForm.data.envelope}
-                                                onChange={(e) =>
-                                                    criteriaForm.setData(
-                                                        'envelope',
-                                                        e.target.value,
-                                                    )
+                                                onValueChange={(value) =>
+                                                    criteriaForm.setData('envelope', value)
                                                 }
-                                                placeholder="technical"
-                                            />
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="technical">Technical</SelectItem>
+                                                    <SelectItem value="financial">Financial</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div className="w-28 space-y-2">
                                             <Label>Weight %</Label>
