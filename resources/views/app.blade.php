@@ -44,7 +44,7 @@
     </head>
     <body class="font-sans antialiased">
         <script>
-            window.__translations__ = @json(__('*') !== '*' ? [] : json_decode(file_get_contents(lang_path(app()->getLocale() . '.json')), true) ?? []);
+            window.__translations__ = @json(json_decode(file_get_contents(lang_path(app()->getLocale() . '.json')), true) ?? []);
         </script>
         <x-inertia::app />
     </body>
