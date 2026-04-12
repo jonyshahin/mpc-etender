@@ -11,6 +11,7 @@ use App\Models\Tender;
 use App\Services\BoqService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class BoqController extends Controller
 {
@@ -24,7 +25,9 @@ class BoqController extends Controller
 
         $this->boqService->createSection($tender, $request->validated());
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('BOQ section added.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('BOQ section added.')]);
+
+        return back();
     }
 
     public function updateSection(Request $request, Tender $tender, BoqSection $section): RedirectResponse
@@ -37,7 +40,9 @@ class BoqController extends Controller
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('BOQ section updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('BOQ section updated.')]);
+
+        return back();
     }
 
     public function destroySection(Tender $tender, BoqSection $section): RedirectResponse
@@ -47,7 +52,9 @@ class BoqController extends Controller
         $section->items()->delete();
         $section->delete();
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('BOQ section deleted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('BOQ section deleted.')]);
+
+        return back();
     }
 
     public function storeItem(StoreBoqItemRequest $request, Tender $tender, BoqSection $section): RedirectResponse
@@ -56,7 +63,9 @@ class BoqController extends Controller
 
         $this->boqService->createItem($section, $request->validated());
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('BOQ item added.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('BOQ item added.')]);
+
+        return back();
     }
 
     public function updateItem(Request $request, Tender $tender, BoqItem $item): RedirectResponse
@@ -73,7 +82,9 @@ class BoqController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ]));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('BOQ item updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('BOQ item updated.')]);
+
+        return back();
     }
 
     public function destroyItem(Tender $tender, BoqItem $item): RedirectResponse
@@ -82,7 +93,9 @@ class BoqController extends Controller
 
         $item->delete();
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('BOQ item deleted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('BOQ item deleted.')]);
+
+        return back();
     }
 
     public function import(Request $request, Tender $tender): RedirectResponse
@@ -93,6 +106,8 @@ class BoqController extends Controller
 
         $count = $this->boqService->importFromExcel($tender, $request->file('file'));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __(':count items imported.', ['count' => $count])]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __(':count items imported.', ['count' => $count])]);
+
+        return back();
     }
 }

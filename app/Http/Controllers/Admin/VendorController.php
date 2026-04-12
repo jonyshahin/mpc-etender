@@ -70,7 +70,9 @@ class VendorController extends Controller
     {
         $this->vendorService->prequalify($vendor, $request->user());
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Vendor approved successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Vendor approved successfully.')]);
+
+        return back();
     }
 
     public function reject(VendorPrequalificationRequest $request, Vendor $vendor): RedirectResponse
@@ -79,7 +81,9 @@ class VendorController extends Controller
 
         $this->vendorService->reject($vendor, $request->user(), $request->input('reason'));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Vendor rejected.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Vendor rejected.')]);
+
+        return back();
     }
 
     public function suspend(VendorPrequalificationRequest $request, Vendor $vendor): RedirectResponse
@@ -88,6 +92,8 @@ class VendorController extends Controller
 
         $this->vendorService->suspend($vendor, $request->user(), $request->input('reason'));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Vendor suspended.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Vendor suspended.')]);
+
+        return back();
     }
 }

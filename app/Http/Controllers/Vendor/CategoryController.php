@@ -31,6 +31,8 @@ class CategoryController extends Controller
         $vendor = $request->user('vendor');
         $vendor->categories()->sync($request->validated('category_ids'));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Categories updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Categories updated successfully.')]);
+
+        return back();
     }
 }

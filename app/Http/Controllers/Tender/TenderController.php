@@ -63,8 +63,9 @@ class TenderController extends Controller
     {
         $tender = $this->tenderService->create($request->validated(), $request->user());
 
-        return redirect()->route('tenders.show', $tender)
-            ->with('flash', ['type' => 'success', 'message' => __('Tender created as draft.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender created as draft.')]);
+
+        return redirect()->route('tenders.show', $tender);
     }
 
     public function show(Request $request, Tender $tender): Response
@@ -118,8 +119,9 @@ class TenderController extends Controller
 
         $this->tenderService->update($tender, $request->validated());
 
-        return redirect()->route('tenders.show', $tender)
-            ->with('flash', ['type' => 'success', 'message' => __('Tender updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender updated.')]);
+
+        return redirect()->route('tenders.show', $tender);
     }
 
     public function publish(Request $request, Tender $tender): RedirectResponse
@@ -128,8 +130,9 @@ class TenderController extends Controller
 
         $this->tenderService->publish($tender);
 
-        return redirect()->route('tenders.show', $tender)
-            ->with('flash', ['type' => 'success', 'message' => __('Tender published successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender published successfully.')]);
+
+        return redirect()->route('tenders.show', $tender);
     }
 
     public function cancel(Request $request, Tender $tender): RedirectResponse
@@ -140,7 +143,8 @@ class TenderController extends Controller
 
         $this->tenderService->cancel($tender, $request->input('reason'));
 
-        return redirect()->route('tenders.show', $tender)
-            ->with('flash', ['type' => 'success', 'message' => __('Tender cancelled.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender cancelled.')]);
+
+        return redirect()->route('tenders.show', $tender);
     }
 }

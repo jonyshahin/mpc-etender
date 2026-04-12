@@ -80,7 +80,9 @@ class ApprovalController extends Controller
             $request->validated('comments'),
         );
 
-        return redirect()->back()->with('success', __('Approval submitted successfully.'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval submitted successfully.')]);
+
+        return redirect()->back();
     }
 
     /**
@@ -94,7 +96,9 @@ class ApprovalController extends Controller
             $request->validated('comments'),
         );
 
-        return redirect()->back()->with('success', __('Approval rejected.'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval rejected.')]);
+
+        return redirect()->back();
     }
 
     /**
@@ -110,7 +114,9 @@ class ApprovalController extends Controller
             $delegatee,
         );
 
-        return redirect()->back()->with('success', __('Approval delegated successfully.'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval delegated successfully.')]);
+
+        return redirect()->back();
     }
 
     /**
@@ -126,6 +132,8 @@ class ApprovalController extends Controller
             $request->user(),
         );
 
-        return redirect()->back()->with('success', __('Approval request created successfully.'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval request created successfully.')]);
+
+        return redirect()->back();
     }
 }

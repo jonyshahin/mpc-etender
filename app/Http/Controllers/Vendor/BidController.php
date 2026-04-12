@@ -11,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BidController extends Controller
 {
@@ -53,9 +52,9 @@ class BidController extends Controller
             try {
                 $bid = $this->bidService->createDraft($tender, $vendor);
             } catch (\RuntimeException $e) {
-                return redirect()
-                    ->route('vendor.tenders.show', $tender)
-                    ->with('error', $e->getMessage());
+                Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
+
+                return redirect()->route('vendor.tenders.show', $tender);
             }
         }
 
@@ -78,11 +77,13 @@ class BidController extends Controller
         try {
             $bid = $this->bidService->createDraft($tender, $vendor);
 
-            return redirect()
-                ->route('vendor.bids.show', $bid)
-                ->with('success', __('Draft bid created successfully.'));
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('Draft bid created successfully.')]);
+
+            return redirect()->route('vendor.bids.show', $bid);
         } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
+
+            return back();
         }
     }
 
@@ -104,7 +105,9 @@ class BidController extends Controller
 
         $this->bidService->updatePricing($bid, $validated['boq_prices']);
 
-        return back()->with('success', __('Bid pricing updated successfully.'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Bid pricing updated successfully.')]);
+
+        return back();
     }
 
     /**
@@ -123,11 +126,13 @@ class BidController extends Controller
 
             $this->bidService->submit($bid);
 
-            return redirect()
-                ->route('vendor.bids.show', $bid)
-                ->with('success', __('Bid submitted and sealed successfully.'));
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('Bid submitted and sealed successfully.')]);
+
+            return redirect()->route('vendor.bids.show', $bid);
         } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
+
+            return back();
         }
     }
 
@@ -146,11 +151,13 @@ class BidController extends Controller
         try {
             $this->bidService->withdraw($bid, $validated['reason']);
 
-            return redirect()
-                ->route('vendor.bids.index')
-                ->with('success', __('Bid withdrawn successfully.'));
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('Bid withdrawn successfully.')]);
+
+            return redirect()->route('vendor.bids.index');
         } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
+
+            return back();
         }
     }
 

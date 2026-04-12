@@ -24,7 +24,9 @@ class ReportController extends Controller
 
         $this->evaluationService->generateReport($tender, $request->user());
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Evaluation report generated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Evaluation report generated.')]);
+
+        return back();
     }
 
     public function show(Request $request, Tender $tender): Response

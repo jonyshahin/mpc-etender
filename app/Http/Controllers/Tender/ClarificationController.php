@@ -9,6 +9,7 @@ use App\Models\Clarification;
 use App\Models\Tender;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ClarificationController extends Controller
 {
@@ -26,7 +27,9 @@ class ClarificationController extends Controller
             'is_published' => false,
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Question submitted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Question submitted.')]);
+
+        return back();
     }
 
     /**
@@ -40,7 +43,9 @@ class ClarificationController extends Controller
             'answered_at' => now(),
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Answer saved.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Answer saved.')]);
+
+        return back();
     }
 
     /**
@@ -53,6 +58,8 @@ class ClarificationController extends Controller
             'published_at' => now(),
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Clarification published.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Clarification published.')]);
+
+        return back();
     }
 }

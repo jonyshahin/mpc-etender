@@ -46,8 +46,9 @@ class ProjectController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
-        return redirect()->route('admin.projects.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Project created successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created successfully.')]);
+
+        return redirect()->route('admin.projects.index');
     }
 
     public function edit(Project $project): Response
@@ -74,8 +75,9 @@ class ProjectController extends Controller
     {
         $project->update($request->validated());
 
-        return redirect()->route('admin.projects.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Project updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated successfully.')]);
+
+        return redirect()->route('admin.projects.index');
     }
 
     public function addUser(AssignProjectUsersRequest $request, Project $project): RedirectResponse
@@ -93,7 +95,9 @@ class ProjectController extends Controller
             'assigned_by' => $request->user()->id,
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('User added to project.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User added to project.')]);
+
+        return back();
     }
 
     public function updateUserRole(Request $request, Project $project, User $user): RedirectResponse
@@ -112,7 +116,9 @@ class ProjectController extends Controller
             'project_role' => $data['project_role'],
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('User role updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User role updated.')]);
+
+        return back();
     }
 
     public function removeUser(Project $project, User $user): RedirectResponse
@@ -121,6 +127,8 @@ class ProjectController extends Controller
 
         $project->users()->detach($user->id);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('User removed from project.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User removed from project.')]);
+
+        return back();
     }
 }

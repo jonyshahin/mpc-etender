@@ -63,8 +63,9 @@ class UserController extends Controller
             $user->projects()->attach($pivotData);
         }
 
-        return redirect()->route('admin.users.index')
-            ->with('flash', ['type' => 'success', 'message' => __('User created successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User created successfully.')]);
+
+        return redirect()->route('admin.users.index');
     }
 
     public function edit(User $user): Response
@@ -96,19 +97,23 @@ class UserController extends Controller
         ])->all();
         $user->projects()->sync($pivotData);
 
-        return redirect()->route('admin.users.index')
-            ->with('flash', ['type' => 'success', 'message' => __('User updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated successfully.')]);
+
+        return redirect()->route('admin.users.index');
     }
 
     public function destroy(User $user): RedirectResponse
     {
         if ($user->id === request()->user()->id) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('You cannot delete your own account.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('You cannot delete your own account.')]);
+
+            return back();
         }
 
         $user->update(['is_active' => false]);
 
-        return redirect()->route('admin.users.index')
-            ->with('flash', ['type' => 'success', 'message' => __('User deactivated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User deactivated successfully.')]);
+
+        return redirect()->route('admin.users.index');
     }
 }

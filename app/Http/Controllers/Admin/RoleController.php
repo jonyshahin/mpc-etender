@@ -27,20 +27,24 @@ class RoleController extends Controller
     {
         Role::create($request->validated());
 
-        return redirect()->route('admin.roles.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Role created successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Role created successfully.')]);
+
+        return redirect()->route('admin.roles.index');
     }
 
     public function update(UpdateRoleRequest $request, Role $role): RedirectResponse
     {
         if ($role->is_system) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('System roles cannot be modified.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('System roles cannot be modified.')]);
+
+            return back();
         }
 
         $role->update($request->validated());
 
-        return redirect()->route('admin.roles.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Role updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Role updated successfully.')]);
+
+        return redirect()->route('admin.roles.index');
     }
 
     public function permissions(Role $role): Response
@@ -56,7 +60,8 @@ class RoleController extends Controller
     {
         $role->permissions()->sync($request->validated('permission_ids'));
 
-        return redirect()->route('admin.roles.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Permissions updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Permissions updated successfully.')]);
+
+        return redirect()->route('admin.roles.index');
     }
 }

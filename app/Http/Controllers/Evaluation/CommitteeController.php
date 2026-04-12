@@ -43,7 +43,9 @@ class CommitteeController extends Controller
             'formed_at' => now(),
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Committee created.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Committee created.')]);
+
+        return back();
     }
 
     public function update(Request $request, Tender $tender, EvaluationCommittee $committee): RedirectResponse
@@ -53,7 +55,9 @@ class CommitteeController extends Controller
             'status' => ['required', 'in:active,completed'],
         ]));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Committee updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Committee updated.')]);
+
+        return back();
     }
 
     public function addMember(AddMemberRequest $request, Tender $tender, EvaluationCommittee $committee): RedirectResponse
@@ -61,7 +65,9 @@ class CommitteeController extends Controller
         $data = $request->validated();
 
         if ($committee->committeeMemberRecords()->where('user_id', $data['user_id'])->exists()) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('User is already a member.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('User is already a member.')]);
+
+            return back();
         }
 
         CommitteeMember::create([
@@ -71,13 +77,17 @@ class CommitteeController extends Controller
             'has_scored' => false,
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Member added.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Member added.')]);
+
+        return back();
     }
 
     public function removeMember(Tender $tender, EvaluationCommittee $committee, CommitteeMember $member): RedirectResponse
     {
         $member->delete();
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Member removed.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);
+
+        return back();
     }
 }

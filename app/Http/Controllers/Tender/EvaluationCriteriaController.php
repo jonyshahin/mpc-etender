@@ -8,6 +8,7 @@ use App\Models\EvaluationCriterion;
 use App\Models\Tender;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class EvaluationCriteriaController extends Controller
 {
@@ -23,7 +24,9 @@ class EvaluationCriteriaController extends Controller
             'sort_order' => $data['sort_order'] ?? $maxSort + 1,
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Evaluation criterion added.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Evaluation criterion added.')]);
+
+        return back();
     }
 
     public function update(Request $request, Tender $tender, EvaluationCriterion $criterion): RedirectResponse
@@ -40,7 +43,9 @@ class EvaluationCriteriaController extends Controller
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]));
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Criterion updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Criterion updated.')]);
+
+        return back();
     }
 
     public function destroy(Tender $tender, EvaluationCriterion $criterion): RedirectResponse
@@ -49,6 +54,8 @@ class EvaluationCriteriaController extends Controller
 
         $criterion->delete();
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Criterion deleted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Criterion deleted.')]);
+
+        return back();
     }
 }

@@ -30,31 +30,38 @@ class CategoryController extends Controller
     {
         Category::create($request->validated());
 
-        return redirect()->route('admin.categories.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Category created successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Category created successfully.')]);
+
+        return redirect()->route('admin.categories.index');
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
     {
         $category->update($request->validated());
 
-        return redirect()->route('admin.categories.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Category updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Category updated successfully.')]);
+
+        return redirect()->route('admin.categories.index');
     }
 
     public function destroy(Category $category): RedirectResponse
     {
         if ($category->children()->exists()) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('Cannot delete a category with sub-categories.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Cannot delete a category with sub-categories.')]);
+
+            return back();
         }
 
         if ($category->vendors()->exists()) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('Cannot delete a category with assigned vendors.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Cannot delete a category with assigned vendors.')]);
+
+            return back();
         }
 
         $category->delete();
 
-        return redirect()->route('admin.categories.index')
-            ->with('flash', ['type' => 'success', 'message' => __('Category deleted successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Category deleted successfully.')]);
+
+        return redirect()->route('admin.categories.index');
     }
 }

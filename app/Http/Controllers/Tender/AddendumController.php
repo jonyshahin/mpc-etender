@@ -7,6 +7,7 @@ use App\Http\Requests\Tender\StoreAddendumRequest;
 use App\Models\Tender;
 use App\Services\FileUploadService;
 use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
 
 class AddendumController extends Controller
 {
@@ -44,6 +45,8 @@ class AddendumController extends Controller
             $tender->update(['submission_deadline' => $data['new_deadline']]);
         }
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Addendum issued.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Addendum issued.')]);
+
+        return back();
     }
 }

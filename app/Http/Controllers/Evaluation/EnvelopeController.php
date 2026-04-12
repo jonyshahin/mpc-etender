@@ -7,6 +7,7 @@ use App\Models\Tender;
 use App\Services\EvaluationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class EnvelopeController extends Controller
 {
@@ -22,15 +23,19 @@ class EnvelopeController extends Controller
         $this->authorize('update', $tender);
 
         if (! $tender->is_two_envelope) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('Not a two-envelope tender.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Not a two-envelope tender.')]);
+
+            return back();
         }
 
         $passingBids = $this->evaluationService->getPassingBids($tender);
 
-        return back()->with('flash', [
+        Inertia::flash('toast', [
             'type' => 'success',
             'message' => __(':count bids passed technical evaluation.', ['count' => $passingBids->count()]),
         ]);
+
+        return back();
     }
 
     /**
@@ -42,6 +47,8 @@ class EnvelopeController extends Controller
 
         $this->evaluationService->computeFinalRanking($tender);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Financial evaluation completed. Final ranking computed.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Financial evaluation completed. Final ranking computed.')]);
+
+        return back();
     }
 }

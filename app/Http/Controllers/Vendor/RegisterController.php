@@ -34,7 +34,8 @@ class RegisterController extends Controller
 
         Auth::guard('vendor')->login($vendor);
 
-        return redirect()->route('vendor.dashboard')
-            ->with('flash', ['type' => 'success', 'message' => __('Registration successful. Your application is under review.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Registration successful. Your application is under review.')]);
+
+        return redirect()->route('vendor.dashboard');
     }
 }

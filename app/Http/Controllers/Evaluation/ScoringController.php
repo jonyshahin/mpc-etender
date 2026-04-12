@@ -91,13 +91,15 @@ class ScoringController extends Controller
             // Validate score is within max_score
             $criterion = $tender->evaluationCriteria()->find($scoreData['criterion_id']);
             if ($criterion && $scoreData['score'] > $criterion->max_score) {
-                return back()->with('flash', [
+                Inertia::flash('toast', [
                     'type' => 'error',
                     'message' => __('Score for :name exceeds maximum of :max.', [
                         'name' => $criterion->name_en,
                         'max' => $criterion->max_score,
                     ]),
                 ]);
+
+                return back();
             }
 
             EvaluationScore::updateOrCreate(
@@ -121,7 +123,9 @@ class ScoringController extends Controller
                 ->update(['has_scored' => true, 'scored_at' => now()]);
         }
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Scores saved.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Scores saved.')]);
+
+        return back();
     }
 
     public function myProgress(Request $request, Tender $tender): Response

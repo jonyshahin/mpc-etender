@@ -22,6 +22,8 @@ class ProfileController extends Controller
     {
         $request->user('vendor')->update($request->validated());
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Profile updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated successfully.')]);
+
+        return back();
     }
 }

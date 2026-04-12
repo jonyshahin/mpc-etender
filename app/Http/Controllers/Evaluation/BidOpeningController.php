@@ -50,13 +50,17 @@ class BidOpeningController extends Controller
 
         // Verify authorizer has permission and is on the project
         if (! $authorizer->hasPermission('bids.open') || ! $authorizer->isAssignedToProject($tender->project_id)) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('Authorizer does not have permission.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Authorizer does not have permission.')]);
+
+            return back();
         }
 
         $this->sealingService->openBids($tender, $opener, $authorizer);
 
         $tender->update(['status' => 'under_evaluation']);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Bids opened successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Bids opened successfully.')]);
+
+        return back();
     }
 }

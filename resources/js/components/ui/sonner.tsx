@@ -4,6 +4,7 @@ import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 function Toaster({ ...props }: ToasterProps) {
     const { appearance } = useAppearance();
+    const isRtl = document.documentElement.dir === 'rtl';
 
     useFlashToast();
 
@@ -11,7 +12,8 @@ function Toaster({ ...props }: ToasterProps) {
         <Sonner
             theme={appearance}
             className="toaster group"
-            position="bottom-right"
+            dir={isRtl ? 'rtl' : 'ltr'}
+            position={isRtl ? 'bottom-left' : 'bottom-right'}
             style={
                 {
                     '--normal-bg': 'var(--popover)',

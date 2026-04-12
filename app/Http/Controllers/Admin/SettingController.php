@@ -33,6 +33,8 @@ class SettingController extends Controller
             ]);
         }
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Settings updated successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings updated successfully.')]);
+
+        return back();
     }
 }

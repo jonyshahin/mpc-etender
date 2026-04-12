@@ -49,7 +49,9 @@ class DocumentController extends Controller
             'status' => VendorDocStatus::Pending,
         ]);
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Document uploaded successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Document uploaded successfully.')]);
+
+        return back();
     }
 
     public function destroy(Request $request, VendorDocument $document): RedirectResponse
@@ -61,12 +63,16 @@ class DocumentController extends Controller
         }
 
         if ($document->status !== VendorDocStatus::Pending) {
-            return back()->with('flash', ['type' => 'error', 'message' => __('Only pending documents can be deleted.')]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Only pending documents can be deleted.')]);
+
+            return back();
         }
 
         $this->fileUploadService->delete($document->file_path);
         $document->delete();
 
-        return back()->with('flash', ['type' => 'success', 'message' => __('Document deleted successfully.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Document deleted successfully.')]);
+
+        return back();
     }
 }
