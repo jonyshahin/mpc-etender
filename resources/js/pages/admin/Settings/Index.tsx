@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,7 @@ type Props = {
 const GROUP_ORDER = ['General', 'Notifications', 'Approvals', 'Security'];
 
 export default function Index({ settingGroups }: Props) {
+    const { t } = useTranslation();
     const allSettings = Object.values(settingGroups).flat();
 
     const form = useForm({
@@ -129,12 +131,12 @@ export default function Index({ settingGroups }: Props) {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="System Settings"
-                        description="Configure system-wide settings for the e-Tender platform."
+                        title={t('pages.admin.system_settings')}
+                        description={t('pages.admin.system_settings_description')}
                     />
                     <Button onClick={handleSubmit} disabled={form.processing}>
                         <Save className="mr-2 h-4 w-4" />
-                        Save All Settings
+                        {t('btn.save_all_settings')}
                     </Button>
                 </div>
 
@@ -155,7 +157,7 @@ export default function Index({ settingGroups }: Props) {
                     <div className="flex justify-end">
                         <Button type="submit" disabled={form.processing}>
                             <Save className="mr-2 h-4 w-4" />
-                            Save All Settings
+                            {t('btn.save_all_settings')}
                         </Button>
                     </div>
                 </form>

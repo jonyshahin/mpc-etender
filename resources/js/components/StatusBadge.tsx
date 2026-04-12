@@ -1,3 +1,4 @@
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 /**
@@ -30,12 +31,15 @@ const defaultColor = 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-
  * A colored badge component that displays a status string as a styled pill.
  */
 export function StatusBadge({ status, colorMap }: StatusBadgeProps) {
+    const { t } = useTranslation();
     const mergedMap = { ...defaultColorMap, ...colorMap };
     const colorClasses = mergedMap[status] ?? defaultColor;
 
-    const displayText = status
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+    const statusKey = `status.${status}`;
+    const translated = t(statusKey);
+    const displayText = translated !== statusKey
+        ? translated
+        : status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
     return (
         <span

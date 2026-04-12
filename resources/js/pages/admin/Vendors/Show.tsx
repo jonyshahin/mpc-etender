@@ -1,5 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     ArrowLeft,
     CheckCircle,
@@ -94,6 +95,7 @@ function formatDate(value: string | null): string {
 }
 
 export default function Show({ vendor, documentUrls }: Props) {
+    const { t } = useTranslation();
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
     const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
 
@@ -132,7 +134,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                     className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="mr-1 h-4 w-4" />
-                    Back to Vendors
+                    {t('btn.back_to_vendors')}
                 </Link>
 
                 {/* Header */}
@@ -157,7 +159,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                                 className="bg-green-600 hover:bg-green-700"
                             >
                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                Approve
+                                {t('btn.approve')}
                             </Button>
                         )}
                         {vendor.prequalification_status !== 'rejected' && (
@@ -166,7 +168,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                                 onClick={() => setRejectDialogOpen(true)}
                             >
                                 <XCircle className="mr-2 h-4 w-4" />
-                                Reject
+                                {t('btn.reject')}
                             </Button>
                         )}
                         {vendor.prequalification_status !== 'suspended' && (
@@ -175,7 +177,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                                 onClick={() => setSuspendDialogOpen(true)}
                             >
                                 <Ban className="mr-2 h-4 w-4" />
-                                Suspend
+                                {t('btn.suspend')}
                             </Button>
                         )}
                     </div>
@@ -186,8 +188,8 @@ export default function Show({ vendor, documentUrls }: Props) {
                     <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
                         <p className="font-medium">
                             {vendor.prequalification_status === 'rejected'
-                                ? 'Rejection Reason'
-                                : 'Suspension Reason'}
+                                ? t('pages.admin.rejection_reason')
+                                : t('pages.admin.suspension_reason')}
                         </p>
                         <p className="mt-1">{vendor.rejection_reason}</p>
                     </div>
@@ -198,41 +200,41 @@ export default function Show({ vendor, documentUrls }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Building2 className="h-5 w-5" />
-                            Company Information
+                            {t('pages.admin.company_information')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <Label className="text-muted-foreground">Company Name</Label>
+                                <Label className="text-muted-foreground">{t('form.company_name')}</Label>
                                 <p className="font-medium">{vendor.company_name}</p>
                             </div>
                             {vendor.company_name_ar && (
                                 <div>
-                                    <Label className="text-muted-foreground">Company Name (Arabic)</Label>
+                                    <Label className="text-muted-foreground">{t('form.company_name_arabic')}</Label>
                                     <p className="font-medium" dir="rtl">{vendor.company_name_ar}</p>
                                 </div>
                             )}
                             <div>
-                                <Label className="text-muted-foreground">Trade License No.</Label>
+                                <Label className="text-muted-foreground">{t('form.trade_license_no')}</Label>
                                 <p className="font-medium">{vendor.trade_license_no}</p>
                             </div>
                             <div>
-                                <Label className="text-muted-foreground">Contact Person</Label>
+                                <Label className="text-muted-foreground">{t('form.contact_person')}</Label>
                                 <p className="flex items-center gap-1 font-medium">
                                     <User className="h-4 w-4 text-muted-foreground" />
                                     {vendor.contact_person}
                                 </p>
                             </div>
                             <div>
-                                <Label className="text-muted-foreground">Email</Label>
+                                <Label className="text-muted-foreground">{t('form.email')}</Label>
                                 <p className="flex items-center gap-1 font-medium">
                                     <Mail className="h-4 w-4 text-muted-foreground" />
                                     {vendor.email}
                                 </p>
                             </div>
                             <div>
-                                <Label className="text-muted-foreground">Phone</Label>
+                                <Label className="text-muted-foreground">{t('form.phone')}</Label>
                                 <p className="flex items-center gap-1 font-medium">
                                     <Phone className="h-4 w-4 text-muted-foreground" />
                                     {vendor.phone}
@@ -240,28 +242,28 @@ export default function Show({ vendor, documentUrls }: Props) {
                             </div>
                             {vendor.whatsapp_number && (
                                 <div>
-                                    <Label className="text-muted-foreground">WhatsApp</Label>
+                                    <Label className="text-muted-foreground">{t('form.whatsapp')}</Label>
                                     <p className="font-medium">{vendor.whatsapp_number}</p>
                                 </div>
                             )}
                             <div className="sm:col-span-2">
-                                <Label className="text-muted-foreground">Address</Label>
+                                <Label className="text-muted-foreground">{t('form.address')}</Label>
                                 <p className="flex items-center gap-1 font-medium">
                                     <MapPin className="h-4 w-4 text-muted-foreground" />
                                     {vendor.address}
                                 </p>
                             </div>
                             <div>
-                                <Label className="text-muted-foreground">City</Label>
+                                <Label className="text-muted-foreground">{t('form.city')}</Label>
                                 <p className="font-medium">{vendor.city}</p>
                             </div>
                             <div>
-                                <Label className="text-muted-foreground">Country</Label>
+                                <Label className="text-muted-foreground">{t('form.country')}</Label>
                                 <p className="font-medium">{vendor.country}</p>
                             </div>
                             {vendor.website && (
                                 <div>
-                                    <Label className="text-muted-foreground">Website</Label>
+                                    <Label className="text-muted-foreground">{t('form.website')}</Label>
                                     <p className="flex items-center gap-1 font-medium">
                                         <Globe className="h-4 w-4 text-muted-foreground" />
                                         <a
@@ -277,13 +279,13 @@ export default function Show({ vendor, documentUrls }: Props) {
                             )}
                             {vendor.qualified_at && (
                                 <div>
-                                    <Label className="text-muted-foreground">Qualified At</Label>
+                                    <Label className="text-muted-foreground">{t('form.qualified_at')}</Label>
                                     <p className="font-medium">{formatDate(vendor.qualified_at)}</p>
                                 </div>
                             )}
                             {vendor.qualified_by && (
                                 <div>
-                                    <Label className="text-muted-foreground">Qualified By</Label>
+                                    <Label className="text-muted-foreground">{t('form.qualified_by')}</Label>
                                     <p className="font-medium">{vendor.qualified_by.name}</p>
                                 </div>
                             )}
@@ -294,9 +296,9 @@ export default function Show({ vendor, documentUrls }: Props) {
                 {/* Categories */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Categories</CardTitle>
+                        <CardTitle>{t('pages.admin.categories')}</CardTitle>
                         <CardDescription>
-                            Vendor's registered procurement categories.
+                            {t('pages.admin.vendor_categories_description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -315,7 +317,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground">
-                                No categories assigned.
+                                {t('empty.no_categories')}
                             </p>
                         )}
                     </CardContent>
@@ -326,10 +328,10 @@ export default function Show({ vendor, documentUrls }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <FileText className="h-5 w-5" />
-                            Documents
+                            {t('pages.admin.documents')}
                         </CardTitle>
                         <CardDescription>
-                            Uploaded vendor qualification documents.
+                            {t('pages.admin.vendor_documents_description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -338,13 +340,13 @@ export default function Show({ vendor, documentUrls }: Props) {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b text-left">
-                                            <th className="pb-2 pr-4 font-medium">Title</th>
-                                            <th className="pb-2 pr-4 font-medium">Type</th>
-                                            <th className="pb-2 pr-4 font-medium">Status</th>
-                                            <th className="pb-2 pr-4 font-medium">Issue Date</th>
-                                            <th className="pb-2 pr-4 font-medium">Expiry Date</th>
-                                            <th className="pb-2 pr-4 font-medium">Size</th>
-                                            <th className="pb-2 font-medium">Actions</th>
+                                            <th className="pb-2 pr-4 font-medium">{t('table.title')}</th>
+                                            <th className="pb-2 pr-4 font-medium">{t('table.type')}</th>
+                                            <th className="pb-2 pr-4 font-medium">{t('table.status')}</th>
+                                            <th className="pb-2 pr-4 font-medium">{t('table.issue_date')}</th>
+                                            <th className="pb-2 pr-4 font-medium">{t('table.expiry_date')}</th>
+                                            <th className="pb-2 pr-4 font-medium">{t('table.size')}</th>
+                                            <th className="pb-2 font-medium">{t('table.actions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -377,7 +379,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                                                             className="inline-flex items-center gap-1 text-primary hover:underline"
                                                         >
                                                             <ExternalLink className="h-3.5 w-3.5" />
-                                                            View
+                                                            {t('btn.view')}
                                                         </a>
                                                     )}
                                                 </td>
@@ -388,7 +390,7 @@ export default function Show({ vendor, documentUrls }: Props) {
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground">
-                                No documents uploaded.
+                                {t('empty.no_documents')}
                             </p>
                         )}
                     </CardContent>
@@ -399,18 +401,17 @@ export default function Show({ vendor, documentUrls }: Props) {
             <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Reject Vendor</DialogTitle>
+                        <DialogTitle>{t('pages.admin.reject_vendor')}</DialogTitle>
                         <DialogDescription>
-                            Provide a reason for rejecting {vendor.company_name}. This will be
-                            visible to the vendor.
+                            {t('pages.admin.reject_vendor_description', { name: vendor.company_name })}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
-                        <Label htmlFor="reject-reason">Reason</Label>
+                        <Label htmlFor="reject-reason">{t('form.reason')}</Label>
                         <textarea
                             id="reject-reason"
                             className="mt-1.5 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            placeholder="Enter rejection reason..."
+                            placeholder={t('form.enter_rejection_reason')}
                             value={rejectForm.data.rejection_reason}
                             onChange={(e) =>
                                 rejectForm.setData('rejection_reason', e.target.value)
@@ -427,14 +428,14 @@ export default function Show({ vendor, documentUrls }: Props) {
                             variant="outline"
                             onClick={() => setRejectDialogOpen(false)}
                         >
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={handleReject}
                             disabled={rejectForm.processing}
                         >
-                            Reject Vendor
+                            {t('btn.reject_vendor')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -444,18 +445,17 @@ export default function Show({ vendor, documentUrls }: Props) {
             <Dialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Suspend Vendor</DialogTitle>
+                        <DialogTitle>{t('pages.admin.suspend_vendor')}</DialogTitle>
                         <DialogDescription>
-                            Provide a reason for suspending {vendor.company_name}. This will be
-                            visible to the vendor.
+                            {t('pages.admin.suspend_vendor_description', { name: vendor.company_name })}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
-                        <Label htmlFor="suspend-reason">Reason</Label>
+                        <Label htmlFor="suspend-reason">{t('form.reason')}</Label>
                         <textarea
                             id="suspend-reason"
                             className="mt-1.5 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            placeholder="Enter suspension reason..."
+                            placeholder={t('form.enter_suspension_reason')}
                             value={suspendForm.data.rejection_reason}
                             onChange={(e) =>
                                 suspendForm.setData('rejection_reason', e.target.value)
@@ -472,14 +472,14 @@ export default function Show({ vendor, documentUrls }: Props) {
                             variant="outline"
                             onClick={() => setSuspendDialogOpen(false)}
                         >
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={handleSuspend}
                             disabled={suspendForm.processing}
                         >
-                            Suspend Vendor
+                            {t('btn.suspend_vendor')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

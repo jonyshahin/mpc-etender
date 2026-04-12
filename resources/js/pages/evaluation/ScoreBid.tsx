@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { ScoringMatrix } from '@/components/ScoringMatrix';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export default function ScoreBid({ tender, bid, criteria, existingScores }: Props) {
+    const { t } = useTranslation();
     const [confirmComplete, setConfirmComplete] = useState(false);
 
     const form = useForm<{
@@ -62,25 +64,25 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
         <>
             <Head title={`Score Bid - ${bid.bid_reference}`} />
             <Heading
-                title="Score Bid"
+                title={t('pages.eval.score_bid')}
                 description={`${tender.reference_number} - ${bid.vendor?.company_name ?? bid.bid_reference}`}
             />
 
             <div className="mt-6 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Bid Details</CardTitle>
+                        <CardTitle>{t('eval.bid_details')}</CardTitle>
                         <CardDescription>
-                            Vendor: {bid.vendor?.company_name ?? 'Unknown'} | Reference: {bid.bid_reference}
+                            {t('table.vendor')}: {bid.vendor?.company_name ?? t('eval.unknown_vendor')} | {t('table.reference')}: {bid.bid_reference}
                         </CardDescription>
                     </CardHeader>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Evaluation Scoring</CardTitle>
+                        <CardTitle>{t('eval.evaluation_scoring')}</CardTitle>
                         <CardDescription>
-                            Score each criterion. Provide justification for your scores where applicable.
+                            {t('eval.scoring_instructions')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -99,11 +101,11 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
                 <div className="flex items-center justify-end gap-4">
                     <Button variant="outline" onClick={handleSaveProgress} disabled={form.processing}>
                         <Save className="mr-2 h-4 w-4" />
-                        Save Progress
+                        {t('btn.save_progress')}
                     </Button>
                     <Button onClick={() => setConfirmComplete(true)} disabled={form.processing}>
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Complete Scoring
+                        {t('btn.complete_scoring')}
                     </Button>
                 </div>
             </div>
@@ -112,8 +114,8 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
                 open={confirmComplete}
                 onOpenChange={setConfirmComplete}
                 onConfirm={handleCompleteScoring}
-                title="Complete Scoring"
-                description="Once completed, you will not be able to modify your scores for this bid. Are you sure you want to finalize your evaluation?"
+                title={t('eval.complete_scoring')}
+                description={t('eval.complete_scoring_confirm')}
             />
         </>
     );

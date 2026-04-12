@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,6 +63,7 @@ function CreateProjectDialog({
     open: boolean;
     onClose: () => void;
 }) {
+    const { t } = useTranslation();
     const form = useForm({
         name: '',
         name_ar: '',
@@ -87,7 +89,7 @@ function CreateProjectDialog({
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>New Project</DialogTitle>
+                    <DialogTitle>{t('pages.admin.new_project')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={submit} className="space-y-4">
                     {errorEntries.length > 0 && (
@@ -95,7 +97,7 @@ function CreateProjectDialog({
                             role="alert"
                             className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
                         >
-                            <p className="font-medium">Please correct the following:</p>
+                            <p className="font-medium">{t('form.please_correct')}</p>
                             <ul className="mt-1 list-inside list-disc">
                                 {errorEntries.map(([field, msg]) => (
                                     <li key={field}>
@@ -107,7 +109,7 @@ function CreateProjectDialog({
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="create-name">Name</Label>
+                        <Label htmlFor="create-name">{t('form.name')}</Label>
                         <Input
                             id="create-name"
                             value={form.data.name}
@@ -119,7 +121,7 @@ function CreateProjectDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="create-name_ar">Name (Arabic)</Label>
+                        <Label htmlFor="create-name_ar">{t('form.name_arabic')}</Label>
                         <Input
                             id="create-name_ar"
                             dir="rtl"
@@ -132,7 +134,7 @@ function CreateProjectDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="create-code">Code</Label>
+                        <Label htmlFor="create-code">{t('form.code')}</Label>
                         <Input
                             id="create-code"
                             value={form.data.code}
@@ -144,7 +146,7 @@ function CreateProjectDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="create-description">Description</Label>
+                        <Label htmlFor="create-description">{t('form.description')}</Label>
                         <Input
                             id="create-description"
                             value={form.data.description}
@@ -156,7 +158,7 @@ function CreateProjectDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="create-location">Location</Label>
+                        <Label htmlFor="create-location">{t('form.location')}</Label>
                         <Input
                             id="create-location"
                             value={form.data.location}
@@ -168,7 +170,7 @@ function CreateProjectDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="create-client_name">Client Name</Label>
+                        <Label htmlFor="create-client_name">{t('form.client_name')}</Label>
                         <Input
                             id="create-client_name"
                             value={form.data.client_name}
@@ -181,7 +183,7 @@ function CreateProjectDialog({
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="create-start_date">Start Date</Label>
+                            <Label htmlFor="create-start_date">{t('form.start_date')}</Label>
                             <Input
                                 id="create-start_date"
                                 type="date"
@@ -193,7 +195,7 @@ function CreateProjectDialog({
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="create-end_date">End Date</Label>
+                            <Label htmlFor="create-end_date">{t('form.end_date')}</Label>
                             <Input
                                 id="create-end_date"
                                 type="date"
@@ -208,10 +210,10 @@ function CreateProjectDialog({
 
                     <div className="flex justify-end gap-2 pt-4">
                         <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button type="submit" disabled={form.processing}>
-                            Create Project
+                            {t('btn.create_project')}
                         </Button>
                     </div>
                 </form>
@@ -221,6 +223,7 @@ function CreateProjectDialog({
 }
 
 export default function Index({ projects, filters }: Props) {
+    const { t } = useTranslation();
     const [search, setSearch] = useState(filters.search ?? '');
     const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -240,28 +243,28 @@ export default function Index({ projects, filters }: Props) {
     const columns = [
         {
             key: 'code',
-            label: 'Code',
+            label: t('table.code'),
             sortable: true,
             render: (value: string) => <span className="font-mono text-sm">{value}</span>,
         },
         {
             key: 'name',
-            label: 'Name',
+            label: t('table.name'),
             sortable: true,
             render: (value: string) => <span className="font-medium">{value}</span>,
         },
         {
             key: 'location',
-            label: 'Location',
+            label: t('table.location'),
             render: (value: string | null) => value ?? '—',
         },
         {
             key: 'status',
-            label: 'Status',
+            label: t('table.status'),
             render: (value: string) => <StatusBadge status={value} />,
         },
-        { key: 'tenders_count', label: 'Tenders' },
-        { key: 'users_count', label: 'Team Size' },
+        { key: 'tenders_count', label: t('table.tenders') },
+        { key: 'users_count', label: t('table.team_size') },
     ];
 
     return (
@@ -269,17 +272,17 @@ export default function Index({ projects, filters }: Props) {
             <Head title="Projects" />
 
             <div className="flex items-center justify-between">
-                <Heading title="Projects" description="Manage construction projects." />
+                <Heading title={t('pages.admin.projects')} description={t('pages.admin.projects_description')} />
                 <Button onClick={() => setShowCreateDialog(true)}>
                     <Plus className="mr-2 h-4 w-4" />
-                    New Project
+                    {t('btn.new_project')}
                 </Button>
             </div>
 
             <div className="mt-4 flex items-center gap-4">
                 <form onSubmit={handleSearch} className="flex-1">
                     <Input
-                        placeholder="Search projects..."
+                        placeholder={t('form.search_projects')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -289,15 +292,15 @@ export default function Index({ projects, filters }: Props) {
                     onValueChange={handleStatusFilter}
                 >
                     <SelectTrigger className="w-48">
-                        <SelectValue placeholder="All Statuses" />
+                        <SelectValue placeholder={t('form.all_statuses')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="on_hold">On Hold</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="all">{t('form.all_statuses')}</SelectItem>
+                        <SelectItem value="draft">{t('status.draft')}</SelectItem>
+                        <SelectItem value="active">{t('status.active')}</SelectItem>
+                        <SelectItem value="on_hold">{t('status.on_hold')}</SelectItem>
+                        <SelectItem value="completed">{t('status.completed')}</SelectItem>
+                        <SelectItem value="cancelled">{t('status.cancelled')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -309,7 +312,7 @@ export default function Index({ projects, filters }: Props) {
                     filters={filters}
                     actions={(project: Project) => (
                         <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/admin/projects/${project.id}/edit`}>Edit</Link>
+                            <Link href={`/admin/projects/${project.id}/edit`}>{t('btn.edit')}</Link>
                         </Button>
                     )}
                 />

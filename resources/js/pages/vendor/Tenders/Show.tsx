@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Props = {
     tender: {
@@ -64,6 +65,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function Show({ tender, canBid, existingBidId }: Props) {
+    const { t } = useTranslation();
     const clarificationForm = useForm({ question: '' });
 
     function submitClarification(e: React.FormEvent) {
@@ -83,7 +85,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                     <Button asChild variant="ghost" size="sm">
                         <Link href="/vendor/tenders">
                             <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back
+                            {t('btn.back')}
                         </Link>
                     </Button>
                 </div>
@@ -101,14 +103,14 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                             <Button asChild>
                                 <Link href={`/vendor/tenders/${tender.id}/bid`}>
                                     <Plus className="mr-1 h-4 w-4" />
-                                    Start Bid
+                                    {t('btn.start_bid')}
                                 </Link>
                             </Button>
                         )}
                         {existingBidId && (
                             <Button asChild variant="outline">
                                 <Link href={`/vendor/bids/${existingBidId}`}>
-                                    Continue Bid
+                                    {t('btn.continue_bid')}
                                 </Link>
                             </Button>
                         )}
@@ -118,23 +120,23 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                 {/* Overview */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Overview</CardTitle>
+                        <CardTitle>{t('tender.overview')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {tender.project && (
                                 <div>
-                                    <dt className="text-sm font-medium text-muted-foreground">Project</dt>
+                                    <dt className="text-sm font-medium text-muted-foreground">{t('tender.project')}</dt>
                                     <dd className="mt-1 text-sm">{tender.project.name} ({tender.project.code})</dd>
                                 </div>
                             )}
                             <div>
-                                <dt className="text-sm font-medium text-muted-foreground">Tender Type</dt>
+                                <dt className="text-sm font-medium text-muted-foreground">{t('tender.tender_type')}</dt>
                                 <dd className="mt-1 text-sm capitalize">{tender.tender_type.replace(/_/g, ' ')}</dd>
                             </div>
                             {tender.estimated_value && (
                                 <div>
-                                    <dt className="text-sm font-medium text-muted-foreground">Estimated Value</dt>
+                                    <dt className="text-sm font-medium text-muted-foreground">{t('tender.estimated_value')}</dt>
                                     <dd className="mt-1 flex items-center gap-1 text-sm">
                                         <DollarSign className="h-3.5 w-3.5" />
                                         {Number(tender.estimated_value).toLocaleString()} {tender.currency}
@@ -142,30 +144,30 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                                 </div>
                             )}
                             <div>
-                                <dt className="text-sm font-medium text-muted-foreground">Submission Deadline</dt>
+                                <dt className="text-sm font-medium text-muted-foreground">{t('tender.submission_deadline')}</dt>
                                 <dd className="mt-1 flex items-center gap-1 text-sm">
                                     <Calendar className="h-3.5 w-3.5" />
                                     {new Date(tender.submission_deadline).toLocaleString()}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-sm font-medium text-muted-foreground">Opening Date</dt>
+                                <dt className="text-sm font-medium text-muted-foreground">{t('tender.opening_date')}</dt>
                                 <dd className="mt-1 flex items-center gap-1 text-sm">
                                     <Clock className="h-3.5 w-3.5" />
                                     {new Date(tender.opening_date).toLocaleString()}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-sm font-medium text-muted-foreground">Envelope Type</dt>
+                                <dt className="text-sm font-medium text-muted-foreground">{t('tender.envelope_type')}</dt>
                                 <dd className="mt-1 text-sm">
-                                    {tender.is_two_envelope ? 'Two-Envelope' : 'Single Envelope'}
+                                    {tender.is_two_envelope ? t('tender.two_envelope') : t('tender.single_envelope')}
                                 </dd>
                             </div>
                         </dl>
 
                         {tender.categories && tender.categories.length > 0 && (
                             <div className="mt-4">
-                                <p className="text-sm font-medium text-muted-foreground">Categories</p>
+                                <p className="text-sm font-medium text-muted-foreground">{t('tender.categories')}</p>
                                 <div className="mt-1 flex flex-wrap gap-1">
                                     {tender.categories.map((cat) => (
                                         <Badge key={cat.id} variant="secondary">{cat.name_en}</Badge>
@@ -176,7 +178,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
 
                         {tender.description_en && (
                             <div className="mt-4">
-                                <p className="text-sm font-medium text-muted-foreground">Description</p>
+                                <p className="text-sm font-medium text-muted-foreground">{t('tender.description')}</p>
                                 <p className="mt-1 text-sm whitespace-pre-line">{tender.description_en}</p>
                             </div>
                         )}
@@ -189,7 +191,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Layers className="h-5 w-5" />
-                                Bill of Quantities
+                                {t('tender.bill_of_quantities')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -200,10 +202,10 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="border-b text-left">
-                                                    <th className="px-3 py-2">Code</th>
-                                                    <th className="px-3 py-2">Description</th>
-                                                    <th className="px-3 py-2">Unit</th>
-                                                    <th className="px-3 py-2 text-right">Quantity</th>
+                                                    <th className="px-3 py-2">{t('table.code')}</th>
+                                                    <th className="px-3 py-2">{t('table.description')}</th>
+                                                    <th className="px-3 py-2">{t('table.unit')}</th>
+                                                    <th className="px-3 py-2 text-right">{t('table.quantity')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -230,7 +232,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <FileText className="h-5 w-5" />
-                                Documents
+                                {t('tender.documents')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -246,7 +248,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                                         <Button asChild variant="ghost" size="sm">
                                             <a href={`/vendor/tenders/${tender.id}/documents/${doc.id}/download`}>
                                                 <Download className="mr-1 h-4 w-4" />
-                                                Download
+                                                {t('btn.download')}
                                             </a>
                                         </Button>
                                     </li>
@@ -260,7 +262,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                 {tender.addenda && tender.addenda.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Addenda</CardTitle>
+                            <CardTitle>{t('tender.addenda')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {tender.addenda.map((addendum) => (
@@ -285,9 +287,9 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <MessageCircle className="h-5 w-5" />
-                            Clarifications
+                            {t('tender.clarifications')}
                         </CardTitle>
-                        <CardDescription>Ask questions about this tender</CardDescription>
+                        <CardDescription>{t('tender.ask_questions_about_tender')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {tender.clarifications && tender.clarifications.length > 0 && (
@@ -302,7 +304,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                                             <p className="mt-2 text-sm text-green-700">A: {c.answer}</p>
                                         ) : (
                                             <p className="mt-2 text-sm italic text-muted-foreground">
-                                                Awaiting response
+                                                {t('tender.awaiting_response')}
                                             </p>
                                         )}
                                     </div>
@@ -311,11 +313,11 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                         )}
 
                         <form onSubmit={submitClarification} className="space-y-3 border-t pt-4">
-                            <Label htmlFor="question">Ask a Question</Label>
+                            <Label htmlFor="question">{t('tender.ask_a_question')}</Label>
                             <textarea
                                 id="question"
                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                placeholder="Type your question here..."
+                                placeholder={t('tender.question_placeholder')}
                                 value={clarificationForm.data.question}
                                 onChange={(e) => clarificationForm.setData('question', e.target.value)}
                             />
@@ -327,7 +329,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                                 disabled={clarificationForm.processing || !clarificationForm.data.question.trim()}
                             >
                                 <Send className="mr-1 h-4 w-4" />
-                                Submit Question
+                                {t('btn.submit_question')}
                             </Button>
                         </form>
                     </CardContent>

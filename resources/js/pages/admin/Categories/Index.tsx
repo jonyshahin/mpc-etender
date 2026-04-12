@@ -1,6 +1,7 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ type Props = {
 };
 
 export default function Index({ categories }: Props) {
+    const { t } = useTranslation();
     const [openIds, setOpenIds] = useState<Set<string>>(new Set());
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -121,13 +123,13 @@ export default function Index({ categories }: Props) {
                             <Input
                                 value={editForm.data.name_en}
                                 onChange={(e) => editForm.setData('name_en', e.target.value)}
-                                placeholder="Name (English)"
+                                placeholder={t('form.name_english')}
                                 className="h-8 w-48"
                             />
                             <Input
                                 value={editForm.data.name_ar}
                                 onChange={(e) => editForm.setData('name_ar', e.target.value)}
-                                placeholder="Name (Arabic)"
+                                placeholder={t('form.name_arabic')}
                                 className="h-8 w-48"
                                 dir="rtl"
                             />
@@ -148,10 +150,10 @@ export default function Index({ categories }: Props) {
                             </span>
                         )}
                         {vendorsCount !== undefined && (
-                            <Badge variant="secondary">{vendorsCount} vendors</Badge>
+                            <Badge variant="secondary">{vendorsCount} {t('table.vendors')}</Badge>
                         )}
                         <Badge variant={cat.is_active ? 'default' : 'outline'}>
-                            {cat.is_active ? 'Active' : 'Inactive'}
+                            {cat.is_active ? t('status.active') : t('status.inactive')}
                         </Badge>
                         <Button variant="ghost" size="sm" onClick={() => startEdit(cat)}>
                             <Pencil className="h-4 w-4" />
@@ -171,8 +173,8 @@ export default function Index({ categories }: Props) {
 
             <div className="space-y-6">
                 <Heading
-                    title="Procurement Categories"
-                    description="Manage procurement category tree for vendor classification."
+                    title={t('pages.admin.procurement_categories')}
+                    description={t('pages.admin.procurement_categories_description')}
                 />
 
                 <div className="rounded-md border">
@@ -220,7 +222,7 @@ export default function Index({ categories }: Props) {
 
                     {categories.length === 0 && (
                         <div className="p-8 text-center text-muted-foreground">
-                            No categories yet. Add your first category below.
+                            {t('empty.no_categories_yet')}
                         </div>
                     )}
                 </div>
@@ -228,19 +230,19 @@ export default function Index({ categories }: Props) {
                 {/* Add Category Form */}
                 <form onSubmit={handleAdd} className="flex items-end gap-3 rounded-md border p-4">
                     <div className="space-y-2">
-                        <Label htmlFor="add-name-en">Name (English)</Label>
+                        <Label htmlFor="add-name-en">{t('form.name_english')}</Label>
                         <Input
                             id="add-name-en"
                             value={addForm.data.name_en}
                             onChange={(e) => addForm.setData('name_en', e.target.value)}
-                            placeholder="Category name"
+                            placeholder={t('form.category_name')}
                         />
                         {addForm.errors.name_en && (
                             <p className="text-sm text-destructive">{addForm.errors.name_en}</p>
                         )}
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="add-name-ar">Name (Arabic)</Label>
+                        <Label htmlFor="add-name-ar">{t('form.name_arabic')}</Label>
                         <Input
                             id="add-name-ar"
                             value={addForm.data.name_ar}
@@ -250,13 +252,13 @@ export default function Index({ categories }: Props) {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>Parent Category</Label>
+                        <Label>{t('form.parent_category')}</Label>
                         <Select
                             value={addForm.data.parent_id}
                             onValueChange={(value) => addForm.setData('parent_id', value)}
                         >
                             <SelectTrigger className="w-48">
-                                <SelectValue placeholder="None (root)" />
+                                <SelectValue placeholder={t('form.none_root')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {categories.map((cat) => (
@@ -269,7 +271,7 @@ export default function Index({ categories }: Props) {
                     </div>
                     <Button type="submit" disabled={addForm.processing}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Category
+                        {t('btn.add_category')}
                     </Button>
                 </form>
             </div>
@@ -278,8 +280,8 @@ export default function Index({ categories }: Props) {
                 open={!!deleteId}
                 onOpenChange={(open: boolean) => !open && setDeleteId(null)}
                 onConfirm={confirmDelete}
-                title="Delete Category"
-                description="Are you sure you want to delete this category? This action cannot be undone."
+                title={t('pages.admin.delete_category')}
+                description={t('pages.admin.delete_category_confirm')}
             />
         </>
     );

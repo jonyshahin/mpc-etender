@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -130,6 +131,7 @@ function getDecisionIcon(decision: string) {
 }
 
 export default function Show({ approval, projectUsers }: Props) {
+    const { t } = useTranslation();
     const [approveOpen, setApproveOpen] = useState(false);
     const [rejectOpen, setRejectOpen] = useState(false);
     const [delegateOpen, setDelegateOpen] = useState(false);
@@ -198,7 +200,7 @@ export default function Show({ approval, projectUsers }: Props) {
                             {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
                         </Badge>
                         <Badge variant={getLevelVariant(approval.approval_level)}>
-                            Level {approval.approval_level}
+                            {t('approval.level')} {approval.approval_level}
                         </Badge>
                     </div>
                 </div>
@@ -206,12 +208,12 @@ export default function Show({ approval, projectUsers }: Props) {
                 {/* Tender Summary */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Tender Summary</CardTitle>
+                        <CardTitle>{t('approval.tender_summary')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4 sm:grid-cols-3">
                             <div>
-                                <p className="text-muted-foreground text-sm">Estimated Value</p>
+                                <p className="text-muted-foreground text-sm">{t('tender.estimated_value')}</p>
                                 <p className="text-lg font-semibold">
                                     {formatCurrency(
                                         approval.tender?.estimated_value,
@@ -220,13 +222,13 @@ export default function Show({ approval, projectUsers }: Props) {
                                 </p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-sm">Currency</p>
+                                <p className="text-muted-foreground text-sm">{t('form.currency')}</p>
                                 <p className="text-lg font-semibold">
                                     {approval.tender?.currency ?? '—'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-sm">Tender Status</p>
+                                <p className="text-muted-foreground text-sm">{t('approval.tender_status')}</p>
                                 <Badge variant="outline" className="mt-1">
                                     {approval.tender?.status ?? '—'}
                                 </Badge>
@@ -239,7 +241,7 @@ export default function Show({ approval, projectUsers }: Props) {
                 {approval.report && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Evaluation Summary</CardTitle>
+                            <CardTitle>{t('approval.evaluation_summary')}</CardTitle>
                             {approval.report.summary && (
                                 <CardDescription className="whitespace-pre-line">
                                     {approval.report.summary}
@@ -253,19 +255,19 @@ export default function Show({ approval, projectUsers }: Props) {
                                         <thead>
                                             <tr className="border-b">
                                                 <th className="px-3 py-2 text-left font-medium">
-                                                    Rank
+                                                    {t('table.rank')}
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-medium">
-                                                    Vendor
+                                                    {t('table.vendor')}
                                                 </th>
                                                 <th className="px-3 py-2 text-right font-medium">
-                                                    Technical Score
+                                                    {t('table.technical_score')}
                                                 </th>
                                                 <th className="px-3 py-2 text-right font-medium">
-                                                    Financial Score
+                                                    {t('table.financial_score')}
                                                 </th>
                                                 <th className="px-3 py-2 text-right font-medium">
-                                                    Final Score
+                                                    {t('table.final_score')}
                                                 </th>
                                             </tr>
                                         </thead>
@@ -312,7 +314,7 @@ export default function Show({ approval, projectUsers }: Props) {
                                 </div>
                             ) : (
                                 <p className="text-muted-foreground text-sm">
-                                    No ranking data available.
+                                    {t('empty.no_ranking_data')}
                                 </p>
                             )}
                         </CardContent>
@@ -322,12 +324,12 @@ export default function Show({ approval, projectUsers }: Props) {
                 {/* Approval History */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Approval History</CardTitle>
+                        <CardTitle>{t('approval.approval_history')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {approval.decisions.length === 0 ? (
                             <p className="text-muted-foreground text-sm">
-                                No decisions recorded yet.
+                                {t('empty.no_decisions')}
                             </p>
                         ) : (
                             <div className="space-y-4">
@@ -353,7 +355,7 @@ export default function Show({ approval, projectUsers }: Props) {
                                                 </Badge>
                                                 {decision.delegated_from && (
                                                     <span className="text-muted-foreground text-xs">
-                                                        (Delegated from {decision.delegated_from})
+                                                        ({t('approval.delegated_from')} {decision.delegated_from})
                                                     </span>
                                                 )}
                                             </div>
@@ -378,10 +380,9 @@ export default function Show({ approval, projectUsers }: Props) {
                 {isPending && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Your Decision</CardTitle>
+                            <CardTitle>{t('approval.your_decision')}</CardTitle>
                             <CardDescription>
-                                Review the evaluation and make your decision on this approval
-                                request.
+                                {t('approval.your_decision_description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -392,21 +393,21 @@ export default function Show({ approval, projectUsers }: Props) {
                                     onClick={() => setApproveOpen(true)}
                                 >
                                     <CheckCircle className="mr-1.5 h-4 w-4" />
-                                    Approve
+                                    {t('btn.approve')}
                                 </Button>
                                 <Button
                                     variant="destructive"
                                     onClick={() => setRejectOpen(true)}
                                 >
                                     <XCircle className="mr-1.5 h-4 w-4" />
-                                    Reject
+                                    {t('btn.reject')}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => setDelegateOpen(true)}
                                 >
                                     <Forward className="mr-1.5 h-4 w-4" />
-                                    Delegate
+                                    {t('btn.delegate')}
                                 </Button>
                             </div>
                         </CardContent>
@@ -418,18 +419,17 @@ export default function Show({ approval, projectUsers }: Props) {
             <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Approve Request</DialogTitle>
+                        <DialogTitle>{t('approval.approve_request')}</DialogTitle>
                         <DialogDescription>
-                            Confirm your approval for this tender evaluation. You may add optional
-                            comments.
+                            {t('approval.approve_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
                         <div className="space-y-2">
-                            <Label htmlFor="approve-comments">Comments</Label>
+                            <Label htmlFor="approve-comments">{t('form.comments')}</Label>
                             <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 id="approve-comments"
-                                placeholder="Optional comments..."
+                                placeholder={t('form.optional_comments')}
                                 value={approveForm.data.comments}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                     approveForm.setData('comments', e.target.value)
@@ -449,14 +449,14 @@ export default function Show({ approval, projectUsers }: Props) {
                             onClick={() => setApproveOpen(false)}
                             disabled={approveForm.processing}
                         >
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button
                             className="bg-green-600 hover:bg-green-700"
                             onClick={handleApprove}
                             disabled={approveForm.processing}
                         >
-                            {approveForm.processing ? 'Submitting...' : 'Confirm Approval'}
+                            {approveForm.processing ? t('btn.submitting') : t('btn.confirm_approval')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -466,17 +466,17 @@ export default function Show({ approval, projectUsers }: Props) {
             <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Reject Request</DialogTitle>
+                        <DialogTitle>{t('approval.reject_request')}</DialogTitle>
                         <DialogDescription>
-                            Please provide a reason for rejecting this approval request.
+                            {t('approval.reject_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
                         <div className="space-y-2">
-                            <Label htmlFor="reject-comments">Comments</Label>
+                            <Label htmlFor="reject-comments">{t('form.comments')}</Label>
                             <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 id="reject-comments"
-                                placeholder="Reason for rejection..."
+                                placeholder={t('form.rejection_reason')}
                                 value={rejectForm.data.comments}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                     rejectForm.setData('comments', e.target.value)
@@ -496,14 +496,14 @@ export default function Show({ approval, projectUsers }: Props) {
                             onClick={() => setRejectOpen(false)}
                             disabled={rejectForm.processing}
                         >
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={handleReject}
                             disabled={rejectForm.processing}
                         >
-                            {rejectForm.processing ? 'Submitting...' : 'Confirm Rejection'}
+                            {rejectForm.processing ? t('btn.submitting') : t('btn.confirm_rejection')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -513,14 +513,14 @@ export default function Show({ approval, projectUsers }: Props) {
             <Dialog open={delegateOpen} onOpenChange={setDelegateOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delegate Approval</DialogTitle>
+                        <DialogTitle>{t('approval.delegate_approval')}</DialogTitle>
                         <DialogDescription>
-                            Select a user to delegate this approval request to.
+                            {t('approval.delegate_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
                         <div className="space-y-2">
-                            <Label htmlFor="delegate-user">Delegate To</Label>
+                            <Label htmlFor="delegate-user">{t('form.delegate_to')}</Label>
                             <SearchableSelect
                                 options={projectUsers.map((u) => ({
                                     value: u.id,
@@ -530,7 +530,7 @@ export default function Show({ approval, projectUsers }: Props) {
                                 onChange={(value) =>
                                     delegateForm.setData('delegatee_id', value)
                                 }
-                                placeholder="Select a user..."
+                                placeholder={t('form.select_user')}
                             />
                             {delegateForm.errors.delegatee_id && (
                                 <p className="text-sm text-red-500">
@@ -539,10 +539,10 @@ export default function Show({ approval, projectUsers }: Props) {
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="delegate-comments">Comments</Label>
+                            <Label htmlFor="delegate-comments">{t('form.comments')}</Label>
                             <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 id="delegate-comments"
-                                placeholder="Optional comments..."
+                                placeholder={t('form.optional_comments')}
                                 value={delegateForm.data.comments}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                                     delegateForm.setData('comments', e.target.value)
@@ -562,13 +562,13 @@ export default function Show({ approval, projectUsers }: Props) {
                             onClick={() => setDelegateOpen(false)}
                             disabled={delegateForm.processing}
                         >
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button
                             onClick={handleDelegate}
                             disabled={delegateForm.processing || !delegateForm.data.delegatee_id}
                         >
-                            {delegateForm.processing ? 'Submitting...' : 'Confirm Delegation'}
+                            {delegateForm.processing ? t('btn.submitting') : t('btn.confirm_delegation')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

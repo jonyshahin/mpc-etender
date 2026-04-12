@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -44,6 +45,7 @@ type Props = {
 };
 
 export default function Report({ tender, report, ranking, criteria }: Props) {
+    const { t } = useTranslation();
     const [confirmApproval, setConfirmApproval] = useState(false);
     const generateForm = useForm({});
     const approvalForm = useForm({});
@@ -66,7 +68,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
     return (
         <>
             <Head title={`Evaluation Report - ${tender.reference_number}`} />
-            <Heading title="Evaluation Report" description={`${tender.reference_number} - ${tender.title_en}`} />
+            <Heading title={t('pages.eval.evaluation_report')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
                 {/* Ranking Table */}
@@ -75,21 +77,21 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Trophy className="h-5 w-5" />
-                                Bid Ranking
+                                {t('eval.bid_ranking')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/50">
-                                        <th className="px-4 py-3 text-center font-medium">Rank</th>
-                                        <th className="px-4 py-3 text-left font-medium">Vendor</th>
-                                        <th className="px-4 py-3 text-center font-medium">Technical Score</th>
+                                        <th className="px-4 py-3 text-center font-medium">{t('table.rank')}</th>
+                                        <th className="px-4 py-3 text-left font-medium">{t('table.vendor')}</th>
+                                        <th className="px-4 py-3 text-center font-medium">{t('table.technical_score')}</th>
                                         {tender.is_two_envelope && (
-                                            <th className="px-4 py-3 text-center font-medium">Financial Score</th>
+                                            <th className="px-4 py-3 text-center font-medium">{t('table.financial_score')}</th>
                                         )}
-                                        <th className="px-4 py-3 text-center font-medium">Final Score</th>
-                                        <th className="px-4 py-3 text-left font-medium">Score Distribution</th>
+                                        <th className="px-4 py-3 text-center font-medium">{t('table.final_score')}</th>
+                                        <th className="px-4 py-3 text-left font-medium">{t('table.score_distribution')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -109,7 +111,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                                 {row.vendor_name}
                                                 {report?.recommended_bid_id === row.bid_id && (
                                                     <Badge variant="default" className="ml-2 bg-green-600">
-                                                        Recommended
+                                                        {t('eval.recommended')}
                                                     </Badge>
                                                 )}
                                             </td>
@@ -164,11 +166,11 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                 <div className="mt-4 flex items-center gap-6 text-xs text-muted-foreground">
                                     <div className="flex items-center gap-1">
                                         <div className="h-3 w-3 rounded bg-blue-500" />
-                                        Technical Score
+                                        {t('table.technical_score')}
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <div className="h-3 w-3 rounded bg-emerald-500" />
-                                        Financial Score
+                                        {t('table.financial_score')}
                                     </div>
                                 </div>
                             )}
@@ -181,13 +183,13 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <BarChart3 className="h-12 w-12 text-muted-foreground" />
-                            <p className="mt-4 text-lg font-medium">No report generated yet</p>
+                            <p className="mt-4 text-lg font-medium">{t('empty.no_report')}</p>
                             <p className="mb-6 text-sm text-muted-foreground">
-                                Generate an evaluation report based on the scoring results.
+                                {t('empty.no_report_description')}
                             </p>
                             <Button onClick={handleGenerateReport} disabled={generateForm.processing}>
                                 <FileText className="mr-2 h-4 w-4" />
-                                Generate Report
+                                {t('btn.generate_report')}
                             </Button>
                         </CardContent>
                     </Card>
@@ -197,7 +199,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2">
                                     <FileText className="h-5 w-5" />
-                                    Evaluation Report
+                                    {t('pages.eval.evaluation_report')}
                                 </CardTitle>
                                 <Badge variant="outline">{report.status}</Badge>
                             </div>
@@ -207,7 +209,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="rounded-lg bg-muted/50 p-4">
-                                <h3 className="mb-2 font-medium">Summary</h3>
+                                <h3 className="mb-2 font-medium">{t('eval.summary')}</h3>
                                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{report.summary}</p>
                             </div>
 
@@ -215,7 +217,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                 <Button variant="outline" asChild>
                                     <a href={`/tenders/${tender.id}/evaluation-report/pdf`} target="_blank" rel="noopener noreferrer">
                                         <Download className="mr-2 h-4 w-4" />
-                                        Download PDF
+                                        {t('btn.download_pdf')}
                                     </a>
                                 </Button>
                                 <Button
@@ -223,7 +225,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                     disabled={approvalForm.processing}
                                 >
                                     <Send className="mr-2 h-4 w-4" />
-                                    Submit for Approval
+                                    {t('btn.submit_for_approval')}
                                 </Button>
                             </div>
                         </CardContent>
@@ -235,8 +237,8 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                 open={confirmApproval}
                 onOpenChange={setConfirmApproval}
                 onConfirm={handleSubmitForApproval}
-                title="Submit for Approval"
-                description="This will submit the evaluation report for management approval. Are you sure you want to proceed?"
+                title={t('eval.submit_for_approval')}
+                description={t('eval.submit_for_approval_confirm')}
             />
         </>
     );

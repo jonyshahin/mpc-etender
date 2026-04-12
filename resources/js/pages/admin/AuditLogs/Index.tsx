@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,7 +64,7 @@ function truncateUuid(uuid: string): string {
     return uuid.length > 8 ? uuid.substring(0, 8) + '...' : uuid;
 }
 
-function ValueDiff({ label, values, color }: { label: string; values: Record<string, any> | null; color: 'red' | 'green' }) {
+function ValueDiff({ label, values, color }: { label: string; values: Record<string, any> | null; color: 'red' | 'green'; }) {
     if (!values || Object.keys(values).length === 0) return null;
 
     const colorClasses = color === 'red'
@@ -109,6 +110,7 @@ function ExpandableRow({ log }: { log: AuditLog }) {
 }
 
 export default function Index({ logs, filters }: Props) {
+    const { t } = useTranslation();
     const [localFilters, setLocalFilters] = useState({
         action: filters.action ?? '',
         entity_type: filters.entity_type ?? '',
@@ -133,7 +135,7 @@ export default function Index({ logs, filters }: Props) {
     const columns = [
         {
             key: 'created_at',
-            label: 'Timestamp',
+            label: t('table.timestamp'),
             render: (value: string) => (
                 <span className="text-sm text-muted-foreground">
                     {new Date(value).toLocaleString()}
@@ -142,26 +144,26 @@ export default function Index({ logs, filters }: Props) {
         },
         {
             key: 'user.name',
-            label: 'User',
+            label: t('table.user'),
             render: (value: string | null) => (
-                <span className="text-sm">{value ?? 'System'}</span>
+                <span className="text-sm">{value ?? t('table.system')}</span>
             ),
         },
         {
             key: 'action',
-            label: 'Action',
+            label: t('table.action'),
             render: (value: string) => <StatusBadge status={value} />,
         },
         {
             key: 'auditable_type',
-            label: 'Entity Type',
+            label: t('table.entity_type'),
             render: (value: string) => (
                 <span className="font-mono text-xs">{shortEntityType(value)}</span>
             ),
         },
         {
             key: 'auditable_id',
-            label: 'Entity ID',
+            label: t('table.entity_id'),
             render: (value: string) => (
                 <span className="font-mono text-xs" title={value}>
                     {truncateUuid(value)}
@@ -170,7 +172,7 @@ export default function Index({ logs, filters }: Props) {
         },
         {
             key: 'ip_address',
-            label: 'IP Address',
+            label: t('table.ip_address'),
             render: (value: string | null) => (
                 <span className="font-mono text-xs text-muted-foreground">
                     {value ?? '—'}
@@ -185,14 +187,14 @@ export default function Index({ logs, filters }: Props) {
 
             <div className="space-y-6">
                 <Heading
-                    title="Audit Logs"
-                    description="Read-only audit trail of all system actions."
+                    title={t('pages.admin.audit_logs')}
+                    description={t('pages.admin.audit_logs_description')}
                 />
 
                 {/* Filters */}
                 <div className="flex flex-wrap items-end gap-3 rounded-md border p-4">
                     <div className="space-y-2">
-                        <Label>Action</Label>
+                        <Label>{t('form.action')}</Label>
                         <Select
                             value={localFilters.action}
                             onValueChange={(value) =>
@@ -200,7 +202,7 @@ export default function Index({ logs, filters }: Props) {
                             }
                         >
                             <SelectTrigger className="w-40">
-                                <SelectValue placeholder="All actions" />
+                                <SelectValue placeholder={t('form.all_actions')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {ACTION_OPTIONS.map((action) => (
@@ -213,7 +215,7 @@ export default function Index({ logs, filters }: Props) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="entity-type">Entity Type</Label>
+                        <Label htmlFor="entity-type">{t('form.entity_type')}</Label>
                         <Input
                             id="entity-type"
                             value={localFilters.entity_type}
@@ -226,7 +228,7 @@ export default function Index({ logs, filters }: Props) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="filter-from">From</Label>
+                        <Label htmlFor="filter-from">{t('form.from')}</Label>
                         <Input
                             id="filter-from"
                             type="date"
@@ -239,7 +241,7 @@ export default function Index({ logs, filters }: Props) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="filter-to">To</Label>
+                        <Label htmlFor="filter-to">{t('form.to')}</Label>
                         <Input
                             id="filter-to"
                             type="date"
@@ -253,10 +255,10 @@ export default function Index({ logs, filters }: Props) {
 
                     <Button onClick={applyFilters}>
                         <Search className="mr-2 h-4 w-4" />
-                        Apply
+                        {t('btn.apply')}
                     </Button>
                     <Button variant="outline" onClick={clearFilters}>
-                        Clear
+                        {t('btn.clear')}
                     </Button>
                 </div>
 

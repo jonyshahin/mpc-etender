@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -41,6 +42,7 @@ type Props = {
 };
 
 export default function Committees({ tender, committees, projectUsers }: Props) {
+    const { t } = useTranslation();
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [addMemberCommitteeId, setAddMemberCommitteeId] = useState<string | null>(null);
 
@@ -91,13 +93,13 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
     return (
         <>
             <Head title={`Committees - ${tender.reference_number}`} />
-            <Heading title="Evaluation Committees" description={`${tender.reference_number} - ${tender.title_en}`} />
+            <Heading title={t('pages.eval.evaluation_committees')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
                 <div className="flex justify-end">
                     <Button onClick={() => setCreateDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Create Committee
+                        {t('btn.create_committee')}
                     </Button>
                 </div>
 
@@ -105,9 +107,9 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <Users className="h-12 w-12 text-muted-foreground" />
-                            <p className="mt-4 text-lg font-medium">No committees formed yet</p>
+                            <p className="mt-4 text-lg font-medium">{t('empty.no_committees')}</p>
                             <p className="text-sm text-muted-foreground">
-                                Create a committee to begin the evaluation process.
+                                {t('empty.no_committees_description')}
                             </p>
                         </CardContent>
                     </Card>
@@ -125,7 +127,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                     <Badge variant="outline">{committee.status}</Badge>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Formed: {new Date(committee.formed_at).toLocaleDateString()}
+                                    {t('eval.formed')}: {new Date(committee.formed_at).toLocaleDateString()}
                                 </p>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -148,12 +150,12 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                                 {member.pivot.has_scored ? (
                                                     <Badge variant="default" className="bg-green-600">
                                                         <Check className="mr-1 h-3 w-3" />
-                                                        Scored
+                                                        {t('status.scored')}
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="secondary">
                                                         <Clock className="mr-1 h-3 w-3" />
-                                                        Pending
+                                                        {t('status.pending')}
                                                     </Badge>
                                                 )}
                                                 <Button
@@ -172,30 +174,30 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                 {addMemberCommitteeId === committee.id ? (
                                     <div className="space-y-3 rounded-lg border border-dashed p-4">
                                         <div className="space-y-2">
-                                            <Label>User</Label>
+                                            <Label>{t('form.user')}</Label>
                                             <SearchableSelect
                                                 options={userOptions}
                                                 value={memberForm.data.user_id}
                                                 onChange={(value) => memberForm.setData('user_id', value)}
-                                                placeholder="Search for a user..."
+                                                placeholder={t('form.search_user')}
                                             />
                                             {memberForm.errors.user_id && (
                                                 <p className="text-sm text-destructive">{memberForm.errors.user_id}</p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Role</Label>
+                                            <Label>{t('form.role')}</Label>
                                             <Select
                                                 value={memberForm.data.role}
                                                 onValueChange={(value) => memberForm.setData('role', value)}
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select role" />
+                                                    <SelectValue placeholder={t('form.select_role')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="chair">Chair</SelectItem>
-                                                    <SelectItem value="member">Member</SelectItem>
-                                                    <SelectItem value="secretary">Secretary</SelectItem>
+                                                    <SelectItem value="chair">{t('form.role_chair')}</SelectItem>
+                                                    <SelectItem value="member">{t('form.role_member')}</SelectItem>
+                                                    <SelectItem value="secretary">{t('form.role_secretary')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             {memberForm.errors.role && (
@@ -208,7 +210,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                                 onClick={() => handleAddMember(committee.id)}
                                                 disabled={memberForm.processing}
                                             >
-                                                Add
+                                                {t('btn.add')}
                                             </Button>
                                             <Button
                                                 size="sm"
@@ -218,7 +220,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                                     memberForm.reset();
                                                 }}
                                             >
-                                                Cancel
+                                                {t('btn.cancel')}
                                             </Button>
                                         </div>
                                     </div>
@@ -230,7 +232,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                         onClick={() => setAddMemberCommitteeId(committee.id)}
                                     >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Add Member
+                                        {t('btn.add_member')}
                                     </Button>
                                 )}
                             </CardContent>
@@ -242,36 +244,36 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Create Committee</DialogTitle>
+                        <DialogTitle>{t('eval.create_committee')}</DialogTitle>
                         <DialogDescription>
-                            Form a new evaluation committee for this tender.
+                            {t('eval.create_committee_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Committee Name</Label>
+                            <Label>{t('form.committee_name')}</Label>
                             <Input
                                 value={createForm.data.name}
                                 onChange={(e) => createForm.setData('name', e.target.value)}
-                                placeholder="e.g. Technical Evaluation Committee"
+                                placeholder={t('form.committee_name_placeholder')}
                             />
                             {createForm.errors.name && (
                                 <p className="text-sm text-destructive">{createForm.errors.name}</p>
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label>Type</Label>
+                            <Label>{t('form.type')}</Label>
                             <Select
                                 value={createForm.data.committee_type}
                                 onValueChange={(value) => createForm.setData('committee_type', value)}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
+                                    <SelectValue placeholder={t('form.select_type')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="technical">Technical</SelectItem>
-                                    <SelectItem value="financial">Financial</SelectItem>
-                                    <SelectItem value="combined">Combined</SelectItem>
+                                    <SelectItem value="technical">{t('eval.technical')}</SelectItem>
+                                    <SelectItem value="financial">{t('eval.financial')}</SelectItem>
+                                    <SelectItem value="combined">{t('eval.combined')}</SelectItem>
                                 </SelectContent>
                             </Select>
                             {createForm.errors.committee_type && (
@@ -281,10 +283,10 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                            Cancel
+                            {t('btn.cancel')}
                         </Button>
                         <Button onClick={handleCreateCommittee} disabled={createForm.processing}>
-                            Create
+                            {t('btn.create')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

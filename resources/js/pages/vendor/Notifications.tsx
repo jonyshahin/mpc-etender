@@ -4,6 +4,7 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Notif = {
     id: string;
@@ -39,6 +40,7 @@ function timeAgo(date: string): string {
 }
 
 export default function Notifications({ notifications, unreadCount }: Props) {
+    const { t } = useTranslation();
     const { locale } = usePage().props as any;
     const isAr = locale === 'ar';
 
@@ -48,11 +50,11 @@ export default function Notifications({ notifications, unreadCount }: Props) {
 
     return (
         <>
-            <Head title={isAr ? 'الإشعارات' : 'Notifications'} />
+            <Head title={t('pages.vendor.notifications')} />
             <div className="space-y-6 p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Heading title={isAr ? 'الإشعارات' : 'Notifications'} />
+                        <Heading title={t('pages.vendor.notifications')} />
                         {unreadCount > 0 && (
                             <Badge variant="destructive">{unreadCount}</Badge>
                         )}
@@ -63,7 +65,7 @@ export default function Notifications({ notifications, unreadCount }: Props) {
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <Bell className="mb-4 h-12 w-12 text-muted-foreground" />
-                            <p className="text-muted-foreground">{isAr ? 'لا توجد إشعارات.' : 'No notifications.'}</p>
+                            <p className="text-muted-foreground">{t('empty.no_notifications')}</p>
                         </CardContent>
                     </Card>
                 ) : (

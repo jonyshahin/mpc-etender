@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { Bell, CheckCheck, Clock, Mail, MailOpen } from 'lucide-react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,18 +31,20 @@ type Props = {
     unreadCount: number;
 };
 
-function relativeTime(dateStr: string): string {
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diffMs = now.getTime() - date.getTime();
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return 'Just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    const diffDays = Math.floor(diffHr / 24);
-    if (diffDays < 30) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+function makeRelativeTime(t: (key: string) => string) {
+    return function relativeTime(dateStr: string): string {
+        const now = new Date();
+        const date = new Date(dateStr);
+        const diffMs = now.getTime() - date.getTime();
+        const diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 1) return t('notifications.just_now');
+        if (diffMin < 60) return `${diffMin}${t('notifications.minutes_ago')}`;
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return `${diffHr}${t('notifications.hours_ago')}`;
+        const diffDays = Math.floor(diffHr / 24);
+        if (diffDays < 30) return `${diffDays}${t('notifications.days_ago')}`;
+        return date.toLocaleDateString();
+    };
 }
 
 function typeBadgeColor(type: string): string {
@@ -56,6 +59,8 @@ function typeBadgeColor(type: string): string {
 }
 
 export default function Index({ notifications, unreadCount }: Props) {
+    const { t } = useTranslation();
+    const relativeTime = makeRelativeTime(t);
     const { props } = usePage();
     const locale = (props as any).locale ?? 'en';
     const isAr = locale === 'ar';
@@ -85,17 +90,17 @@ export default function Index({ notifications, unreadCount }: Props) {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Heading title="Notifications" />
+                        <Heading title={t('pages.notifications.title')} />
                         {unreadCount > 0 && (
                             <Badge variant="default" className="bg-blue-600 text-white">
-                                {unreadCount} unread
+                                {unreadCount} {t('notifications.unread')}
                             </Badge>
                         )}
                     </div>
                     {unreadCount > 0 && (
                         <Button variant="outline" onClick={markAllRead} className="gap-2">
                             <CheckCheck className="h-4 w-4" />
-                            Mark All Read
+                            {t('btn.mark_all_read')}
                         </Button>
                     )}
                 </div>
@@ -104,7 +109,7 @@ export default function Index({ notifications, unreadCount }: Props) {
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">No notifications yet.</p>
+                            <p className="text-muted-foreground">{t('empty.no_notifications')}</p>
                         </CardContent>
                     </Card>
                 ) : (
@@ -155,7 +160,7 @@ export default function Index({ notifications, unreadCount }: Props) {
                                             onClick={() => markRead(n.id)}
                                             className="shrink-0"
                                         >
-                                            Mark Read
+                                            {t('btn.mark_read')}
                                         </Button>
                                     )}
                                 </CardContent>

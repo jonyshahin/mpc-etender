@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -38,6 +39,7 @@ type Props = {
 };
 
 export default function BidOpening({ tender, bids, authorizers, canOpen, isOpened }: Props) {
+    const { t } = useTranslation();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const form = useForm({ authorizer_id: '' });
 
@@ -77,26 +79,26 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
     const columns = [
         {
             key: 'vendor',
-            label: 'Vendor',
+            label: t('table.vendor'),
             sortable: true,
             render: (_: any, row: Bid) => row.vendor?.company_name ?? '-',
         },
-        { key: 'bid_reference', label: 'Reference', sortable: true },
+        { key: 'bid_reference', label: t('table.reference'), sortable: true },
         {
             key: 'total_amount',
-            label: 'Total Amount',
+            label: t('table.total_amount'),
             sortable: true,
             render: (value: string | null) => formatCurrency(value),
         },
         {
             key: 'status',
-            label: 'Status',
+            label: t('table.status'),
             sortable: true,
             render: (value: string) => <StatusBadge status={value} />,
         },
         {
             key: 'submitted_at',
-            label: 'Submitted',
+            label: t('table.submitted'),
             sortable: true,
             render: (value: string) => new Date(value).toLocaleDateString(),
         },
@@ -105,7 +107,7 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
     return (
         <>
             <Head title={`Bid Opening - ${tender.reference_number}`} />
-            <Heading title="Bid Opening" description={`${tender.reference_number} - ${tender.title_en}`} />
+            <Heading title={t('pages.eval.bid_opening')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
                 {!isOpened ? (
@@ -113,7 +115,7 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Lock className="h-5 w-5" />
-                                Sealed Bids
+                                {t('eval.sealed_bids')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -133,13 +135,13 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
                             {canOpen && (
                                 <div className="flex items-end gap-4">
                                     <div className="w-64 space-y-2">
-                                        <label className="text-sm font-medium">Second Authorizer</label>
+                                        <label className="text-sm font-medium">{t('eval.second_authorizer')}</label>
                                         <Select
                                             value={form.data.authorizer_id}
                                             onValueChange={(value) => form.setData('authorizer_id', value)}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select authorizer" />
+                                                <SelectValue placeholder={t('form.select_authorizer')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {authorizers.map((auth) => (
@@ -158,7 +160,7 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
                                         disabled={!form.data.authorizer_id || form.processing}
                                     >
                                         <Unlock className="mr-2 h-4 w-4" />
-                                        Open Bids
+                                        {t('btn.open_bids')}
                                     </Button>
                                 </div>
                             )}
@@ -169,7 +171,7 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Unlock className="h-5 w-5" />
-                                Opened Bids
+                                {t('eval.opened_bids')}
                                 <Badge variant="outline" className="ml-2">
                                     {bids.length} bid{bids.length !== 1 ? 's' : ''}
                                 </Badge>
@@ -186,8 +188,8 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
                 onConfirm={handleOpenBids}
-                title="Open Bids"
-                description="This action is irreversible and will be logged. All sealed bids will be opened and their contents revealed. Are you sure you want to proceed?"
+                title={t('eval.open_bids')}
+                description={t('eval.open_bids_confirm')}
             />
         </>
     );

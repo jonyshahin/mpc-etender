@@ -11,6 +11,7 @@ import {
     DollarSign,
 } from 'lucide-react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -87,6 +88,7 @@ const statusBadgeColors: Record<string, string> = {
 };
 
 export default function Portfolio({ overview, kpis, pendingApprovals, recentTenders }: Props) {
+    const { t } = useTranslation();
     const statusEntries = Object.entries(overview.tender_status_distribution);
     const statusTotal = statusEntries.reduce((sum, [, count]) => sum + count, 0);
 
@@ -99,40 +101,40 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
             <Head title="Portfolio Dashboard" />
 
             <div className="space-y-6">
-                <Heading title="Portfolio Dashboard" />
+                <Heading title={t('pages.portfolio.title')} />
 
                 {/* KPI Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Avg Cycle Time
+                                {t('dashboard.avg_cycle_time')}
                             </CardTitle>
                             <Clock className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{kpis.avg_cycle_time_days} days</div>
-                            <CardDescription>From publish to award</CardDescription>
+                            <div className="text-2xl font-bold">{kpis.avg_cycle_time_days} {t('dashboard.days')}</div>
+                            <CardDescription>{t('dashboard.from_publish_to_award')}</CardDescription>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Avg Bids / Tender
+                                {t('dashboard.avg_bids_per_tender')}
                             </CardTitle>
                             <BarChart3 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{kpis.avg_bids_per_tender.toFixed(1)}</div>
-                            <CardDescription>Competition level</CardDescription>
+                            <CardDescription>{t('dashboard.competition_level')}</CardDescription>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Savings Rate
+                                {t('dashboard.savings_rate')}
                             </CardTitle>
                             <TrendingDown className="h-4 w-4 text-green-600" />
                         </CardHeader>
@@ -141,8 +143,8 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                                 {kpis.savings_rate_percent.toFixed(1)}%
                             </div>
                             <CardDescription>
-                                {formatCurrency(kpis.total_estimated)} est. vs {formatCurrency(kpis.total_awarded)}{' '}
-                                awarded
+                                {formatCurrency(kpis.total_estimated)} {t('dashboard.est_vs')} {formatCurrency(kpis.total_awarded)}{' '}
+                                {t('dashboard.awarded')}
                             </CardDescription>
                         </CardContent>
                     </Card>
@@ -153,27 +155,27 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Projects
+                                {t('dashboard.projects')}
                             </CardTitle>
                             <Building2 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{overview.total_projects}</div>
-                            <CardDescription>{overview.active_projects} active</CardDescription>
+                            <CardDescription>{overview.active_projects} {t('status.active')}</CardDescription>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Tenders
+                                {t('dashboard.tenders')}
                             </CardTitle>
                             <FileText className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{overview.total_tenders}</div>
                             <CardDescription>
-                                {overview.published_tenders} published, {overview.awarded_tenders} awarded
+                                {overview.published_tenders} {t('status.published')}, {overview.awarded_tenders} {t('status.awarded')}
                             </CardDescription>
                         </CardContent>
                     </Card>
@@ -181,26 +183,26 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Vendors
+                                {t('dashboard.vendors')}
                             </CardTitle>
                             <Users className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{overview.total_vendors}</div>
-                            <CardDescription>{overview.qualified_vendors} qualified</CardDescription>
+                            <CardDescription>{overview.qualified_vendors} {t('status.qualified')}</CardDescription>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Spend
+                                {t('dashboard.total_spend')}
                             </CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{formatCurrency(overview.total_spend)}</div>
-                            <CardDescription>{overview.total_bids} total bids</CardDescription>
+                            <CardDescription>{overview.total_bids} {t('dashboard.total_bids')}</CardDescription>
                         </CardContent>
                     </Card>
                 </div>
@@ -210,7 +212,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                     {/* Tender Status Distribution */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Tender Status Distribution</CardTitle>
+                            <CardTitle className="text-base">{t('dashboard.tender_status_distribution')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {statusTotal > 0 ? (
@@ -232,7 +234,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                                                     className={`h-3 w-3 rounded-full ${statusColors[status] || 'bg-gray-400'}`}
                                                 />
                                                 <span className="capitalize text-muted-foreground">
-                                                    {status.replace(/_/g, ' ')}
+                                                    {t(`status.${status}`)}
                                                 </span>
                                                 <span className="font-medium ml-auto">{count}</span>
                                             </div>
@@ -241,7 +243,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                                 </>
                             ) : (
                                 <p className="text-sm text-muted-foreground text-center py-4">
-                                    No tender data available
+                                    {t('empty.no_tender_data')}
                                 </p>
                             )}
                         </CardContent>
@@ -250,7 +252,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                     {/* Monthly Spend */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Monthly Spend</CardTitle>
+                            <CardTitle className="text-base">{t('dashboard.monthly_spend')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {overview.monthly_spend.length > 0 ? (
@@ -276,7 +278,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground text-center py-4">
-                                    No spend data available
+                                    {t('empty.no_spend_data')}
                                 </p>
                             )}
                         </CardContent>
@@ -286,7 +288,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                 {/* Spend by Project */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Spend by Project</CardTitle>
+                        <CardTitle className="text-base">{t('dashboard.spend_by_project')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {overview.spend_by_project.length > 0 ? (
@@ -295,13 +297,13 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                                     <thead>
                                         <tr className="border-b">
                                             <th className="text-left py-2 font-medium text-muted-foreground">
-                                                Project
+                                                {t('table.project')}
                                             </th>
                                             <th className="text-left py-2 font-medium text-muted-foreground w-1/2">
-                                                Spend
+                                                {t('table.spend')}
                                             </th>
                                             <th className="text-right py-2 font-medium text-muted-foreground">
-                                                Total
+                                                {t('table.total')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -329,7 +331,7 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground text-center py-4">
-                                No project spend data available
+                                {t('empty.no_project_spend_data')}
                             </p>
                         )}
                     </CardContent>
@@ -340,44 +342,44 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-base">Recent Tenders</CardTitle>
+                                <CardTitle className="text-base">{t('dashboard.recent_tenders')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 {recentTenders.length > 0 ? (
                                     <div className="space-y-3">
-                                        {recentTenders.map((t) => (
+                                        {recentTenders.map((tender) => (
                                             <div
-                                                key={t.id}
+                                                key={tender.id}
                                                 className="flex items-center justify-between gap-4 py-2 border-b last:border-0"
                                             >
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-xs font-mono text-muted-foreground">
-                                                            {t.reference_number}
+                                                            {tender.reference_number}
                                                         </span>
                                                         <Badge
                                                             variant="secondary"
-                                                            className={`text-xs ${statusBadgeColors[t.status] || ''}`}
+                                                            className={`text-xs ${statusBadgeColors[tender.status] || ''}`}
                                                         >
-                                                            {t.status.replace(/_/g, ' ')}
+                                                            {t(`status.${tender.status}`)}
                                                         </Badge>
                                                     </div>
-                                                    <p className="text-sm font-medium truncate">{t.title_en}</p>
-                                                    {t.project && (
+                                                    <p className="text-sm font-medium truncate">{tender.title_en}</p>
+                                                    {tender.project && (
                                                         <p className="text-xs text-muted-foreground">
-                                                            {t.project.code} - {t.project.name}
+                                                            {tender.project.code} - {tender.project.name}
                                                         </p>
                                                     )}
                                                 </div>
                                                 <span className="text-xs text-muted-foreground shrink-0">
-                                                    {formatDate(t.created_at)}
+                                                    {formatDate(tender.created_at)}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <p className="text-sm text-muted-foreground text-center py-4">
-                                        No recent tenders
+                                        {t('empty.no_recent_tenders')}
                                     </p>
                                 )}
                             </CardContent>
@@ -386,17 +388,17 @@ export default function Portfolio({ overview, kpis, pendingApprovals, recentTend
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="text-base">Pending Approvals</CardTitle>
+                            <CardTitle className="text-base">{t('dashboard.pending_approvals')}</CardTitle>
                             <AlertCircle className="h-5 w-5 text-yellow-500" />
                         </CardHeader>
                         <CardContent className="flex flex-col items-center justify-center py-8">
                             <div className="text-4xl font-bold mb-2">{pendingApprovals}</div>
                             <p className="text-sm text-muted-foreground mb-4">
-                                {pendingApprovals === 1 ? 'item' : 'items'} awaiting your review
+                                {pendingApprovals === 1 ? t('dashboard.item') : t('dashboard.items')} {t('dashboard.awaiting_review')}
                             </p>
                             <Button asChild variant="outline" className="gap-2">
                                 <Link href="/approvals">
-                                    View Approvals
+                                    {t('btn.view_approvals')}
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </Button>

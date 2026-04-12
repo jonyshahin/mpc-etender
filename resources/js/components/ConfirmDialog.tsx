@@ -7,6 +7,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 
 /**
  * Props for the ConfirmDialog component.
@@ -31,12 +32,16 @@ export function ConfirmDialog({
     onOpenChange,
     title,
     description,
-    confirmLabel = 'Confirm',
-    cancelLabel = 'Cancel',
+    confirmLabel,
+    cancelLabel,
     variant = 'destructive',
     onConfirm,
     loading = false,
 }: ConfirmDialogProps) {
+    const { t } = useTranslation();
+    const resolvedConfirmLabel = confirmLabel ?? t('btn.confirm');
+    const resolvedCancelLabel = cancelLabel ?? t('btn.cancel');
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -50,14 +55,14 @@ export function ConfirmDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={loading}
                     >
-                        {cancelLabel}
+                        {resolvedCancelLabel}
                     </Button>
                     <Button
                         variant={variant}
                         onClick={onConfirm}
                         disabled={loading}
                     >
-                        {loading ? 'Processing...' : confirmLabel}
+                        {loading ? t('ui.processing') : resolvedConfirmLabel}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Trash2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 type VendorDocument = {
     id: string;
@@ -44,18 +45,20 @@ function formatFileSize(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const DOCUMENT_TYPES = [
-    { value: 'trade_license', label: 'Trade License' },
-    { value: 'tax_certificate', label: 'Tax Certificate' },
-    { value: 'insurance', label: 'Insurance Certificate' },
-    { value: 'financial_statement', label: 'Financial Statement' },
-    { value: 'bank_reference', label: 'Bank Reference' },
-    { value: 'experience_certificate', label: 'Experience Certificate' },
-    { value: 'iso_certificate', label: 'ISO Certificate' },
-    { value: 'other', label: 'Other' },
+const DOCUMENT_TYPE_KEYS = [
+    { value: 'trade_license', key: 'vendor.doc_type_trade_license' },
+    { value: 'tax_certificate', key: 'vendor.doc_type_tax_certificate' },
+    { value: 'insurance', key: 'vendor.doc_type_insurance' },
+    { value: 'financial_statement', key: 'vendor.doc_type_financial_statement' },
+    { value: 'bank_reference', key: 'vendor.doc_type_bank_reference' },
+    { value: 'experience_certificate', key: 'vendor.doc_type_experience_certificate' },
+    { value: 'iso_certificate', key: 'vendor.doc_type_iso_certificate' },
+    { value: 'other', key: 'vendor.doc_type_other' },
 ];
 
 export default function Index({ documents }: Props) {
+    const { t } = useTranslation();
+    const DOCUMENT_TYPES = DOCUMENT_TYPE_KEYS.map((dt) => ({ value: dt.value, label: t(dt.key) }));
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const uploadForm = useForm({
@@ -88,26 +91,26 @@ export default function Index({ documents }: Props) {
             <Head title="Documents" />
 
             <div className="space-y-6">
-                <Heading title="Documents" description="Manage your company documents and certificates" />
+                <Heading title={t('pages.vendor.documents')} description={t('vendor.manage_documents_description')} />
 
                 {/* Upload Form */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Upload className="h-5 w-5" />
-                            Upload Document
+                            {t('vendor.upload_document')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleUpload} className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="title">Title</Label>
+                                    <Label htmlFor="title">{t('form.title')}</Label>
                                     <Input
                                         id="title"
                                         value={uploadForm.data.title}
                                         onChange={(e) => uploadForm.setData('title', e.target.value)}
-                                        placeholder="Document title"
+                                        placeholder={t('form.document_title_placeholder')}
                                     />
                                     {uploadForm.errors.title && (
                                         <p className="text-sm text-destructive">{uploadForm.errors.title}</p>
@@ -115,13 +118,13 @@ export default function Index({ documents }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="document_type">Document Type</Label>
+                                    <Label htmlFor="document_type">{t('form.document_type')}</Label>
                                     <Select
                                         value={uploadForm.data.document_type}
                                         onValueChange={(value) => uploadForm.setData('document_type', value)}
                                     >
                                         <SelectTrigger id="document_type">
-                                            <SelectValue placeholder="Select type" />
+                                            <SelectValue placeholder={t('form.select_type')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {DOCUMENT_TYPES.map((type) => (
@@ -137,7 +140,7 @@ export default function Index({ documents }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="file">File</Label>
+                                    <Label htmlFor="file">{t('form.file')}</Label>
                                     <Input
                                         id="file"
                                         type="file"
@@ -152,7 +155,7 @@ export default function Index({ documents }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="issue_date">Issue Date</Label>
+                                    <Label htmlFor="issue_date">{t('form.issue_date')}</Label>
                                     <Input
                                         id="issue_date"
                                         type="date"
@@ -162,7 +165,7 @@ export default function Index({ documents }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="expiry_date">Expiry Date</Label>
+                                    <Label htmlFor="expiry_date">{t('form.expiry_date')}</Label>
                                     <Input
                                         id="expiry_date"
                                         type="date"
@@ -175,7 +178,7 @@ export default function Index({ documents }: Props) {
                             <div className="flex justify-end">
                                 <Button type="submit" disabled={uploadForm.processing}>
                                     <Upload className="mr-2 h-4 w-4" />
-                                    {uploadForm.processing ? 'Uploading...' : 'Upload Document'}
+                                    {uploadForm.processing ? t('btn.uploading') : t('btn.upload_document')}
                                 </Button>
                             </div>
                         </form>
@@ -187,20 +190,20 @@ export default function Index({ documents }: Props) {
                     <CardContent className="p-0">
                         {documents.length === 0 ? (
                             <div className="p-6 text-center text-muted-foreground">
-                                No documents uploaded yet. Use the form above to upload your first document.
+                                {t('empty.no_documents')}
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b">
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Title</th>
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Size</th>
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Issue Date</th>
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Expiry Date</th>
-                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.title')}</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.type')}</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.status')}</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.size')}</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.issue_date')}</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.expiry_date')}</th>
+                                            <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.actions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -252,8 +255,8 @@ export default function Index({ documents }: Props) {
                 onOpenChange={(open) => {
                     if (!open) setDeleteId(null);
                 }}
-                title="Delete Document"
-                description="Are you sure you want to delete this document? This action cannot be undone."
+                title={t('vendor.delete_document_title')}
+                description={t('vendor.delete_document_confirm')}
                 onConfirm={handleDelete}
             />
         </>

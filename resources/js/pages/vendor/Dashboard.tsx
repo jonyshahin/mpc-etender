@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, AlertCircle, Clock, FileText, Send } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Props = {
     vendor: {
@@ -48,21 +49,23 @@ function formatDate(date: string | null): string {
 }
 
 export default function Dashboard({ vendor, documentWarnings, expiredDocuments, openTenders, submittedBids }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
             <Head title="Vendor Dashboard" />
 
             <div className="space-y-6">
-                <Heading title={`Welcome, ${vendor.company_name}`} description="Your vendor portal dashboard" />
+                <Heading title={`${t('vendor.welcome')}, ${vendor.company_name}`} description={t('vendor.dashboard_description')} />
 
                 {/* Prequalification Status */}
                 <Card>
                     <CardContent className="flex items-center justify-between p-6">
                         <div>
-                            <h2 className="text-lg font-semibold">Prequalification Status</h2>
+                            <h2 className="text-lg font-semibold">{t('vendor.prequalification_status')}</h2>
                             {vendor.qualified_at && (
                                 <p className="text-sm text-muted-foreground">
-                                    Qualified on {formatDate(vendor.qualified_at)}
+                                    {t('vendor.qualified_on')} {formatDate(vendor.qualified_at)}
                                 </p>
                             )}
                         </div>
@@ -77,8 +80,8 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                             <AlertTriangle className="h-5 w-5 text-amber-600" />
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                                 {vendor.prequalification_status === 'pending'
-                                    ? 'Your prequalification application is under review. You will be notified once it is approved.'
-                                    : 'Your prequalification application has been rejected. Please review the feedback and update your documents.'}
+                                    ? t('vendor.prequalification_pending_message')
+                                    : t('vendor.prequalification_rejected_message')}
                             </p>
                         </div>
                     </div>
@@ -90,13 +93,13 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                         <div className="flex items-center gap-2 mb-2">
                             <AlertTriangle className="h-5 w-5 text-amber-600" />
                             <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                                Documents Expiring Soon
+                                {t('vendor.documents_expiring_soon')}
                             </h3>
                         </div>
                         <ul className="space-y-1">
                             {documentWarnings.map((doc) => (
                                 <li key={doc.id} className="text-sm text-amber-700 dark:text-amber-300">
-                                    {doc.title} - expires {formatDate(doc.expiry_date)}
+                                    {doc.title} - {t('vendor.expires')} {formatDate(doc.expiry_date)}
                                 </li>
                             ))}
                         </ul>
@@ -107,12 +110,12 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                     <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <AlertCircle className="h-5 w-5 text-destructive" />
-                            <h3 className="text-sm font-semibold text-destructive">Expired Documents</h3>
+                            <h3 className="text-sm font-semibold text-destructive">{t('vendor.expired_documents')}</h3>
                         </div>
                         <ul className="space-y-1">
                             {expiredDocuments.map((doc) => (
                                 <li key={doc.id} className="text-sm text-destructive">
-                                    {doc.title} - expired {formatDate(doc.expiry_date)}
+                                    {doc.title} - {t('vendor.expired')} {formatDate(doc.expiry_date)}
                                 </li>
                             ))}
                         </ul>
@@ -123,12 +126,12 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                 <div>
                     <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
                         <FileText className="h-5 w-5" />
-                        Open Tenders
+                        {t('vendor.open_tenders')}
                     </h2>
                     {openTenders.length === 0 ? (
                         <Card>
                             <CardContent className="p-6 text-center text-muted-foreground">
-                                No open tenders matching your categories at this time.
+                                {t('empty.no_open_tenders')}
                             </CardContent>
                         </Card>
                     ) : (
@@ -161,12 +164,12 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                 <div>
                     <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
                         <Send className="h-5 w-5" />
-                        Recent Bids
+                        {t('vendor.recent_bids')}
                     </h2>
                     {submittedBids.length === 0 ? (
                         <Card>
                             <CardContent className="p-6 text-center text-muted-foreground">
-                                You have not submitted any bids yet.
+                                {t('empty.no_bids_submitted')}
                             </CardContent>
                         </Card>
                     ) : (
@@ -176,10 +179,10 @@ export default function Dashboard({ vendor, documentWarnings, expiredDocuments, 
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="border-b">
-                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Tender</th>
-                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Reference</th>
-                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Submitted</th>
+                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.tender')}</th>
+                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.reference')}</th>
+                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.status')}</th>
+                                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('table.submitted')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>

@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { FileText, BarChart3, Trophy, Inbox, DollarSign, Eye } from 'lucide-react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,7 @@ const statusBadgeColors: Record<string, string> = {
 };
 
 export default function Project({ project, overview, tenders }: Props) {
+    const { t } = useTranslation();
     const pipelineEntries = Object.entries(overview.tender_pipeline);
     const pipelineTotal = pipelineEntries.reduce((sum, [, count]) => sum + count, 0);
 
@@ -88,7 +90,7 @@ export default function Project({ project, overview, tenders }: Props) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Tenders
+                                {t('dashboard.total_tenders')}
                             </CardTitle>
                             <FileText className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
@@ -100,7 +102,7 @@ export default function Project({ project, overview, tenders }: Props) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Active Tenders
+                                {t('dashboard.active_tenders')}
                             </CardTitle>
                             <BarChart3 className="h-4 w-4 text-blue-500" />
                         </CardHeader>
@@ -112,7 +114,7 @@ export default function Project({ project, overview, tenders }: Props) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Awarded
+                                {t('status.awarded')}
                             </CardTitle>
                             <Trophy className="h-4 w-4 text-emerald-500" />
                         </CardHeader>
@@ -126,7 +128,7 @@ export default function Project({ project, overview, tenders }: Props) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Bids
+                                {t('dashboard.total_bids_label')}
                             </CardTitle>
                             <Inbox className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
@@ -140,7 +142,7 @@ export default function Project({ project, overview, tenders }: Props) {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Total Award Value
+                            {t('dashboard.total_award_value')}
                         </CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -153,7 +155,7 @@ export default function Project({ project, overview, tenders }: Props) {
                 {pipelineTotal > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Tender Pipeline</CardTitle>
+                            <CardTitle className="text-base">{t('dashboard.tender_pipeline')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="flex h-8 rounded-full overflow-hidden mb-4">
@@ -175,7 +177,7 @@ export default function Project({ project, overview, tenders }: Props) {
                                             className={`h-3 w-3 rounded-full ${pipelineColors[status] || 'bg-gray-400'}`}
                                         />
                                         <span className="capitalize text-muted-foreground">
-                                            {status.replace(/_/g, ' ')}
+                                            {t(`status.${status}`)}
                                         </span>
                                         <span className="font-medium">{count}</span>
                                     </div>
@@ -188,7 +190,7 @@ export default function Project({ project, overview, tenders }: Props) {
                 {/* Tenders Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Tenders</CardTitle>
+                        <CardTitle className="text-base">{t('dashboard.tenders')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {tenders.length > 0 ? (
@@ -197,51 +199,51 @@ export default function Project({ project, overview, tenders }: Props) {
                                     <thead>
                                         <tr className="border-b">
                                             <th className="text-left py-2 font-medium text-muted-foreground">
-                                                Reference
+                                                {t('table.reference')}
                                             </th>
                                             <th className="text-left py-2 font-medium text-muted-foreground">
-                                                Title
+                                                {t('table.title')}
                                             </th>
                                             <th className="text-left py-2 font-medium text-muted-foreground">
-                                                Status
+                                                {t('table.status')}
                                             </th>
                                             <th className="text-left py-2 font-medium text-muted-foreground">
-                                                Deadline
+                                                {t('table.deadline')}
                                             </th>
                                             <th className="text-center py-2 font-medium text-muted-foreground">
-                                                Bids
+                                                {t('table.bids')}
                                             </th>
                                             <th className="text-right py-2 font-medium text-muted-foreground">
-                                                Actions
+                                                {t('table.actions')}
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {tenders.map((t) => (
-                                            <tr key={t.id} className="border-b last:border-0 hover:bg-muted/50">
-                                                <td className="py-3 font-mono text-xs">{t.reference_number}</td>
+                                        {tenders.map((tender) => (
+                                            <tr key={tender.id} className="border-b last:border-0 hover:bg-muted/50">
+                                                <td className="py-3 font-mono text-xs">{tender.reference_number}</td>
                                                 <td className="py-3 font-medium max-w-xs truncate">
-                                                    {t.title_en}
+                                                    {tender.title_en}
                                                 </td>
                                                 <td className="py-3">
                                                     <Badge
                                                         variant="secondary"
-                                                        className={`text-xs ${statusBadgeColors[t.status] || ''}`}
+                                                        className={`text-xs ${statusBadgeColors[tender.status] || ''}`}
                                                     >
-                                                        {t.status.replace(/_/g, ' ')}
+                                                        {t(`status.${tender.status}`)}
                                                     </Badge>
                                                 </td>
                                                 <td className="py-3 text-muted-foreground">
-                                                    {formatDate(t.submission_deadline)}
+                                                    {formatDate(tender.submission_deadline)}
                                                 </td>
-                                                <td className="py-3 text-center">{t.bids_count}</td>
+                                                <td className="py-3 text-center">{tender.bids_count}</td>
                                                 <td className="py-3 text-right">
                                                     <Button asChild variant="ghost" size="sm" className="gap-1">
                                                         <Link
-                                                            href={`/projects/${project.id}/tenders/${t.id}`}
+                                                            href={`/projects/${project.id}/tenders/${tender.id}`}
                                                         >
                                                             <Eye className="h-4 w-4" />
-                                                            View
+                                                            {t('btn.view')}
                                                         </Link>
                                                     </Button>
                                                 </td>
@@ -252,7 +254,7 @@ export default function Project({ project, overview, tenders }: Props) {
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground text-center py-8">
-                                No tenders for this project yet.
+                                {t('empty.no_tenders_for_project')}
                             </p>
                         )}
                     </CardContent>

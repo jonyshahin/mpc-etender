@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 
 type BoqItem = {
     id: string;
@@ -44,6 +45,7 @@ type PriceEntry = {
 };
 
 export default function Create({ tender, bid, boqSections }: Props) {
+    const { t } = useTranslation();
     const [prices, setPrices] = useState<Record<string, PriceEntry>>(() => {
         const initial: Record<string, PriceEntry> = {};
         boqSections.forEach((section) => {
@@ -126,7 +128,7 @@ export default function Create({ tender, bid, boqSections }: Props) {
                     <Button asChild variant="ghost" size="sm">
                         <Link href={`/vendor/tenders/${tender.id}`}>
                             <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back to Tender
+                            {t('btn.back_to_tender')}
                         </Link>
                     </Button>
                 </div>
@@ -136,7 +138,7 @@ export default function Create({ tender, bid, boqSections }: Props) {
                         <p className="font-mono text-sm text-muted-foreground">{tender.reference_number}</p>
                         <Heading title={tender.title_en} />
                     </div>
-                    <p className="text-sm text-muted-foreground">Currency: {tender.currency}</p>
+                    <p className="text-sm text-muted-foreground">{t('tender.currency')}: {tender.currency}</p>
                 </div>
 
                 {/* BOQ Pricing Sections */}
@@ -150,12 +152,12 @@ export default function Create({ tender, bid, boqSections }: Props) {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b text-left">
-                                            <th className="px-3 py-2">Code</th>
-                                            <th className="px-3 py-2">Description</th>
-                                            <th className="px-3 py-2">Unit</th>
-                                            <th className="px-3 py-2 text-right">Qty</th>
-                                            <th className="px-3 py-2 text-right">Unit Price</th>
-                                            <th className="px-3 py-2 text-right">Total</th>
+                                            <th className="px-3 py-2">{t('table.code')}</th>
+                                            <th className="px-3 py-2">{t('table.description')}</th>
+                                            <th className="px-3 py-2">{t('table.unit')}</th>
+                                            <th className="px-3 py-2 text-right">{t('table.qty')}</th>
+                                            <th className="px-3 py-2 text-right">{t('table.unit_price')}</th>
+                                            <th className="px-3 py-2 text-right">{t('table.total')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -191,7 +193,7 @@ export default function Create({ tender, bid, boqSections }: Props) {
                                     <tfoot>
                                         <tr className="font-semibold">
                                             <td colSpan={5} className="px-3 py-2 text-right">
-                                                Section Subtotal
+                                                {t('tender.section_subtotal')}
                                             </td>
                                             <td className="px-3 py-2 text-right">
                                                 {(sectionTotals[section.id] ?? 0).toLocaleString(undefined, {
@@ -210,7 +212,7 @@ export default function Create({ tender, bid, boqSections }: Props) {
                 {/* Grand Total */}
                 <Card>
                     <CardContent className="flex items-center justify-between py-4">
-                        <span className="text-lg font-semibold">Grand Total</span>
+                        <span className="text-lg font-semibold">{t('tender.grand_total')}</span>
                         <span className="text-lg font-bold">
                             {grandTotal.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
@@ -224,16 +226,16 @@ export default function Create({ tender, bid, boqSections }: Props) {
                 {/* Technical Notes */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Technical Notes</CardTitle>
+                        <CardTitle>{t('tender.technical_notes')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Label htmlFor="technical_notes" className="sr-only">
-                            Technical Notes
+                            {t('tender.technical_notes')}
                         </Label>
                         <textarea
                             id="technical_notes"
                             className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            placeholder="Add any technical notes, assumptions, or exclusions..."
+                            placeholder={t('tender.technical_notes_placeholder')}
                             value={technicalNotes}
                             onChange={(e) => setTechnicalNotes(e.target.value)}
                         />
@@ -245,27 +247,27 @@ export default function Create({ tender, bid, boqSections }: Props) {
                     <Button asChild variant="outline">
                         <Link href={`/vendor/tenders/${tender.id}`}>
                             <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back
+                            {t('btn.back')}
                         </Link>
                     </Button>
 
                     <Button variant="secondary" onClick={saveDraft} disabled={saving}>
                         <Save className="mr-1 h-4 w-4" />
-                        {saving ? 'Saving...' : 'Save Draft'}
+                        {saving ? t('btn.saving') : t('btn.save_draft')}
                     </Button>
 
                     <Button onClick={() => setShowSubmitConfirm(true)} disabled={submitting}>
                         <SendHorizonal className="mr-1 h-4 w-4" />
-                        {submitting ? 'Submitting...' : 'Submit Bid'}
+                        {submitting ? t('btn.submitting') : t('btn.submit_bid')}
                     </Button>
                 </div>
 
                 <ConfirmDialog
                     open={showSubmitConfirm}
                     onOpenChange={setShowSubmitConfirm}
-                    title="Submit Bid"
-                    description="Once submitted, you cannot modify your bid. Proceed?"
-                    confirmLabel="Submit"
+                    title={t('tender.submit_bid_title')}
+                    description={t('tender.submit_bid_confirm')}
+                    confirmLabel={t('btn.submit')}
                     onConfirm={() => {
                         setShowSubmitConfirm(false);
                         submitBid();

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,7 @@ type Props = {
 };
 
 export default function Scoring({ tender, criteria, bids, existingScores, envelope, hasCompleted }: Props) {
+    const { t } = useTranslation();
     const isBidScored = (bidId: string) => {
         const scores = existingScores[bidId];
         return scores && scores.length === criteria.length;
@@ -41,12 +43,12 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
     return (
         <>
             <Head title={`Scoring - ${tender.reference_number}`} />
-            <Heading title="Bid Scoring" description={`${tender.reference_number} - ${tender.title_en}`} />
+            <Heading title={t('pages.eval.bid_scoring')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
                 <div className="flex items-center gap-4">
                     <Badge variant="outline" className="text-sm">
-                        Envelope: {envelope}
+                        {t('eval.envelope')}: {envelope}
                     </Badge>
                     <Badge variant="outline" className="text-sm">
                         {criteria.length} criteria ({totalWeight}% total weight)
@@ -54,7 +56,7 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                     {hasCompleted && (
                         <Badge variant="default" className="bg-green-600 text-sm">
                             <Check className="mr-1 h-3 w-3" />
-                            Scoring Complete
+                            {t('eval.scoring_complete')}
                         </Badge>
                     )}
                 </div>
@@ -63,12 +65,12 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <ClipboardList className="h-5 w-5" />
-                            Bids to Score
+                            {t('eval.bids_to_score')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {bids.length === 0 ? (
-                            <p className="py-8 text-center text-muted-foreground">No bids available for scoring.</p>
+                            <p className="py-8 text-center text-muted-foreground">{t('empty.no_bids_for_scoring')}</p>
                         ) : (
                             <div className="space-y-3">
                                 {bids.map((bid) => {
@@ -91,7 +93,7 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                                                 </div>
                                                 <div>
                                                     <p className="font-medium">
-                                                        {bid.vendor?.company_name ?? 'Unknown Vendor'}
+                                                        {bid.vendor?.company_name ?? t('eval.unknown_vendor')}
                                                     </p>
                                                     <p className="text-sm text-muted-foreground">
                                                         {bid.bid_reference}
@@ -102,10 +104,10 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                                                 <StatusBadge status={bid.status} />
                                                 {scored ? (
                                                     <Badge variant="default" className="bg-green-600">
-                                                        Scored
+                                                        {t('status.scored')}
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="secondary">Not Scored</Badge>
+                                                    <Badge variant="secondary">{t('status.not_scored')}</Badge>
                                                 )}
                                             </div>
                                         </Link>
@@ -119,15 +121,15 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                 {criteria.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Evaluation Criteria</CardTitle>
+                            <CardTitle>{t('eval.evaluation_criteria')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/50">
-                                        <th className="px-4 py-2 text-left">Criterion</th>
-                                        <th className="px-4 py-2 text-center">Weight</th>
-                                        <th className="px-4 py-2 text-center">Max Score</th>
+                                        <th className="px-4 py-2 text-left">{t('table.criterion')}</th>
+                                        <th className="px-4 py-2 text-center">{t('table.weight')}</th>
+                                        <th className="px-4 py-2 text-center">{t('table.max_score')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

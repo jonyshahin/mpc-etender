@@ -1,5 +1,6 @@
 import { Head, useForm, Link } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { MultiSelect } from '@/components/MultiSelect';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,13 +51,6 @@ type Props = {
     tenderCategoryIds: string[];
 };
 
-const TENDER_TYPES = [
-    { value: 'open', label: 'Open' },
-    { value: 'restricted', label: 'Restricted' },
-    { value: 'direct_invitation', label: 'Direct Invitation' },
-    { value: 'framework', label: 'Framework' },
-];
-
 const CURRENCIES = [
     { value: 'USD', label: 'USD' },
     { value: 'IQD', label: 'IQD' },
@@ -77,6 +71,15 @@ function flattenCategories(categories: Category[]) {
 }
 
 export default function Edit({ tender, projects, categories, tenderCategoryIds }: Props) {
+    const { t } = useTranslation();
+
+    const TENDER_TYPES = [
+        { value: 'open', label: t('tender.type_open') },
+        { value: 'restricted', label: t('tender.type_restricted') },
+        { value: 'direct_invitation', label: t('tender.type_direct_invitation') },
+        { value: 'framework', label: t('tender.type_framework') },
+    ];
+
     const form = useForm({
         project_id: tender.project_id,
         title_en: tender.title_en,
@@ -108,9 +111,9 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Edit Tender" />
+                    <Heading title={t('pages.tender_edit.title')} />
                     <Link href={`/tenders/${tender.id}`}>
-                        <Button variant="outline">Cancel</Button>
+                        <Button variant="outline">{t('btn.cancel')}</Button>
                     </Link>
                 </div>
 
@@ -118,18 +121,18 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                     {/* Basic Information */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Basic Information</CardTitle>
+                            <CardTitle>{t('tender.basic_information')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="project_id">Project</Label>
+                                    <Label htmlFor="project_id">{t('form.project')}</Label>
                                     <Select
                                         value={form.data.project_id}
                                         onValueChange={(v) => form.setData('project_id', v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select project" />
+                                            <SelectValue placeholder={t('form.select_project')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {projects.map((p) => (
@@ -147,7 +150,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="tender_type">Tender Type</Label>
+                                    <Label htmlFor="tender_type">{t('form.tender_type')}</Label>
                                     <Select
                                         value={form.data.tender_type}
                                         onValueChange={(v) => form.setData('tender_type', v)}
@@ -156,9 +159,9 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {TENDER_TYPES.map((t) => (
-                                                <SelectItem key={t.value} value={t.value}>
-                                                    {t.label}
+                                            {TENDER_TYPES.map((tt) => (
+                                                <SelectItem key={tt.value} value={tt.value}>
+                                                    {tt.label}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -168,7 +171,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="title_en">Title (English)</Label>
+                                    <Label htmlFor="title_en">{t('form.title_en')}</Label>
                                     <Input
                                         id="title_en"
                                         value={form.data.title_en}
@@ -181,7 +184,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="title_ar">Title (Arabic)</Label>
+                                    <Label htmlFor="title_ar">{t('form.title_ar')}</Label>
                                     <Input
                                         id="title_ar"
                                         value={form.data.title_ar}
@@ -193,7 +196,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="description_en">Description (English)</Label>
+                                    <Label htmlFor="description_en">{t('form.description_en')}</Label>
                                     <textarea
                                         id="description_en"
                                         className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -204,7 +207,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="description_ar">Description (Arabic)</Label>
+                                    <Label htmlFor="description_ar">{t('form.description_ar')}</Label>
                                     <textarea
                                         id="description_ar"
                                         className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -222,12 +225,12 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                     {/* Financial */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Financial Details</CardTitle>
+                            <CardTitle>{t('tender.financial_details')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="estimated_value">Estimated Value</Label>
+                                    <Label htmlFor="estimated_value">{t('form.estimated_value')}</Label>
                                     <Input
                                         id="estimated_value"
                                         type="number"
@@ -238,7 +241,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="currency">Currency</Label>
+                                    <Label htmlFor="currency">{t('form.currency')}</Label>
                                     <Select
                                         value={form.data.currency}
                                         onValueChange={(v) => form.setData('currency', v)}
@@ -262,12 +265,12 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                     {/* Dates */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Dates</CardTitle>
+                            <CardTitle>{t('tender.dates')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="submission_deadline">Submission Deadline</Label>
+                                    <Label htmlFor="submission_deadline">{t('form.submission_deadline')}</Label>
                                     <Input
                                         id="submission_deadline"
                                         type="datetime-local"
@@ -283,7 +286,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="opening_date">Opening Date</Label>
+                                    <Label htmlFor="opening_date">{t('form.opening_date')}</Label>
                                     <Input
                                         id="opening_date"
                                         type="datetime-local"
@@ -310,13 +313,13 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                         }
                                     />
                                     <Label htmlFor="requires_site_visit">
-                                        Requires site visit
+                                        {t('form.requires_site_visit')}
                                     </Label>
                                 </div>
 
                                 {form.data.requires_site_visit && (
                                     <div className="ml-6 space-y-2">
-                                        <Label htmlFor="site_visit_date">Site Visit Date</Label>
+                                        <Label htmlFor="site_visit_date">{t('form.site_visit_date')}</Label>
                                         <Input
                                             id="site_visit_date"
                                             type="datetime-local"
@@ -335,7 +338,7 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                     {/* Evaluation Settings */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Evaluation Settings</CardTitle>
+                            <CardTitle>{t('tender.evaluation_settings')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-2">
@@ -347,14 +350,14 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                                     }
                                 />
                                 <Label htmlFor="is_two_envelope">
-                                    Two-envelope system (Technical + Financial)
+                                    {t('form.two_envelope_system')}
                                 </Label>
                             </div>
 
                             {form.data.is_two_envelope && (
                                 <div className="ml-6 space-y-2">
                                     <Label htmlFor="technical_pass_score">
-                                        Technical Pass Score (%)
+                                        {t('form.technical_pass_score')}
                                     </Label>
                                     <Input
                                         id="technical_pass_score"
@@ -375,14 +378,14 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                     {/* Categories */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Categories</CardTitle>
+                            <CardTitle>{t('tender.categories')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <MultiSelect
                                 options={categoryOptions}
                                 value={form.data.category_ids}
                                 onChange={(ids) => form.setData('category_ids', ids)}
-                                placeholder="Select categories..."
+                                placeholder={t('form.select_categories')}
                             />
                         </CardContent>
                     </Card>
@@ -391,11 +394,11 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
                     <div className="flex items-center justify-end gap-4">
                         <Link href={`/tenders/${tender.id}`}>
                             <Button type="button" variant="outline">
-                                Cancel
+                                {t('btn.cancel')}
                             </Button>
                         </Link>
                         <Button type="submit" disabled={form.processing}>
-                            {form.processing ? 'Saving...' : 'Save Changes'}
+                            {form.processing ? t('btn.saving') : t('btn.save_changes')}
                         </Button>
                     </div>
                 </form>

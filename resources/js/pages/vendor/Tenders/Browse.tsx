@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 
 type PaginatedData<T> = {
     data: T[];
@@ -48,6 +49,7 @@ function deadlineLabel(deadline: string): { text: string; className: string } {
 }
 
 export default function Browse({ tenders, filters }: Props) {
+    const { t } = useTranslation();
     const [search, setSearch] = useState(filters.search ?? '');
 
     function handleSearch(e: FormEvent) {
@@ -60,28 +62,28 @@ export default function Browse({ tenders, filters }: Props) {
             <Head title="Browse Tenders" />
 
             <div className="space-y-6">
-                <Heading title="Browse Tenders" />
+                <Heading title={t('pages.vendor.browse_tenders')} />
 
                 <form onSubmit={handleSearch} className="flex items-center gap-3 max-w-lg">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="text"
-                            placeholder="Search tenders..."
+                            placeholder={t('tender.search_placeholder')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-10"
                         />
                     </div>
                     <Button type="submit" variant="secondary">
-                        Search
+                        {t('btn.search')}
                     </Button>
                 </form>
 
                 {tenders.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-12 text-center text-muted-foreground">
-                            No tenders found matching your criteria.
+                            {t('empty.no_tenders_found')}
                         </CardContent>
                     </Card>
                 ) : (
@@ -130,7 +132,7 @@ export default function Browse({ tenders, filters }: Props) {
                                             <div className="mt-auto pt-3">
                                                 <Button asChild variant="outline" className="w-full">
                                                     <Link href={`/vendor/tenders/${tender.id}`}>
-                                                        View Details
+                                                        {t('btn.view_details')}
                                                         <ArrowRight className="ml-2 h-4 w-4" />
                                                     </Link>
                                                 </Button>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Props = {
     vendor: {
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export default function Profile({ vendor }: Props) {
+    const { t } = useTranslation();
     const form = useForm({
         company_name: vendor.company_name,
         company_name_ar: vendor.company_name_ar ?? '',
@@ -51,18 +53,18 @@ export default function Profile({ vendor }: Props) {
             <Head title="Company Profile" />
 
             <div className="space-y-6">
-                <Heading title="Company Profile" description="Update your company information" />
+                <Heading title={t('pages.vendor.company_profile')} description={t('vendor.update_company_info')} />
 
                 <form onSubmit={handleSubmit}>
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* Company Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Company Information</CardTitle>
+                                <CardTitle>{t('vendor.company_information')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="company_name">Company Name</Label>
+                                    <Label htmlFor="company_name">{t('form.company_name')}</Label>
                                     <Input
                                         id="company_name"
                                         value={form.data.company_name}
@@ -74,7 +76,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="company_name_ar">Company Name (Arabic)</Label>
+                                    <Label htmlFor="company_name_ar">{t('form.company_name_ar')}</Label>
                                     <Input
                                         id="company_name_ar"
                                         dir="rtl"
@@ -84,7 +86,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="trade_license_no">Trade License No</Label>
+                                    <Label htmlFor="trade_license_no">{t('form.trade_license_no')}</Label>
                                     <Input
                                         id="trade_license_no"
                                         value={form.data.trade_license_no}
@@ -96,7 +98,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="website">Website</Label>
+                                    <Label htmlFor="website">{t('form.website')}</Label>
                                     <Input
                                         id="website"
                                         type="url"
@@ -106,7 +108,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="address">Address</Label>
+                                    <Label htmlFor="address">{t('form.address')}</Label>
                                     <Input
                                         id="address"
                                         value={form.data.address}
@@ -119,7 +121,7 @@ export default function Profile({ vendor }: Props) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="city">City</Label>
+                                        <Label htmlFor="city">{t('form.city')}</Label>
                                         <Input
                                             id="city"
                                             value={form.data.city}
@@ -130,7 +132,7 @@ export default function Profile({ vendor }: Props) {
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="country">Country</Label>
+                                        <Label htmlFor="country">{t('form.country')}</Label>
                                         <Input
                                             id="country"
                                             value={form.data.country}
@@ -147,11 +149,11 @@ export default function Profile({ vendor }: Props) {
                         {/* Contact Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Contact Information</CardTitle>
+                                <CardTitle>{t('vendor.contact_information')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="contact_person">Contact Person</Label>
+                                    <Label htmlFor="contact_person">{t('form.contact_person')}</Label>
                                     <Input
                                         id="contact_person"
                                         value={form.data.contact_person}
@@ -163,7 +165,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
+                                    <Label htmlFor="email">{t('form.email')}</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -176,7 +178,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Phone</Label>
+                                    <Label htmlFor="phone">{t('form.phone')}</Label>
                                     <Input
                                         id="phone"
                                         type="tel"
@@ -189,7 +191,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="whatsapp_number">WhatsApp Number</Label>
+                                    <Label htmlFor="whatsapp_number">{t('form.whatsapp_number')}</Label>
                                     <Input
                                         id="whatsapp_number"
                                         type="tel"
@@ -199,7 +201,7 @@ export default function Profile({ vendor }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="language_pref">Language Preference</Label>
+                                    <Label htmlFor="language_pref">{t('form.language_preference')}</Label>
                                     <Select
                                         value={form.data.language_pref}
                                         onValueChange={(value) => form.setData('language_pref', value)}
@@ -208,8 +210,8 @@ export default function Profile({ vendor }: Props) {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="en">English</SelectItem>
-                                            <SelectItem value="ar">Arabic</SelectItem>
+                                            <SelectItem value="en">{t('form.english')}</SelectItem>
+                                            <SelectItem value="ar">{t('form.arabic')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -220,7 +222,7 @@ export default function Profile({ vendor }: Props) {
                     <div className="mt-6 flex justify-end">
                         <Button type="submit" disabled={form.processing}>
                             <Save className="mr-2 h-4 w-4" />
-                            {form.processing ? 'Saving...' : 'Save Changes'}
+                            {form.processing ? t('btn.saving') : t('btn.save_changes')}
                         </Button>
                     </div>
                 </form>

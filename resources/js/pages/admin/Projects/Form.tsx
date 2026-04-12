@@ -2,6 +2,7 @@ import { Head, useForm, router } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import { Trash2, UserPlus } from 'lucide-react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,14 +40,15 @@ type Props = {
     availableUsers: Array<{ id: string; name: string; email: string }>;
 };
 
-const PROJECT_ROLES = [
-    { value: 'manager', label: 'Manager' },
-    { value: 'engineer', label: 'Engineer' },
-    { value: 'evaluator', label: 'Evaluator' },
-    { value: 'viewer', label: 'Viewer' },
-];
-
 export default function Form({ project, assignedUsers, availableUsers }: Props) {
+    const { t } = useTranslation();
+
+    const PROJECT_ROLES = [
+        { value: 'manager', label: t('form.role_manager') },
+        { value: 'engineer', label: t('form.role_engineer') },
+        { value: 'evaluator', label: t('form.role_evaluator') },
+        { value: 'viewer', label: t('form.role_viewer') },
+    ];
     const form = useForm({
         name: project.name,
         name_ar: project.name_ar ?? '',
@@ -106,7 +108,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
             <Head title={`Edit Project - ${project.name}`} />
 
             <Heading
-                title="Edit Project"
+                title={t('pages.admin.edit_project')}
                 description={`${project.code} - ${project.name}`}
             />
 
@@ -114,13 +116,13 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                 {/* Section 1: Project Details */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Project Details</CardTitle>
+                        <CardTitle>{t('pages.admin.project_details')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submitProject} className="space-y-4">
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Name</Label>
+                                    <Label htmlFor="name">{t('form.name')}</Label>
                                     <Input
                                         id="name"
                                         value={form.data.name}
@@ -132,7 +134,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="name_ar">Name (Arabic)</Label>
+                                    <Label htmlFor="name_ar">{t('form.name_arabic')}</Label>
                                     <Input
                                         id="name_ar"
                                         dir="rtl"
@@ -147,7 +149,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="code">Code</Label>
+                                    <Label htmlFor="code">{t('form.code')}</Label>
                                     <Input
                                         id="code"
                                         value={form.data.code}
@@ -159,19 +161,19 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="status">Status</Label>
+                                    <Label htmlFor="status">{t('form.status')}</Label>
                                     <Select
                                         value={form.data.status}
                                         onValueChange={(value) => form.setData('status', value)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select status" />
+                                            <SelectValue placeholder={t('form.select_status')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="on_hold">On Hold</SelectItem>
-                                            <SelectItem value="completed">Completed</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                                            <SelectItem value="active">{t('status.active')}</SelectItem>
+                                            <SelectItem value="on_hold">{t('status.on_hold')}</SelectItem>
+                                            <SelectItem value="completed">{t('status.completed')}</SelectItem>
+                                            <SelectItem value="cancelled">{t('status.cancelled')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {form.errors.status && (
@@ -181,7 +183,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">{t('form.description')}</Label>
                                 <Input
                                     id="description"
                                     value={form.data.description}
@@ -194,7 +196,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="location">Location</Label>
+                                    <Label htmlFor="location">{t('form.location')}</Label>
                                     <Input
                                         id="location"
                                         value={form.data.location}
@@ -206,7 +208,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="client_name">Client Name</Label>
+                                    <Label htmlFor="client_name">{t('form.client_name')}</Label>
                                     <Input
                                         id="client_name"
                                         value={form.data.client_name}
@@ -220,7 +222,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="start_date">Start Date</Label>
+                                    <Label htmlFor="start_date">{t('form.start_date')}</Label>
                                     <Input
                                         id="start_date"
                                         type="date"
@@ -233,7 +235,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="end_date">End Date</Label>
+                                    <Label htmlFor="end_date">{t('form.end_date')}</Label>
                                     <Input
                                         id="end_date"
                                         type="date"
@@ -248,7 +250,7 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
 
                             <div className="flex justify-end pt-4">
                                 <Button type="submit" disabled={form.processing}>
-                                    Update Project
+                                    {t('btn.update_project')}
                                 </Button>
                             </div>
                         </form>
@@ -258,22 +260,22 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                 {/* Section 2: User Assignments */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Team Members</CardTitle>
+                        <CardTitle>{t('pages.admin.team_members')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {/* Add user row */}
                         <div className="mb-6 flex items-end gap-4">
                             <div className="flex-1 space-y-2">
-                                <Label>User</Label>
+                                <Label>{t('form.user')}</Label>
                                 <SearchableSelect
                                     options={userOptions}
                                     value={newUserId}
                                     onChange={setNewUserId}
-                                    placeholder="Select a user..."
+                                    placeholder={t('form.select_user')}
                                 />
                             </div>
                             <div className="w-40 space-y-2">
-                                <Label>Role</Label>
+                                <Label>{t('form.role')}</Label>
                                 <Select value={newUserRole} onValueChange={setNewUserRole}>
                                     <SelectTrigger>
                                         <SelectValue />
@@ -289,14 +291,14 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                             </div>
                             <Button type="button" onClick={assignUser} disabled={!newUserId}>
                                 <UserPlus className="mr-2 h-4 w-4" />
-                                Add
+                                {t('btn.add')}
                             </Button>
                         </div>
 
                         {/* Assigned users list */}
                         {assignedUsers.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
-                                No users assigned to this project.
+                                {t('empty.no_users_assigned')}
                             </p>
                         ) : (
                             <div className="space-y-3">

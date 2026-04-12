@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Category = {
     id: string;
@@ -19,15 +20,17 @@ type Props = {
     categories: Category[];
 };
 
-const STEPS = [
-    { number: 1, title: 'Company Info' },
-    { number: 2, title: 'Contact Person' },
-    { number: 3, title: 'Categories' },
-    { number: 4, title: 'Review' },
-    { number: 5, title: 'Submit' },
+const STEP_KEYS = [
+    { number: 1, key: 'auth.step_company_info' },
+    { number: 2, key: 'auth.step_contact_person' },
+    { number: 3, key: 'auth.step_categories' },
+    { number: 4, key: 'auth.step_review' },
+    { number: 5, key: 'auth.step_submit' },
 ];
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
+    const { t } = useTranslation();
+    const STEPS = STEP_KEYS.map((s) => ({ number: s.number, title: t(s.key) }));
     return (
         <div className="flex items-center justify-center gap-2 mb-8">
             {STEPS.map((step, index) => (
@@ -124,6 +127,7 @@ function CategoryTree({
 }
 
 export default function Register({ categories }: Props) {
+    const { t } = useTranslation();
     const [currentStep, setCurrentStep] = useState(1);
 
     const form = useForm({
@@ -194,8 +198,8 @@ export default function Register({ categories }: Props) {
             <div className="flex min-h-screen items-center justify-center bg-background p-4">
                 <div className="w-full max-w-2xl">
                     <div className="mb-6 text-center">
-                        <h1 className="text-2xl font-bold">Vendor Registration</h1>
-                        <p className="text-muted-foreground">Register your company on the MPC e-Tender platform</p>
+                        <h1 className="text-2xl font-bold">{t('auth.vendor_registration')}</h1>
+                        <p className="text-muted-foreground">{t('auth.registration_description')}</p>
                     </div>
 
                     <StepIndicator currentStep={currentStep} />
@@ -207,12 +211,12 @@ export default function Register({ categories }: Props) {
                                 {currentStep === 1 && (
                                     <div className="space-y-4">
                                         <CardHeader className="p-0 pb-4">
-                                            <CardTitle>Company Information</CardTitle>
-                                            <CardDescription>Enter your company details</CardDescription>
+                                            <CardTitle>{t('vendor.company_information')}</CardTitle>
+                                            <CardDescription>{t('auth.enter_company_details')}</CardDescription>
                                         </CardHeader>
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
-                                                <Label htmlFor="company_name">Company Name *</Label>
+                                                <Label htmlFor="company_name">{t('form.company_name')} *</Label>
                                                 <Input
                                                     id="company_name"
                                                     value={form.data.company_name}
@@ -223,7 +227,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="company_name_ar">Company Name (Arabic)</Label>
+                                                <Label htmlFor="company_name_ar">{t('form.company_name_ar')}</Label>
                                                 <Input
                                                     id="company_name_ar"
                                                     dir="rtl"
@@ -232,7 +236,7 @@ export default function Register({ categories }: Props) {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="trade_license_no">Trade License No *</Label>
+                                                <Label htmlFor="trade_license_no">{t('form.trade_license_no')} *</Label>
                                                 <Input
                                                     id="trade_license_no"
                                                     value={form.data.trade_license_no}
@@ -243,7 +247,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="website">Website</Label>
+                                                <Label htmlFor="website">{t('form.website')}</Label>
                                                 <Input
                                                     id="website"
                                                     type="url"
@@ -253,7 +257,7 @@ export default function Register({ categories }: Props) {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="address">Address *</Label>
+                                            <Label htmlFor="address">{t('form.address')} *</Label>
                                             <Input
                                                 id="address"
                                                 value={form.data.address}
@@ -265,7 +269,7 @@ export default function Register({ categories }: Props) {
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
-                                                <Label htmlFor="city">City *</Label>
+                                                <Label htmlFor="city">{t('form.city')} *</Label>
                                                 <Input
                                                     id="city"
                                                     value={form.data.city}
@@ -276,7 +280,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="country">Country *</Label>
+                                                <Label htmlFor="country">{t('form.country')} *</Label>
                                                 <Input
                                                     id="country"
                                                     value={form.data.country}
@@ -294,12 +298,12 @@ export default function Register({ categories }: Props) {
                                 {currentStep === 2 && (
                                     <div className="space-y-4">
                                         <CardHeader className="p-0 pb-4">
-                                            <CardTitle>Contact Person</CardTitle>
-                                            <CardDescription>Provide contact and login details</CardDescription>
+                                            <CardTitle>{t('vendor.contact_person')}</CardTitle>
+                                            <CardDescription>{t('auth.provide_contact_details')}</CardDescription>
                                         </CardHeader>
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div className="space-y-2">
-                                                <Label htmlFor="contact_person">Contact Person *</Label>
+                                                <Label htmlFor="contact_person">{t('form.contact_person')} *</Label>
                                                 <Input
                                                     id="contact_person"
                                                     value={form.data.contact_person}
@@ -310,7 +314,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="email">Email *</Label>
+                                                <Label htmlFor="email">{t('form.email')} *</Label>
                                                 <Input
                                                     id="email"
                                                     type="email"
@@ -322,7 +326,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="password">Password *</Label>
+                                                <Label htmlFor="password">{t('form.password')} *</Label>
                                                 <Input
                                                     id="password"
                                                     type="password"
@@ -334,7 +338,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="password_confirmation">Confirm Password *</Label>
+                                                <Label htmlFor="password_confirmation">{t('form.confirm_password')} *</Label>
                                                 <Input
                                                     id="password_confirmation"
                                                     type="password"
@@ -344,11 +348,11 @@ export default function Register({ categories }: Props) {
                                                 {form.data.password &&
                                                     form.data.password_confirmation &&
                                                     form.data.password !== form.data.password_confirmation && (
-                                                        <p className="text-sm text-destructive">Passwords do not match</p>
+                                                        <p className="text-sm text-destructive">{t('auth.passwords_do_not_match')}</p>
                                                     )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="phone">Phone *</Label>
+                                                <Label htmlFor="phone">{t('form.phone')} *</Label>
                                                 <Input
                                                     id="phone"
                                                     type="tel"
@@ -360,7 +364,7 @@ export default function Register({ categories }: Props) {
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="whatsapp_number">WhatsApp Number</Label>
+                                                <Label htmlFor="whatsapp_number">{t('form.whatsapp_number')}</Label>
                                                 <Input
                                                     id="whatsapp_number"
                                                     type="tel"
@@ -376,8 +380,8 @@ export default function Register({ categories }: Props) {
                                 {currentStep === 3 && (
                                     <div className="space-y-4">
                                         <CardHeader className="p-0 pb-4">
-                                            <CardTitle>Business Categories</CardTitle>
-                                            <CardDescription>Select the categories your company operates in</CardDescription>
+                                            <CardTitle>{t('pages.vendor.business_categories')}</CardTitle>
+                                            <CardDescription>{t('vendor.select_categories_description')}</CardDescription>
                                         </CardHeader>
                                         <CategoryTree
                                             categories={categories}
@@ -385,7 +389,7 @@ export default function Register({ categories }: Props) {
                                             onToggle={handleCategoryToggle}
                                         />
                                         {form.data.category_ids.length === 0 && (
-                                            <p className="text-sm text-muted-foreground">Please select at least one category</p>
+                                            <p className="text-sm text-muted-foreground">{t('auth.select_at_least_one_category')}</p>
                                         )}
                                     </div>
                                 )}
@@ -394,33 +398,33 @@ export default function Register({ categories }: Props) {
                                 {currentStep === 4 && (
                                     <div className="space-y-4">
                                         <CardHeader className="p-0 pb-4">
-                                            <CardTitle>Review Your Information</CardTitle>
-                                            <CardDescription>Please verify all details before submitting</CardDescription>
+                                            <CardTitle>{t('auth.review_your_information')}</CardTitle>
+                                            <CardDescription>{t('auth.verify_details_before_submitting')}</CardDescription>
                                         </CardHeader>
 
                                         <div className="space-y-4">
                                             <div className="rounded-lg border p-4">
-                                                <h3 className="mb-2 font-semibold">Company Information</h3>
+                                                <h3 className="mb-2 font-semibold">{t('vendor.company_information')}</h3>
                                                 <dl className="grid grid-cols-2 gap-2 text-sm">
-                                                    <dt className="text-muted-foreground">Company Name</dt>
+                                                    <dt className="text-muted-foreground">{t('form.company_name')}</dt>
                                                     <dd>{form.data.company_name}</dd>
                                                     {form.data.company_name_ar && (
                                                         <>
-                                                            <dt className="text-muted-foreground">Company Name (AR)</dt>
+                                                            <dt className="text-muted-foreground">{t('form.company_name_ar')}</dt>
                                                             <dd>{form.data.company_name_ar}</dd>
                                                         </>
                                                     )}
-                                                    <dt className="text-muted-foreground">Trade License</dt>
+                                                    <dt className="text-muted-foreground">{t('form.trade_license_no')}</dt>
                                                     <dd>{form.data.trade_license_no}</dd>
-                                                    <dt className="text-muted-foreground">Address</dt>
+                                                    <dt className="text-muted-foreground">{t('form.address')}</dt>
                                                     <dd>{form.data.address}</dd>
-                                                    <dt className="text-muted-foreground">City</dt>
+                                                    <dt className="text-muted-foreground">{t('form.city')}</dt>
                                                     <dd>{form.data.city}</dd>
-                                                    <dt className="text-muted-foreground">Country</dt>
+                                                    <dt className="text-muted-foreground">{t('form.country')}</dt>
                                                     <dd>{form.data.country}</dd>
                                                     {form.data.website && (
                                                         <>
-                                                            <dt className="text-muted-foreground">Website</dt>
+                                                            <dt className="text-muted-foreground">{t('form.website')}</dt>
                                                             <dd>{form.data.website}</dd>
                                                         </>
                                                     )}
@@ -428,17 +432,17 @@ export default function Register({ categories }: Props) {
                                             </div>
 
                                             <div className="rounded-lg border p-4">
-                                                <h3 className="mb-2 font-semibold">Contact Person</h3>
+                                                <h3 className="mb-2 font-semibold">{t('vendor.contact_person')}</h3>
                                                 <dl className="grid grid-cols-2 gap-2 text-sm">
-                                                    <dt className="text-muted-foreground">Name</dt>
+                                                    <dt className="text-muted-foreground">{t('form.name')}</dt>
                                                     <dd>{form.data.contact_person}</dd>
-                                                    <dt className="text-muted-foreground">Email</dt>
+                                                    <dt className="text-muted-foreground">{t('form.email')}</dt>
                                                     <dd>{form.data.email}</dd>
-                                                    <dt className="text-muted-foreground">Phone</dt>
+                                                    <dt className="text-muted-foreground">{t('form.phone')}</dt>
                                                     <dd>{form.data.phone}</dd>
                                                     {form.data.whatsapp_number && (
                                                         <>
-                                                            <dt className="text-muted-foreground">WhatsApp</dt>
+                                                            <dt className="text-muted-foreground">{t('form.whatsapp_number')}</dt>
                                                             <dd>{form.data.whatsapp_number}</dd>
                                                         </>
                                                     )}
@@ -446,9 +450,9 @@ export default function Register({ categories }: Props) {
                                             </div>
 
                                             <div className="rounded-lg border p-4">
-                                                <h3 className="mb-2 font-semibold">Selected Categories</h3>
+                                                <h3 className="mb-2 font-semibold">{t('auth.selected_categories')}</h3>
                                                 <p className="text-sm">
-                                                    {form.data.category_ids.length} categories selected
+                                                    {form.data.category_ids.length} {t('auth.categories_selected')}
                                                 </p>
                                             </div>
                                         </div>
@@ -459,16 +463,15 @@ export default function Register({ categories }: Props) {
                                 {currentStep === 5 && (
                                     <div className="space-y-4 text-center py-8">
                                         <CardHeader className="p-0 pb-4">
-                                            <CardTitle>Ready to Submit</CardTitle>
+                                            <CardTitle>{t('auth.ready_to_submit')}</CardTitle>
                                             <CardDescription>
-                                                Your registration will be reviewed by the MPC team. You will receive an email
-                                                notification once your account has been approved.
+                                                {t('auth.registration_review_message')}
                                             </CardDescription>
                                         </CardHeader>
 
                                         {form.errors && Object.keys(form.errors).length > 0 && (
                                             <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-                                                <p className="font-semibold">Please fix the following errors:</p>
+                                                <p className="font-semibold">{t('auth.fix_errors')}</p>
                                                 <ul className="mt-2 list-disc list-inside">
                                                     {Object.entries(form.errors).map(([key, message]) => (
                                                         <li key={key}>{message}</li>
@@ -485,7 +488,7 @@ export default function Register({ categories }: Props) {
                                         {currentStep > 1 && (
                                             <Button type="button" variant="outline" onClick={handlePrevious}>
                                                 <ChevronLeft className="mr-1 h-4 w-4" />
-                                                Previous
+                                                {t('btn.previous')}
                                             </Button>
                                         )}
                                     </div>
@@ -496,12 +499,12 @@ export default function Register({ categories }: Props) {
                                                 onClick={handleNext}
                                                 disabled={!validateStep(currentStep)}
                                             >
-                                                Next
+                                                {t('btn.next')}
                                                 <ChevronRight className="ml-1 h-4 w-4" />
                                             </Button>
                                         ) : (
                                             <Button type="submit" disabled={form.processing}>
-                                                {form.processing ? 'Submitting...' : 'Submit Registration'}
+                                                {form.processing ? t('btn.submitting') : t('btn.submit_registration')}
                                             </Button>
                                         )}
                                     </div>
@@ -511,9 +514,9 @@ export default function Register({ categories }: Props) {
                     </Card>
 
                     <p className="mt-4 text-center text-sm text-muted-foreground">
-                        Already have an account?{' '}
+                        {t('auth.already_have_account')}{' '}
                         <Link href="/vendor/login" className="text-primary underline">
-                            Sign in
+                            {t('auth.sign_in')}
                         </Link>
                     </p>
                 </div>

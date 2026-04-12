@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Search, Filter } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ type Props = {
 };
 
 export default function Index({ vendors, filters }: Props) {
+    const { t } = useTranslation();
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status || 'all');
 
@@ -70,7 +72,7 @@ export default function Index({ vendors, filters }: Props) {
     const columns = [
         {
             key: 'company_name',
-            label: 'Company Name',
+            label: t('table.company_name'),
             sortable: true,
             render: (value: string) => (
                 <span className="font-medium">{value}</span>
@@ -78,18 +80,18 @@ export default function Index({ vendors, filters }: Props) {
         },
         {
             key: 'email',
-            label: 'Email',
+            label: t('table.email'),
             sortable: true,
         },
         {
             key: 'prequalification_status',
-            label: 'Status',
+            label: t('table.status'),
             sortable: true,
             render: (value: string) => <StatusBadge status={value} />,
         },
         {
             key: 'categories',
-            label: 'Categories',
+            label: t('table.categories'),
             render: (_value: unknown, row: Vendor) =>
                 row.categories && row.categories.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
@@ -105,13 +107,13 @@ export default function Index({ vendors, filters }: Props) {
         },
         {
             key: 'city',
-            label: 'City',
+            label: t('table.city'),
             sortable: true,
             render: (value: string | null) => value ?? '--',
         },
         {
             key: 'created_at',
-            label: 'Registered',
+            label: t('table.registered'),
             sortable: true,
             render: (value: string) =>
                 new Date(value).toLocaleDateString('en-US', {
@@ -128,7 +130,7 @@ export default function Index({ vendors, filters }: Props) {
                     href={`/admin/vendors/${row.id}`}
                     className="text-sm font-medium text-primary hover:underline"
                 >
-                    View
+                    {t('btn.view')}
                 </Link>
             ),
         },
@@ -140,14 +142,14 @@ export default function Index({ vendors, filters }: Props) {
 
             <div className="space-y-6">
                 <Heading
-                    title="Vendors"
-                    description="Manage vendor registrations and prequalification status."
+                    title={t('pages.admin.vendors')}
+                    description={t('pages.admin.vendors_description')}
                 />
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                     <div className="flex-1">
                         <Input
-                            placeholder="Search by company name or email..."
+                            placeholder={t('form.search_vendors')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -157,20 +159,20 @@ export default function Index({ vendors, filters }: Props) {
 
                     <Select value={status} onValueChange={setStatus}>
                         <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="All Statuses" />
+                            <SelectValue placeholder={t('form.all_statuses')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="qualified">Qualified</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                            <SelectItem value="suspended">Suspended</SelectItem>
+                            <SelectItem value="all">{t('form.all_statuses')}</SelectItem>
+                            <SelectItem value="pending">{t('status.pending')}</SelectItem>
+                            <SelectItem value="qualified">{t('status.qualified')}</SelectItem>
+                            <SelectItem value="rejected">{t('status.rejected')}</SelectItem>
+                            <SelectItem value="suspended">{t('status.suspended')}</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Button onClick={handleFilter}>
                         <Search className="mr-2 h-4 w-4" />
-                        Search
+                        {t('btn.search')}
                     </Button>
                 </div>
 

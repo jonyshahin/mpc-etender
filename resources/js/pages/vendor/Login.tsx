@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LogIn } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 export default function Login() {
+    const { t } = useTranslation();
     const form = useForm({
         email: '',
         password: '',
@@ -26,8 +28,8 @@ export default function Login() {
                 <div className="w-full max-w-md">
                     <Card>
                         <CardHeader className="text-center">
-                            <CardTitle className="text-2xl">Vendor Portal</CardTitle>
-                            <CardDescription>Sign in to your vendor account</CardDescription>
+                            <CardTitle className="text-2xl">{t('auth.vendor_portal')}</CardTitle>
+                            <CardDescription>{t('auth.sign_in_description')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleSubmit} className="space-y-4">
@@ -40,7 +42,7 @@ export default function Login() {
                                 )}
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
+                                    <Label htmlFor="email">{t('form.email')}</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -55,7 +57,7 @@ export default function Login() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="password">{t('form.password')}</Label>
                                     <Input
                                         id="password"
                                         type="password"
@@ -75,20 +77,20 @@ export default function Login() {
                                         onCheckedChange={(checked) => form.setData('remember', checked === true)}
                                     />
                                     <Label htmlFor="remember" className="cursor-pointer text-sm">
-                                        Remember me
+                                        {t('auth.remember_me')}
                                     </Label>
                                 </div>
 
                                 <Button type="submit" className="w-full" disabled={form.processing}>
                                     <LogIn className="mr-2 h-4 w-4" />
-                                    {form.processing ? 'Signing in...' : 'Sign In'}
+                                    {form.processing ? t('auth.signing_in') : t('auth.sign_in')}
                                 </Button>
                             </form>
 
                             <p className="mt-4 text-center text-sm text-muted-foreground">
-                                Don&apos;t have an account?{' '}
+                                {t('auth.no_account')}{' '}
                                 <Link href="/vendor/register" className="text-primary underline">
-                                    Register here
+                                    {t('auth.register_here')}
                                 </Link>
                             </p>
                         </CardContent>

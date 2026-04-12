@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ type Props = {
 };
 
 export default function Index({ roles }: Props) {
+    const { t } = useTranslation();
     const [createOpen, setCreateOpen] = useState(false);
     const [editRole, setEditRole] = useState<Role | null>(null);
 
@@ -78,7 +80,7 @@ export default function Index({ roles }: Props) {
     const columns = [
         {
             key: 'name',
-            label: 'Name',
+            label: t('table.name'),
             render: (value: string) => (
                 <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-muted-foreground" />
@@ -86,27 +88,27 @@ export default function Index({ roles }: Props) {
                 </div>
             ),
         },
-        { key: 'slug', label: 'Slug' },
+        { key: 'slug', label: t('table.slug') },
         {
             key: 'description',
-            label: 'Description',
+            label: t('table.description'),
             render: (value: string | null) => (
                 <span className="text-muted-foreground">{value ?? '—'}</span>
             ),
         },
         {
             key: 'permissions_count',
-            label: 'Permissions',
+            label: t('table.permissions'),
             render: (value: number) => <Badge variant="secondary">{value}</Badge>,
         },
         {
             key: 'users_count',
-            label: 'Users',
+            label: t('table.users'),
             render: (value: number) => <Badge variant="outline">{value}</Badge>,
         },
         {
             key: 'is_system',
-            label: 'System',
+            label: t('table.system'),
             render: (value: boolean) => value ? <Lock className="h-4 w-4 text-amber-500" /> : null,
         },
     ];
@@ -117,10 +119,10 @@ export default function Index({ roles }: Props) {
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Roles" description="Manage user roles and their permissions." />
+                    <Heading title={t('pages.admin.roles')} description={t('pages.admin.roles_description')} />
                     <Button onClick={openCreate}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Create Role
+                        {t('btn.create_role')}
                     </Button>
                 </div>
 
@@ -130,7 +132,7 @@ export default function Index({ roles }: Props) {
                     actions={(role: Role) => (
                         <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" asChild>
-                                <Link href={`/admin/roles/${role.id}/permissions`}>Manage Permissions</Link>
+                                <Link href={`/admin/roles/${role.id}/permissions`}>{t('btn.manage_permissions')}</Link>
                             </Button>
                             {!role.is_system && (
                                 <Button variant="ghost" size="sm" onClick={() => openEdit(role)}>
@@ -146,12 +148,12 @@ export default function Index({ roles }: Props) {
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Create Role</DialogTitle>
-                        <DialogDescription>Add a new role to the system.</DialogDescription>
+                        <DialogTitle>{t('pages.admin.create_role')}</DialogTitle>
+                        <DialogDescription>{t('pages.admin.create_role_description')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitCreate} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="create-name">Name</Label>
+                            <Label htmlFor="create-name">{t('form.name')}</Label>
                             <Input
                                 id="create-name"
                                 value={createForm.data.name}
@@ -162,7 +164,7 @@ export default function Index({ roles }: Props) {
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="create-slug">Slug</Label>
+                            <Label htmlFor="create-slug">{t('form.slug')}</Label>
                             <Input
                                 id="create-slug"
                                 value={createForm.data.slug}
@@ -173,7 +175,7 @@ export default function Index({ roles }: Props) {
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="create-description">Description</Label>
+                            <Label htmlFor="create-description">{t('form.description')}</Label>
                             <Input
                                 id="create-description"
                                 value={createForm.data.description}
@@ -185,10 +187,10 @@ export default function Index({ roles }: Props) {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                                Cancel
+                                {t('btn.cancel')}
                             </Button>
                             <Button type="submit" disabled={createForm.processing}>
-                                Create
+                                {t('btn.create')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -199,12 +201,12 @@ export default function Index({ roles }: Props) {
             <Dialog open={!!editRole} onOpenChange={(open) => !open && setEditRole(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Role</DialogTitle>
-                        <DialogDescription>Update role details.</DialogDescription>
+                        <DialogTitle>{t('pages.admin.edit_role')}</DialogTitle>
+                        <DialogDescription>{t('pages.admin.edit_role_description')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitEdit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="edit-name">Name</Label>
+                            <Label htmlFor="edit-name">{t('form.name')}</Label>
                             <Input
                                 id="edit-name"
                                 value={editForm.data.name}
@@ -215,7 +217,7 @@ export default function Index({ roles }: Props) {
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-slug">Slug</Label>
+                            <Label htmlFor="edit-slug">{t('form.slug')}</Label>
                             <Input
                                 id="edit-slug"
                                 value={editForm.data.slug}
@@ -226,7 +228,7 @@ export default function Index({ roles }: Props) {
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-description">Description</Label>
+                            <Label htmlFor="edit-description">{t('form.description')}</Label>
                             <Input
                                 id="edit-description"
                                 value={editForm.data.description}
@@ -238,10 +240,10 @@ export default function Index({ roles }: Props) {
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setEditRole(null)}>
-                                Cancel
+                                {t('btn.cancel')}
                             </Button>
                             <Button type="submit" disabled={editForm.processing}>
-                                Save Changes
+                                {t('btn.save_changes')}
                             </Button>
                         </DialogFooter>
                     </form>

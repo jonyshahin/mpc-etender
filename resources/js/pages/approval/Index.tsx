@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,6 +77,7 @@ function getDaysUntilDeadline(deadline: string): number {
 }
 
 export default function Index({ approvals }: Props) {
+    const { t } = useTranslation();
     const items = approvals.data;
 
     return (
@@ -83,14 +85,14 @@ export default function Index({ approvals }: Props) {
             <Head title="Pending Approvals" />
 
             <div className="space-y-6">
-                <Heading title="Pending Approvals" />
+                <Heading title={t('pages.approvals.title')} />
 
                 {items.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <Clock className="text-muted-foreground mb-4 h-12 w-12" />
                             <p className="text-muted-foreground text-lg">
-                                No pending approvals at this time.
+                                {t('empty.no_pending_approvals')}
                             </p>
                         </CardContent>
                     </Card>
@@ -115,7 +117,7 @@ export default function Index({ approvals }: Props) {
                                                 </CardDescription>
                                             </div>
                                             <Badge variant={getLevelVariant(approval.approval_level)}>
-                                                Level {approval.approval_level}
+                                                {t('approval.level')} {approval.approval_level}
                                             </Badge>
                                         </div>
                                     </CardHeader>
@@ -127,7 +129,7 @@ export default function Index({ approvals }: Props) {
                                                     <User className="text-muted-foreground h-4 w-4 shrink-0" />
                                                     <span className="truncate">
                                                         <span className="text-muted-foreground">
-                                                            Recommended:{' '}
+                                                            {t('approval.recommended')}:{' '}
                                                         </span>
                                                         <span className="font-medium">
                                                             {vendorName}
@@ -140,7 +142,7 @@ export default function Index({ approvals }: Props) {
                                                 <DollarSign className="text-muted-foreground h-4 w-4 shrink-0" />
                                                 <span>
                                                     <span className="text-muted-foreground">
-                                                        Est. Value:{' '}
+                                                        {t('approval.est_value')}:{' '}
                                                     </span>
                                                     <span className="font-medium">
                                                         {formatCurrency(
@@ -154,7 +156,7 @@ export default function Index({ approvals }: Props) {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
                                                 <span className="text-muted-foreground">
-                                                    Requested:{' '}
+                                                    {t('approval.requested')}:{' '}
                                                     {new Date(
                                                         approval.requested_at,
                                                     ).toLocaleDateString()}
@@ -174,14 +176,14 @@ export default function Index({ approvals }: Props) {
                                                             : 'text-muted-foreground'
                                                     }
                                                 >
-                                                    Deadline:{' '}
+                                                    {t('approval.deadline')}:{' '}
                                                     {new Date(
                                                         approval.deadline,
                                                     ).toLocaleDateString()}
                                                     {isUrgent && daysLeft <= 0
-                                                        ? ' (Overdue)'
+                                                        ? ` (${t('approval.overdue')})`
                                                         : isUrgent
-                                                          ? ` (${daysLeft}d left)`
+                                                          ? ` (${daysLeft}${t('approval.days_left')})`
                                                           : ''}
                                                 </span>
                                             </div>
@@ -189,7 +191,7 @@ export default function Index({ approvals }: Props) {
 
                                         <Button asChild className="w-full">
                                             <Link href={`/approvals/${approval.id}`}>
-                                                Review
+                                                {t('btn.review')}
                                                 <ChevronRight className="ml-1 h-4 w-4" />
                                             </Link>
                                         </Button>

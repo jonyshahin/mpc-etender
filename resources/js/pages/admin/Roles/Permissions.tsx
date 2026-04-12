@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,6 +23,7 @@ type Props = {
 const MODULE_ORDER = ['vendors', 'tenders', 'bids', 'evaluations', 'reports', 'admin', 'approvals'];
 
 export default function Permissions({ role, permissions, rolePermissionIds }: Props) {
+    const { t } = useTranslation();
     const form = useForm({
         permission_ids: [...rolePermissionIds],
     });
@@ -76,17 +78,17 @@ export default function Permissions({ role, permissions, rolePermissionIds }: Pr
                         <Button variant="ghost" size="sm" asChild>
                             <Link href="/admin/roles">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back
+                                {t('btn.back')}
                             </Link>
                         </Button>
                         <Heading
-                            title={`Permissions for ${role.name}`}
-                            description={`Manage what the "${role.name}" role can access.`}
+                            title={`${t('pages.admin.permissions_for')} ${role.name}`}
+                            description={`${t('pages.admin.permissions_description', { role: role.name })}`}
                         />
                     </div>
                     <Button onClick={handleSubmit} disabled={form.processing}>
                         <Save className="mr-2 h-4 w-4" />
-                        Save Permissions
+                        {t('btn.save_permissions')}
                     </Button>
                 </div>
 

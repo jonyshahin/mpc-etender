@@ -12,6 +12,7 @@ import {
     CheckCircle2,
 } from 'lucide-react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -124,7 +125,7 @@ type Props = {
     canCancel: boolean;
 };
 
-const TABS = ['Overview', 'BOQ', 'Documents', 'Addenda', 'Clarifications', 'Evaluation'];
+const TABS = ['Overview', 'BOQ', 'Documents', 'Addenda', 'Clarifications', 'Evaluation'] as const;
 
 function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleString();
@@ -137,6 +138,7 @@ function formatFileSize(bytes: number) {
 }
 
 export default function Show({ tender, canEdit, canPublish, canCancel }: Props) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('Overview');
     const [showPublishConfirm, setShowPublishConfirm] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -280,18 +282,18 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         <StatusBadge status={tender.status} />
                         {canEdit && (
                             <Link href={`/tenders/${tender.id}/edit`}>
-                                <Button variant="outline">Edit</Button>
+                                <Button variant="outline">{t('btn.edit')}</Button>
                             </Link>
                         )}
                         {canPublish && (
-                            <Button onClick={() => setShowPublishConfirm(true)}>Publish</Button>
+                            <Button onClick={() => setShowPublishConfirm(true)}>{t('btn.publish')}</Button>
                         )}
                         {canCancel && (
                             <Button
                                 variant="destructive"
                                 onClick={() => setShowCancelDialog(true)}
                             >
-                                Cancel Tender
+                                {t('btn.cancel_tender')}
                             </Button>
                         )}
                     </div>
@@ -309,7 +311,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                     : 'border-transparent text-muted-foreground hover:text-foreground'
                             }`}
                         >
-                            {tab}
+                            {t(`tender.tab_${tab.toLowerCase()}`)}
                         </button>
                     ))}
                 </div>
@@ -320,31 +322,31 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         {/* Status Timeline */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-base">Timeline</CardTitle>
+                                <CardTitle className="text-base">{t('tender.timeline')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-center gap-4 text-sm">
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                        <span>Created: {formatDate(tender.created_at)}</span>
+                                        <span>{t('tender.created')}: {formatDate(tender.created_at)}</span>
                                     </div>
                                     {tender.publish_date && (
                                         <div className="flex items-center gap-2">
                                             <Send className="h-4 w-4 text-blue-500" />
                                             <span>
-                                                Published: {formatDate(tender.publish_date)}
+                                                {t('tender.published_on')}: {formatDate(tender.publish_date)}
                                             </span>
                                         </div>
                                     )}
                                     <div className="flex items-center gap-2">
                                         <Clock className="h-4 w-4 text-orange-500" />
                                         <span>
-                                            Deadline: {formatDate(tender.submission_deadline)}
+                                            {t('tender.deadline')}: {formatDate(tender.submission_deadline)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-purple-500" />
-                                        <span>Opening: {formatDate(tender.opening_date)}</span>
+                                        <span>{t('tender.opening')}: {formatDate(tender.opening_date)}</span>
                                     </div>
                                 </div>
                             </CardContent>
@@ -354,7 +356,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             <Card>
                                 <CardContent className="pt-6">
-                                    <div className="text-sm text-muted-foreground">Tender Type</div>
+                                    <div className="text-sm text-muted-foreground">{t('tender.tender_type')}</div>
                                     <div className="mt-1 text-lg font-semibold capitalize">
                                         {tender.tender_type.replace('_', ' ')}
                                     </div>
@@ -363,7 +365,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             <Card>
                                 <CardContent className="pt-6">
                                     <div className="text-sm text-muted-foreground">
-                                        Estimated Value
+                                        {t('tender.estimated_value')}
                                     </div>
                                     <div className="mt-1 text-lg font-semibold">
                                         {tender.estimated_value
@@ -374,7 +376,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             </Card>
                             <Card>
                                 <CardContent className="pt-6">
-                                    <div className="text-sm text-muted-foreground">Bids Received</div>
+                                    <div className="text-sm text-muted-foreground">{t('tender.bids_received')}</div>
                                     <div className="mt-1 text-lg font-semibold">
                                         {tender.bids_count}
                                     </div>
@@ -386,7 +388,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         {tender.description_en && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Description</CardTitle>
+                                    <CardTitle className="text-base">{t('tender.description')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm whitespace-pre-wrap">
@@ -404,20 +406,20 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         {/* Details */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-base">Details</CardTitle>
+                                <CardTitle className="text-base">{t('tender.details')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <dl className="grid gap-3 sm:grid-cols-2 text-sm">
                                     <div>
-                                        <dt className="text-muted-foreground">Two-Envelope</dt>
+                                        <dt className="text-muted-foreground">{t('tender.two_envelope')}</dt>
                                         <dd className="font-medium">
-                                            {tender.is_two_envelope ? 'Yes' : 'No'}
+                                            {tender.is_two_envelope ? t('common.yes') : t('common.no')}
                                         </dd>
                                     </div>
                                     {tender.is_two_envelope && tender.technical_pass_score && (
                                         <div>
                                             <dt className="text-muted-foreground">
-                                                Technical Pass Score
+                                                {t('tender.technical_pass_score')}
                                             </dt>
                                             <dd className="font-medium">
                                                 {tender.technical_pass_score}%
@@ -426,7 +428,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                     )}
                                     {tender.creator && (
                                         <div>
-                                            <dt className="text-muted-foreground">Created By</dt>
+                                            <dt className="text-muted-foreground">{t('tender.created_by')}</dt>
                                             <dd className="font-medium">{tender.creator.name}</dd>
                                         </div>
                                     )}
@@ -438,7 +440,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         {tender.categories && tender.categories.length > 0 && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Categories</CardTitle>
+                                    <CardTitle className="text-base">{t('tender.categories')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex flex-wrap gap-2">
@@ -460,7 +462,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                         <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
                                         <div>
                                             <p className="font-medium text-destructive">
-                                                Cancellation Reason
+                                                {t('tender.cancellation_reason')}
                                             </p>
                                             <p className="text-sm mt-1">
                                                 {tender.cancelled_reason}
@@ -495,16 +497,16 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                 <thead>
                                                     <tr className="border-b bg-muted/50">
                                                         <th className="px-3 py-2 text-left font-medium">
-                                                            Code
+                                                            {t('table.code')}
                                                         </th>
                                                         <th className="px-3 py-2 text-left font-medium">
-                                                            Description
+                                                            {t('table.description')}
                                                         </th>
                                                         <th className="px-3 py-2 text-left font-medium">
-                                                            Unit
+                                                            {t('table.unit')}
                                                         </th>
                                                         <th className="px-3 py-2 text-right font-medium">
-                                                            Quantity
+                                                            {t('table.quantity')}
                                                         </th>
                                                     </tr>
                                                 </thead>
@@ -535,7 +537,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                         </div>
                                     ) : (
                                         <p className="text-sm text-muted-foreground">
-                                            No items in this section.
+                                            {t('empty.no_items_in_section')}
                                         </p>
                                     )}
 
@@ -549,7 +551,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     className="flex gap-2 items-end"
                                                 >
                                                     <div className="space-y-1">
-                                                        <Label className="text-xs">Code</Label>
+                                                        <Label className="text-xs">{t('table.code')}</Label>
                                                         <Input
                                                             value={itemForm.data.item_code}
                                                             onChange={(e) =>
@@ -563,7 +565,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     </div>
                                                     <div className="flex-1 space-y-1">
                                                         <Label className="text-xs">
-                                                            Description
+                                                            {t('table.description')}
                                                         </Label>
                                                         <Input
                                                             value={itemForm.data.description_en}
@@ -577,7 +579,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                         />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <Label className="text-xs">Unit</Label>
+                                                        <Label className="text-xs">{t('table.unit')}</Label>
                                                         <Input
                                                             value={itemForm.data.unit}
                                                             onChange={(e) =>
@@ -590,7 +592,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                         />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <Label className="text-xs">Qty</Label>
+                                                        <Label className="text-xs">{t('table.qty')}</Label>
                                                         <Input
                                                             type="number"
                                                             value={itemForm.data.quantity}
@@ -608,7 +610,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                         size="sm"
                                                         disabled={itemForm.processing}
                                                     >
-                                                        Add
+                                                        {t('btn.add')}
                                                     </Button>
                                                     <Button
                                                         type="button"
@@ -618,7 +620,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                             setAddingItemToSection(null)
                                                         }
                                                     >
-                                                        Cancel
+                                                        {t('btn.cancel')}
                                                     </Button>
                                                 </form>
                                             ) : (
@@ -631,7 +633,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     }
                                                 >
                                                     <Plus className="mr-1 h-3 w-3" />
-                                                    Add Item
+                                                    {t('btn.add_item')}
                                                 </Button>
                                             )}
                                         </div>
@@ -642,19 +644,19 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
 
                         {(!tender.boq_sections || tender.boq_sections.length === 0) && (
                             <p className="text-center text-muted-foreground py-8">
-                                No BOQ sections defined yet.
+                                {t('empty.no_boq_sections')}
                             </p>
                         )}
 
                         {canEdit && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Add Section</CardTitle>
+                                    <CardTitle className="text-base">{t('tender.add_section')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <form onSubmit={handleAddSection} className="flex gap-4 items-end">
                                         <div className="flex-1 space-y-2">
-                                            <Label>Title (English)</Label>
+                                            <Label>{t('form.title_en')}</Label>
                                             <Input
                                                 value={sectionForm.data.title}
                                                 onChange={(e) =>
@@ -663,7 +665,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             />
                                         </div>
                                         <div className="flex-1 space-y-2">
-                                            <Label>Title (Arabic)</Label>
+                                            <Label>{t('form.title_ar')}</Label>
                                             <Input
                                                 value={sectionForm.data.title_ar}
                                                 onChange={(e) =>
@@ -676,7 +678,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             type="submit"
                                             disabled={sectionForm.processing}
                                         >
-                                            Add Section
+                                            {t('tender.add_section')}
                                         </Button>
                                     </form>
                                 </CardContent>
@@ -694,19 +696,19 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                     <thead>
                                         <tr className="border-b bg-muted/50">
                                             <th className="px-4 py-3 text-left font-medium">
-                                                Title
+                                                {t('table.title')}
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium">
-                                                Type
+                                                {t('table.type')}
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium">
-                                                Version
+                                                {t('table.version')}
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium">
-                                                Size
+                                                {t('table.size')}
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium">
-                                                Uploaded
+                                                {t('table.uploaded')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -736,14 +738,14 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             </div>
                         ) : (
                             <p className="text-center text-muted-foreground py-8">
-                                No documents uploaded yet.
+                                {t('empty.no_documents')}
                             </p>
                         )}
 
                         {canEdit && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Upload Document</CardTitle>
+                                    <CardTitle className="text-base">{t('tender.upload_document')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <form
@@ -751,7 +753,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                         className="flex gap-4 items-end"
                                     >
                                         <div className="flex-1 space-y-2">
-                                            <Label>Title</Label>
+                                            <Label>{t('form.title')}</Label>
                                             <Input
                                                 value={docForm.data.title}
                                                 onChange={(e) =>
@@ -760,7 +762,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             />
                                         </div>
                                         <div className="w-48 space-y-2">
-                                            <Label>Type</Label>
+                                            <Label>{t('form.type')}</Label>
                                             <Select
                                                 value={docForm.data.doc_type}
                                                 onValueChange={(value) =>
@@ -771,17 +773,17 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="specification">Specification</SelectItem>
-                                                    <SelectItem value="drawing">Drawing</SelectItem>
-                                                    <SelectItem value="contract_terms">Contract Terms</SelectItem>
-                                                    <SelectItem value="boq_template">BOQ Template</SelectItem>
-                                                    <SelectItem value="site_photo">Site Photo</SelectItem>
-                                                    <SelectItem value="other">Other</SelectItem>
+                                                    <SelectItem value="specification">{t('tender.doc_specification')}</SelectItem>
+                                                    <SelectItem value="drawing">{t('tender.doc_drawing')}</SelectItem>
+                                                    <SelectItem value="contract_terms">{t('tender.doc_contract_terms')}</SelectItem>
+                                                    <SelectItem value="boq_template">{t('tender.doc_boq_template')}</SelectItem>
+                                                    <SelectItem value="site_photo">{t('tender.doc_site_photo')}</SelectItem>
+                                                    <SelectItem value="other">{t('tender.doc_other')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                         <div className="flex-1 space-y-2">
-                                            <Label>File</Label>
+                                            <Label>{t('form.file')}</Label>
                                             <Input
                                                 type="file"
                                                 onChange={(e) =>
@@ -793,7 +795,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             />
                                         </div>
                                         <Button type="submit" disabled={docForm.processing}>
-                                            Upload
+                                            {t('btn.upload')}
                                         </Button>
                                     </form>
                                 </CardContent>
@@ -828,19 +830,19 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             ))
                         ) : (
                             <p className="text-center text-muted-foreground py-8">
-                                No addenda issued yet.
+                                {t('empty.no_addenda')}
                             </p>
                         )}
 
                         {canEdit && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Issue Addendum</CardTitle>
+                                    <CardTitle className="text-base">{t('tender.issue_addendum')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <form onSubmit={handleAddAddendum} className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label>Subject</Label>
+                                            <Label>{t('form.subject')}</Label>
                                             <Input
                                                 value={addendumForm.data.subject}
                                                 onChange={(e) =>
@@ -852,7 +854,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Content</Label>
+                                            <Label>{t('form.content')}</Label>
                                             <textarea
                                                 className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                 value={addendumForm.data.content_en}
@@ -877,12 +879,12 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     }
                                                 />
                                                 <Label htmlFor="extends_deadline">
-                                                    Extend deadline
+                                                    {t('tender.extend_deadline')}
                                                 </Label>
                                             </div>
                                             {addendumForm.data.extends_deadline && (
                                                 <div className="space-y-1">
-                                                    <Label>New Deadline</Label>
+                                                    <Label>{t('form.new_deadline')}</Label>
                                                     <Input
                                                         type="datetime-local"
                                                         value={addendumForm.data.new_deadline}
@@ -900,7 +902,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             type="submit"
                                             disabled={addendumForm.processing}
                                         >
-                                            Issue Addendum
+                                            {t('tender.issue_addendum')}
                                         </Button>
                                     </form>
                                 </CardContent>
@@ -920,7 +922,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             <div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm font-medium">
-                                                        Question
+                                                        {t('tender.question')}
                                                     </span>
                                                     <div className="flex items-center gap-2">
                                                         {c.asked_by && (
@@ -936,14 +938,14 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                                 variant="secondary"
                                                                 className="text-xs"
                                                             >
-                                                                Published
+                                                                {t('status.published')}
                                                             </Badge>
                                                         ) : (
                                                             <Badge
                                                                 variant="outline"
                                                                 className="text-xs"
                                                             >
-                                                                Unpublished
+                                                                {t('status.unpublished')}
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -954,7 +956,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             {c.answer ? (
                                                 <div className="border-l-2 border-primary pl-4">
                                                     <span className="text-sm font-medium">
-                                                        Answer
+                                                        {t('tender.answer')}
                                                     </span>
                                                     {c.answered_at && (
                                                         <span className="text-xs text-muted-foreground ml-2">
@@ -981,7 +983,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                                         e.target.value,
                                                                     )
                                                                 }
-                                                                placeholder="Type your answer..."
+                                                                placeholder={t('tender.type_answer_placeholder')}
                                                             />
                                                             <div className="flex gap-2">
                                                                 <Button
@@ -991,7 +993,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                                         answerForm.processing
                                                                     }
                                                                 >
-                                                                    Submit Answer
+                                                                    {t('btn.submit_answer')}
                                                                 </Button>
                                                                 <Button
                                                                     type="button"
@@ -1001,7 +1003,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                                         setAnsweringId(null)
                                                                     }
                                                                 >
-                                                                    Cancel
+                                                                    {t('btn.cancel')}
                                                                 </Button>
                                                             </div>
                                                         </form>
@@ -1011,7 +1013,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                             size="sm"
                                                             onClick={() => setAnsweringId(c.id)}
                                                         >
-                                                            Answer
+                                                            {t('tender.answer')}
                                                         </Button>
                                                     )}
                                                 </>
@@ -1026,7 +1028,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     }
                                                 >
                                                     <Eye className="mr-1 h-3 w-3" />
-                                                    Publish
+                                                    {t('btn.publish')}
                                                 </Button>
                                             )}
                                         </div>
@@ -1035,7 +1037,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             ))
                         ) : (
                             <p className="text-center text-muted-foreground py-8">
-                                No clarification requests yet.
+                                {t('empty.no_clarifications')}
                             </p>
                         )}
                     </div>
@@ -1058,9 +1060,9 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                 <Card key={envelope}>
                                     <CardHeader>
                                         <CardTitle className="text-base capitalize">
-                                            {envelope} Criteria
+                                            {t(`tender.${envelope}_criteria`)}
                                             <span className="text-sm font-normal text-muted-foreground ml-2">
-                                                (Total weight: {totalWeight}%)
+                                                ({t('tender.total_weight')}: {totalWeight}%)
                                             </span>
                                         </CardTitle>
                                     </CardHeader>
@@ -1071,13 +1073,13 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     <thead>
                                                         <tr className="border-b bg-muted/50">
                                                             <th className="px-4 py-2 text-left font-medium">
-                                                                Name
+                                                                {t('table.name')}
                                                             </th>
                                                             <th className="px-4 py-2 text-right font-medium">
-                                                                Weight (%)
+                                                                {t('table.weight_pct')}
                                                             </th>
                                                             <th className="px-4 py-2 text-right font-medium">
-                                                                Max Score
+                                                                {t('table.max_score')}
                                                             </th>
                                                             {canEdit && (
                                                                 <th className="px-4 py-2 w-10"></th>
@@ -1121,7 +1123,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             </div>
                                         ) : (
                                             <p className="text-sm text-muted-foreground">
-                                                No {envelope} criteria defined.
+                                                {t('empty.no_criteria_defined', { envelope })}
                                             </p>
                                         )}
                                     </CardContent>
@@ -1132,7 +1134,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                         {canEdit && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Add Criterion</CardTitle>
+                                    <CardTitle className="text-base">{t('tender.add_criterion')}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <form
@@ -1140,7 +1142,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                         className="flex gap-4 items-end"
                                     >
                                         <div className="flex-1 space-y-2">
-                                            <Label>Name</Label>
+                                            <Label>{t('form.name')}</Label>
                                             <Input
                                                 value={criteriaForm.data.name_en}
                                                 onChange={(e) =>
@@ -1149,11 +1151,11 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                         e.target.value,
                                                     )
                                                 }
-                                                placeholder="Criterion name"
+                                                placeholder={t('tender.criterion_name_placeholder')}
                                             />
                                         </div>
                                         <div className="w-36 space-y-2">
-                                            <Label>Envelope</Label>
+                                            <Label>{t('form.envelope')}</Label>
                                             <Select
                                                 value={criteriaForm.data.envelope}
                                                 onValueChange={(value) =>
@@ -1164,13 +1166,13 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="technical">Technical</SelectItem>
-                                                    <SelectItem value="financial">Financial</SelectItem>
+                                                    <SelectItem value="technical">{t('tender.technical')}</SelectItem>
+                                                    <SelectItem value="financial">{t('tender.financial')}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                         <div className="w-28 space-y-2">
-                                            <Label>Weight %</Label>
+                                            <Label>{t('form.weight_pct')}</Label>
                                             <Input
                                                 type="number"
                                                 value={criteriaForm.data.weight_percentage}
@@ -1183,7 +1185,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             />
                                         </div>
                                         <div className="w-28 space-y-2">
-                                            <Label>Max Score</Label>
+                                            <Label>{t('form.max_score')}</Label>
                                             <Input
                                                 type="number"
                                                 value={criteriaForm.data.max_score}
@@ -1199,7 +1201,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             type="submit"
                                             disabled={criteriaForm.processing}
                                         >
-                                            Add
+                                            {t('btn.add')}
                                         </Button>
                                     </form>
                                 </CardContent>
@@ -1213,29 +1215,28 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
             <ConfirmDialog
                 open={showPublishConfirm}
                 onOpenChange={setShowPublishConfirm}
-                title="Publish Tender"
-                description="Are you sure you want to publish this tender? Once published, it will be visible to vendors and the submission deadline will be enforced."
+                title={t('confirm.publish_tender_title')}
+                description={t('confirm.publish_tender_description')}
                 onConfirm={handlePublish}
-                confirmLabel="Publish"
+                confirmLabel={t('btn.publish')}
             />
 
             {/* Cancel Dialog */}
             <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Cancel Tender</DialogTitle>
+                        <DialogTitle>{t('confirm.cancel_tender_title')}</DialogTitle>
                         <DialogDescription>
-                            Please provide a reason for cancelling this tender. This action cannot
-                            be undone.
+                            {t('confirm.cancel_tender_description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
-                        <Label>Reason</Label>
+                        <Label>{t('form.reason')}</Label>
                         <textarea
                             className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             value={cancelReason}
                             onChange={(e) => setCancelReason(e.target.value)}
-                            placeholder="Enter cancellation reason..."
+                            placeholder={t('tender.cancellation_reason_placeholder')}
                         />
                     </div>
                     <DialogFooter>
@@ -1243,14 +1244,14 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             variant="outline"
                             onClick={() => setShowCancelDialog(false)}
                         >
-                            Keep Tender
+                            {t('btn.keep_tender')}
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={handleCancel}
                             disabled={!cancelReason.trim()}
                         >
-                            Cancel Tender
+                            {t('btn.cancel_tender')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

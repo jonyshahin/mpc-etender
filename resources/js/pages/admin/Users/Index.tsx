@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -50,6 +51,7 @@ type Props = {
 };
 
 export default function Index({ users, roles, filters }: Props) {
+    const { t } = useTranslation();
     const [search, setSearch] = useState(filters.search ?? '');
     const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -77,26 +79,26 @@ export default function Index({ users, roles, filters }: Props) {
     const columns = [
         {
             key: 'name',
-            label: 'Name',
+            label: t('table.name'),
             sortable: true,
             render: (value: string) => <span className="font-medium">{value}</span>,
         },
-        { key: 'email', label: 'Email', sortable: true },
+        { key: 'email', label: t('table.email'), sortable: true },
         {
             key: 'role.name',
-            label: 'Role',
+            label: t('table.role'),
             render: (value: string) => <Badge variant="outline">{value ?? '—'}</Badge>,
         },
         {
             key: 'is_active',
-            label: 'Status',
+            label: t('table.status'),
             render: (value: boolean) => <StatusBadge status={value ? 'active' : 'inactive'} />,
         },
         {
             key: 'last_login_at',
-            label: 'Last Login',
+            label: t('table.last_login'),
             sortable: true,
-            render: (value: string | null) => value ? new Date(value).toLocaleDateString() : 'Never',
+            render: (value: string | null) => value ? new Date(value).toLocaleDateString() : t('table.never'),
         },
     ];
 
@@ -105,17 +107,17 @@ export default function Index({ users, roles, filters }: Props) {
             <Head title="Users" />
 
             <div className="flex items-center justify-between">
-                <Heading title="Users" description="Manage system users and their roles." />
+                <Heading title={t('pages.admin.users')} description={t('pages.admin.users_description')} />
                 <Button onClick={() => setShowCreateDialog(true)}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add User
+                    {t('btn.add_user')}
                 </Button>
             </div>
 
             <div className="mt-4 flex items-center gap-4">
                 <form onSubmit={handleSearch} className="flex-1">
                     <Input
-                        placeholder="Search users..."
+                        placeholder={t('form.search_users')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -125,10 +127,10 @@ export default function Index({ users, roles, filters }: Props) {
                     onValueChange={handleRoleFilter}
                 >
                     <SelectTrigger className="w-48">
-                        <SelectValue placeholder="All Roles" />
+                        <SelectValue placeholder={t('form.all_roles')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Roles</SelectItem>
+                        <SelectItem value="all">{t('form.all_roles')}</SelectItem>
                         {roles.map((role) => (
                             <SelectItem key={role.id} value={role.id}>
                                 {role.name}
@@ -146,7 +148,7 @@ export default function Index({ users, roles, filters }: Props) {
                     actions={(user: User) => (
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" size="sm" asChild>
-                                <Link href={`/admin/users/${user.id}/edit`}>Edit</Link>
+                                <Link href={`/admin/users/${user.id}/edit`}>{t('btn.edit')}</Link>
                             </Button>
                             <Button
                                 variant="ghost"
@@ -154,7 +156,7 @@ export default function Index({ users, roles, filters }: Props) {
                                 className="text-destructive"
                                 onClick={() => setDeleteUserId(user.id)}
                             >
-                                Delete
+                                {t('btn.delete')}
                             </Button>
                         </div>
                     )}
@@ -165,8 +167,8 @@ export default function Index({ users, roles, filters }: Props) {
                 open={deleteUserId !== null}
                 onOpenChange={(open: boolean) => !open && setDeleteUserId(null)}
                 onConfirm={handleDelete}
-                title="Delete User"
-                description="Are you sure you want to delete this user? This action cannot be undone."
+                title={t('pages.admin.delete_user')}
+                description={t('pages.admin.delete_user_confirm')}
             />
 
             {showCreateDialog && (

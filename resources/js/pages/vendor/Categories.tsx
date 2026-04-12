@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ChevronRight, ChevronDown, Save } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Category = {
     id: string;
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export default function Categories({ categories, selectedCategoryIds }: Props) {
+    const { t } = useTranslation();
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
     const form = useForm({
@@ -50,7 +52,7 @@ export default function Categories({ categories, selectedCategoryIds }: Props) {
             <Head title="Business Categories" />
 
             <div className="space-y-6">
-                <Heading title="Business Categories" description="Select the categories your company operates in" />
+                <Heading title={t('pages.vendor.business_categories')} description={t('vendor.select_categories_description')} />
 
                 <form onSubmit={handleSubmit}>
                     <Card>
@@ -125,7 +127,7 @@ export default function Categories({ categories, selectedCategoryIds }: Props) {
                     <div className="mt-6 flex justify-end">
                         <Button type="submit" disabled={form.processing}>
                             <Save className="mr-2 h-4 w-4" />
-                            {form.processing ? 'Saving...' : 'Save Categories'}
+                            {form.processing ? t('btn.saving') : t('btn.save_categories')}
                         </Button>
                     </div>
                 </form>

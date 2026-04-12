@@ -1,9 +1,11 @@
 import { Head } from '@inertiajs/react';
 import AppearanceTabs from '@/components/appearance-tabs';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { edit as editAppearance } from '@/routes/appearance';
 
 export default function Appearance() {
+    const { t } = useTranslation();
     return (
         <>
             <Head title="Appearance settings" />
@@ -13,8 +15,8 @@ export default function Appearance() {
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Appearance settings"
-                    description="Update your account's appearance settings"
+                    title={t('pages.admin.appearance_settings')}
+                    description={t('pages.admin.appearance_settings_description')}
                 />
                 <AppearanceTabs />
             </div>

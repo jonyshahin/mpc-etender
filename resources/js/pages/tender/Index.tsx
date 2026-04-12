@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Search, Eye } from 'lucide-react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -40,70 +41,72 @@ type Props = {
     };
 };
 
-const STATUS_TABS = [
-    { label: 'All', value: '' },
-    { label: 'Draft', value: 'draft' },
-    { label: 'Published', value: 'published' },
-    { label: 'Under Evaluation', value: 'under_evaluation' },
-    { label: 'Awarded', value: 'awarded' },
-];
-
-const columns = [
-    { key: 'reference_number', label: 'Reference', sortable: true },
-    { key: 'title_en', label: 'Title', sortable: true },
-    {
-        key: 'project',
-        label: 'Project',
-        sortable: false,
-        render: (_value: any, row: TenderRow) =>
-            row.project ? (
-                <span className="text-sm">
-                    <span className="font-medium">{row.project.code}</span>
-                    <span className="text-muted-foreground ml-1">— {row.project.name}</span>
-                </span>
-            ) : (
-                <span className="text-muted-foreground">—</span>
-            ),
-    },
-    {
-        key: 'status',
-        label: 'Status',
-        sortable: true,
-        render: (value: string) => <StatusBadge status={value} />,
-    },
-    {
-        key: 'submission_deadline',
-        label: 'Deadline',
-        sortable: true,
-        render: (value: string) => (
-            <span className="text-sm">{new Date(value).toLocaleDateString()}</span>
-        ),
-    },
-    {
-        key: 'bids_count',
-        label: 'Bids',
-        sortable: true,
-        render: (value: number) => (
-            <span className="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                {value}
-            </span>
-        ),
-    },
-    {
-        key: 'actions',
-        label: 'Actions',
-        render: (_value: any, row: TenderRow) => (
-            <Link href={`/tenders/${row.id}`}>
-                <Button variant="ghost" size="sm">
-                    <Eye className="mr-1 h-4 w-4" />
-                    View
-                </Button>
-            </Link>
-        ),
-    },
-];
-
 export default function Index({ tenders, filters }: Props) {
+    const { t } = useTranslation();
+
+    const STATUS_TABS = [
+        { label: t('btn.filter_all'), value: '' },
+        { label: t('status.draft'), value: 'draft' },
+        { label: t('status.published'), value: 'published' },
+        { label: t('status.under_evaluation'), value: 'under_evaluation' },
+        { label: t('status.awarded'), value: 'awarded' },
+    ];
+
+    const columns = [
+        { key: 'reference_number', label: t('table.reference'), sortable: true },
+        { key: 'title_en', label: t('table.title'), sortable: true },
+        {
+            key: 'project',
+            label: t('table.project'),
+            sortable: false,
+            render: (_value: any, row: TenderRow) =>
+                row.project ? (
+                    <span className="text-sm">
+                        <span className="font-medium">{row.project.code}</span>
+                        <span className="text-muted-foreground ml-1">— {row.project.name}</span>
+                    </span>
+                ) : (
+                    <span className="text-muted-foreground">—</span>
+                ),
+        },
+        {
+            key: 'status',
+            label: t('table.status'),
+            sortable: true,
+            render: (value: string) => <StatusBadge status={value} />,
+        },
+        {
+            key: 'submission_deadline',
+            label: t('table.deadline'),
+            sortable: true,
+            render: (value: string) => (
+                <span className="text-sm">{new Date(value).toLocaleDateString()}</span>
+            ),
+        },
+        {
+            key: 'bids_count',
+            label: t('table.bids'),
+            sortable: true,
+            render: (value: number) => (
+                <span className="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                    {value}
+                </span>
+            ),
+        },
+        {
+            key: 'actions',
+            label: t('table.actions'),
+            render: (_value: any, row: TenderRow) => (
+                <Link href={`/tenders/${row.id}`}>
+                    <Button variant="ghost" size="sm">
+                        <Eye className="mr-1 h-4 w-4" />
+                        {t('btn.view')}
+                    </Button>
+                </Link>
+            ),
+        },
+    ];
+
     const [search, setSearch] = useState(filters.search ?? '');
     const activeStatus = filters.status ?? '';
 
@@ -122,11 +125,11 @@ export default function Index({ tenders, filters }: Props) {
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Tenders" />
+                    <Heading title={t('pages.tenders.title')} />
                     <Link href="/tenders/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
-                            Create Tender
+                            {t('btn.create_tender')}
                         </Button>
                     </Link>
                 </div>
@@ -137,14 +140,14 @@ export default function Index({ tenders, filters }: Props) {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="search"
-                                placeholder="Search tenders..."
+                                placeholder={t('tender.search_placeholder')}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-9 w-64"
                             />
                         </div>
                         <Button type="submit" variant="secondary">
-                            Search
+                            {t('btn.search')}
                         </Button>
                     </form>
 

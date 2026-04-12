@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import Heading from '@/components/heading';
+import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,6 +41,7 @@ type Props = {
 };
 
 function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
+    const { t } = useTranslation();
     const isEdit = !!user;
 
     const form = useForm({
@@ -74,7 +76,7 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
     return (
         <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{t('form.name')}</Label>
                 <Input
                     id="name"
                     value={form.data.name}
@@ -86,7 +88,7 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('form.email')}</Label>
                 <Input
                     id="email"
                     type="email"
@@ -100,7 +102,7 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
 
             <div className="space-y-2">
                 <Label htmlFor="password">
-                    Password{isEdit && ' (leave blank to keep current)'}
+                    {t('form.password')}{isEdit && ` (${t('form.leave_blank_to_keep')})`}
                 </Label>
                 <Input
                     id="password"
@@ -114,7 +116,7 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t('form.phone')}</Label>
                 <Input
                     id="phone"
                     value={form.data.phone}
@@ -126,13 +128,13 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="role_id">Role</Label>
+                <Label htmlFor="role_id">{t('form.role')}</Label>
                 <Select
                     value={form.data.role_id}
                     onValueChange={(value) => form.setData('role_id', value)}
                 >
                     <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder={t('form.select_role')} />
                     </SelectTrigger>
                     <SelectContent>
                         {roles.map((role) => (
@@ -148,17 +150,17 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="language_pref">Language</Label>
+                <Label htmlFor="language_pref">{t('form.language')}</Label>
                 <Select
                     value={form.data.language_pref}
                     onValueChange={(value) => form.setData('language_pref', value)}
                 >
                     <SelectTrigger>
-                        <SelectValue placeholder="Select language" />
+                        <SelectValue placeholder={t('form.select_language')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="ar">Arabic</SelectItem>
+                        <SelectItem value="en">{t('form.english')}</SelectItem>
+                        <SelectItem value="ar">{t('form.arabic')}</SelectItem>
                     </SelectContent>
                 </Select>
                 {form.errors.language_pref && (
@@ -175,18 +177,18 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
                             form.setData('is_active', checked === true)
                         }
                     />
-                    <Label htmlFor="is_active">Active</Label>
+                    <Label htmlFor="is_active">{t('form.active')}</Label>
                 </div>
             )}
 
             {projectOptions.length > 0 && (
                 <div className="space-y-2">
-                    <Label>Assigned Projects</Label>
+                    <Label>{t('form.assigned_projects')}</Label>
                     <MultiSelect
                         options={projectOptions}
                         value={form.data.project_ids}
                         onChange={(value: string[]) => form.setData('project_ids', value)}
-                        placeholder="Select projects..."
+                        placeholder={t('form.select_projects')}
                     />
                     {form.errors.project_ids && (
                         <p className="text-sm text-destructive">{form.errors.project_ids}</p>
@@ -197,11 +199,11 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
             <div className="flex justify-end gap-2 pt-4">
                 {onClose && (
                     <Button type="button" variant="outline" onClick={onClose}>
-                        Cancel
+                        {t('btn.cancel')}
                     </Button>
                 )}
                 <Button type="submit" disabled={form.processing}>
-                    {isEdit ? 'Update User' : 'Create User'}
+                    {isEdit ? t('btn.update_user') : t('btn.create_user')}
                 </Button>
             </div>
         </form>
@@ -222,11 +224,12 @@ export function UserFormDialog({
     open: boolean;
     onClose: () => void;
 }) {
+    const { t } = useTranslation();
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Create User</DialogTitle>
+                    <DialogTitle>{t('pages.admin.create_user')}</DialogTitle>
                 </DialogHeader>
                 <UserForm roles={roles} projects={projects} onClose={onClose} />
             </DialogContent>
@@ -238,15 +241,16 @@ export function UserFormDialog({
  * Full-page edit mode (rendered by Inertia as admin/Users/Form).
  */
 export default function Form(props: Props) {
+    const { t } = useTranslation();
     return (
         <>
             <Head title={props.user ? 'Edit User' : 'Create User'} />
             <Heading
-                title={props.user ? 'Edit User' : 'Create User'}
+                title={props.user ? t('pages.admin.edit_user') : t('pages.admin.create_user')}
                 description={
                     props.user
-                        ? `Editing ${props.user.name}`
-                        : 'Create a new user account.'
+                        ? `${t('pages.admin.editing')} ${props.user.name}`
+                        : t('pages.admin.create_user_description')
                 }
             />
             <div className="mt-6 max-w-2xl">

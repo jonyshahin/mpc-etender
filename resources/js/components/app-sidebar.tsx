@@ -17,6 +17,7 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -31,55 +32,37 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Tenders',
-        href: '/tenders',
-        icon: FileText,
-    },
-    {
-        title: 'Approvals',
-        href: '/approvals',
-        icon: CheckSquare,
-    },
-    {
-        title: 'Portfolio',
-        href: '/dashboard/portfolio',
-        icon: BarChart3,
-    },
-    {
-        title: 'Notifications',
-        href: '/notifications',
-        icon: Bell,
-    },
-];
-
-const adminNavItems: NavItem[] = [
-    { title: 'Admin Dashboard', href: '/admin/dashboard', icon: ClipboardList },
-    { title: 'Users', href: '/admin/users', icon: Users },
-    { title: 'Projects', href: '/admin/projects', icon: FolderKanban },
-    { title: 'Vendors', href: '/admin/vendors', icon: Building2 },
-    { title: 'Roles', href: '/admin/roles', icon: Shield },
-    { title: 'Categories', href: '/admin/categories', icon: Tags },
-    { title: 'Settings', href: '/admin/settings', icon: Settings },
-    { title: 'Audit Logs', href: '/admin/audit-logs', icon: ScrollText },
-];
 
 export function AppSidebar() {
     const page = usePage<{ dir?: string }>();
     const { auth } = page.props;
     const { isCurrentUrl } = useCurrentUrl();
+    const { t } = useTranslation();
     const roleSlug = (auth as any).user?.role_slug;
     const isAdmin = roleSlug === 'super_admin' || roleSlug === 'admin';
     const side = page.props.dir === 'rtl' ? 'right' : 'left';
+
+    const mainNavItems: NavItem[] = [
+        { title: t('nav.dashboard'), href: dashboard(), icon: LayoutGrid },
+        { title: t('nav.tenders'), href: '/tenders', icon: FileText },
+        { title: t('nav.approvals'), href: '/approvals', icon: CheckSquare },
+        { title: t('nav.portfolio'), href: '/dashboard/portfolio', icon: BarChart3 },
+        { title: t('nav.notifications'), href: '/notifications', icon: Bell },
+    ];
+
+    const adminNavItems: NavItem[] = [
+        { title: t('nav.admin_dashboard'), href: '/admin/dashboard', icon: ClipboardList },
+        { title: t('nav.users'), href: '/admin/users', icon: Users },
+        { title: t('nav.projects'), href: '/admin/projects', icon: FolderKanban },
+        { title: t('nav.vendors'), href: '/admin/vendors', icon: Building2 },
+        { title: t('nav.roles'), href: '/admin/roles', icon: Shield },
+        { title: t('nav.categories'), href: '/admin/categories', icon: Tags },
+        { title: t('nav.settings'), href: '/admin/settings', icon: Settings },
+        { title: t('nav.audit_logs'), href: '/admin/audit-logs', icon: ScrollText },
+    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset" side={side}>
@@ -100,10 +83,10 @@ export function AppSidebar() {
 
                 {isAdmin && (
                     <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>Administration</SidebarGroupLabel>
+                        <SidebarGroupLabel>{t('nav.admin')}</SidebarGroupLabel>
                         <SidebarMenu>
                             {adminNavItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
+                                <SidebarMenuItem key={String(item.href)}>
                                     <SidebarMenuButton
                                         asChild
                                         isActive={isCurrentUrl(item.href)}
@@ -122,7 +105,7 @@ export function AppSidebar() {
 
                 {roleSlug === 'super_admin' && (
                     <SidebarGroup className="px-2 py-0">
-                        <SidebarGroupLabel>Dev Tools</SidebarGroupLabel>
+                        <SidebarGroupLabel>{t('nav.dev_tools')}</SidebarGroupLabel>
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild tooltip={{ children: 'Horizon' }}>
@@ -146,6 +129,9 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
+                <SidebarMenu>
+                    <LanguageSwitcher />
+                </SidebarMenu>
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
