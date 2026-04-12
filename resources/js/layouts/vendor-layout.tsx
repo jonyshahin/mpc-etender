@@ -16,7 +16,9 @@ export default function VendorLayout({
             <VendorSidebar />
             <AppContent variant="sidebar" className="overflow-x-hidden">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                {children}
+                <div className="flex flex-1 flex-col gap-4 px-6 py-6">
+                    {children}
+                </div>
             </AppContent>
         </AppShell>
     );
