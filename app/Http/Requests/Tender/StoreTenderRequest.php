@@ -48,6 +48,11 @@ class StoreTenderRequest extends FormRequest
             'evaluation_criteria.*.weight_percentage' => ['required_with:evaluation_criteria', 'numeric', 'min:0', 'max:100'],
             'evaluation_criteria.*.max_score' => ['required_with:evaluation_criteria', 'numeric', 'min:0'],
             'evaluation_criteria.*.sort_order' => ['nullable', 'integer'],
+
+            'documents' => ['nullable', 'array'],
+            'documents.*.file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xlsx,jpg,jpeg,png,zip'],
+            'documents.*.title' => ['required', 'string', 'max:255'],
+            'documents.*.doc_type' => ['required', 'in:specification,drawing,contract_terms,boq_template,site_photo,other'],
         ];
     }
 }

@@ -10,6 +10,7 @@ use App\Models\EvaluationCriterion;
 use App\Models\Project;
 use App\Models\Tender;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -18,16 +19,20 @@ use Illuminate\Support\Facades\DB;
  */
 class TenderService
 {
+    public function __construct(
+        private FileUploadService $fileUploadService,
+    ) {}
+
     /**
      * Create a new tender in draft status.
      */
-    public function create(array $data, User $creator): Tender
+    public function create(array $data, User $creator, array $documents = []): Tender
     {
-        return DB::transaction(function () use ($data, $creator) {
+        return DB::transaction(function () use ($data, $creator, $documents) {
             $categoryIds = $data['category_ids'] ?? [];
             $boqSections = $data['boq_sections'] ?? [];
             $criteria = $data['evaluation_criteria'] ?? [];
-            unset($data['category_ids'], $data['boq_sections'], $data['evaluation_criteria']);
+            unset($data['category_ids'], $data['boq_sections'], $data['evaluation_criteria'], $data['documents']);
 
             $data['created_by'] = $creator->id;
             $data['status'] = TenderStatus::Draft;
@@ -67,6 +72,23 @@ class TenderService
                     'weight_percentage' => $criterionData['weight_percentage'],
                     'max_score' => $criterionData['max_score'],
                     'sort_order' => $criterionData['sort_order'] ?? $criterionIndex,
+                ]);
+            }
+
+            foreach ($documents as $docData) {
+                /** @var UploadedFile $file */
+                $file = $docData['file'];
+                $path = $this->fileUploadService->upload($file, "tenders/{$tender->id}/documents");
+
+                $tender->documents()->create([
+                    'uploaded_by' => $creator->id,
+                    'title' => $docData['title'],
+                    'file_path' => $path,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'doc_type' => $docData['doc_type'],
+                    'version' => 1,
+                    'is_current' => true,
                 ]);
             }
 

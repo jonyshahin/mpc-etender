@@ -61,7 +61,24 @@ class TenderController extends Controller
 
     public function store(StoreTenderRequest $request): RedirectResponse
     {
-        $tender = $this->tenderService->create($request->validated(), $request->user());
+        $documents = $request->file('documents', []);
+        $documentsMeta = $request->input('documents', []);
+
+        $docsArray = [];
+        foreach ($documents as $index => $fileData) {
+            $file = is_array($fileData) ? ($fileData['file'] ?? null) : $fileData;
+            $meta = $documentsMeta[$index] ?? [];
+
+            if ($file) {
+                $docsArray[] = [
+                    'file' => $file,
+                    'title' => $meta['title'] ?? $file->getClientOriginalName(),
+                    'doc_type' => $meta['doc_type'] ?? 'other',
+                ];
+            }
+        }
+
+        $tender = $this->tenderService->create($request->validated(), $request->user(), $docsArray);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender created as draft.')]);
 

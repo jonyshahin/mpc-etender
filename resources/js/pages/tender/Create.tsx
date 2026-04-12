@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState, ReactNode } from 'react';
 import { Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
 import Heading from '@/components/heading';
@@ -178,10 +178,11 @@ export default function Create({ projects, categories }: Props) {
     ];
 
     const DOC_TYPES = [
-        { value: 'tender_document', label: t('tender.doc_tender_document') },
-        { value: 'technical_specs', label: t('tender.doc_technical_specs') },
-        { value: 'drawings', label: t('tender.doc_drawings') },
-        { value: 'contract_template', label: t('tender.doc_contract_template') },
+        { value: 'specification', label: t('tender.doc_technical_specs') },
+        { value: 'drawing', label: t('tender.doc_drawings') },
+        { value: 'contract_terms', label: t('tender.doc_contract_template') },
+        { value: 'boq_template', label: t('tender.doc_boq_template') },
+        { value: 'site_photo', label: t('tender.doc_site_photo') },
         { value: 'other', label: t('tender.doc_other') },
     ];
 
@@ -272,7 +273,7 @@ export default function Create({ projects, categories }: Props) {
     }
 
     function addDocument() {
-        setDocuments([...documents, { file: null, title: '', doc_type: 'tender_document' }]);
+        setDocuments([...documents, { file: null, title: '', doc_type: 'specification' }]);
     }
 
     function updateDocument(index: number, field: keyof DocEntry, value: any) {
@@ -309,8 +310,8 @@ export default function Create({ projects, categories }: Props) {
     }
 
     function handleSubmit(status: 'draft' | 'published') {
-        form.transform((data) => ({
-            ...data,
+        const payload: Record<string, any> = {
+            ...form.data,
             category_ids: categoryIds,
             boq_sections: boqSections
                 .filter((s) => s.title.trim() !== '')
@@ -338,8 +339,18 @@ export default function Create({ projects, categories }: Props) {
                     sort_order: i,
                 })),
             status,
-        }));
-        form.post('/tenders');
+        };
+
+        const validDocs = documents.filter((d) => d.file && d.title.trim() !== '');
+        validDocs.forEach((doc, i) => {
+            payload[`documents[${i}][file]`] = doc.file;
+            payload[`documents[${i}][title]`] = doc.title;
+            payload[`documents[${i}][doc_type]`] = doc.doc_type;
+        });
+
+        router.post('/tenders', payload, {
+            forceFormData: true,
+        });
     }
 
     return (
