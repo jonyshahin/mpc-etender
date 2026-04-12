@@ -13,8 +13,9 @@ export function LanguageSwitcher() {
         router.put('/user/language', {
             language: isArabic ? 'en' : 'ar',
         }, {
-            preserveState: false,
-            preserveScroll: true,
+            onSuccess: () => {
+                window.location.reload();
+            },
         });
     };
 
