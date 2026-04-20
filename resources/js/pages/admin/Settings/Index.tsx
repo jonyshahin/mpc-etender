@@ -1,4 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ type Props = {
     settingGroups: Record<string, Setting[]>;
 };
 
-const GROUP_ORDER = ['General', 'Notifications', 'Approvals', 'Security'];
+const GROUP_ORDER = ['general', 'display', 'notifications', 'approvals', 'security'];
 
 export default function Index({ settingGroups }: Props) {
     const { t } = useTranslation();
@@ -34,6 +35,27 @@ export default function Index({ settingGroups }: Props) {
             value: s.value ?? '',
         })),
     });
+
+    useEffect(() => {
+        if (import.meta.env.DEV) {
+            allSettings.forEach((s) => {
+                const labelKey = `settings.${s.key}.label`;
+                if (t(labelKey) === labelKey) {
+                    console.warn(`[i18n] Missing translation key: ${labelKey}`);
+                }
+            });
+        }
+    }, [allSettings, t]);
+
+    function settingLabel(key: string): string {
+        return t(`settings.${key}.label`);
+    }
+
+    function settingDescription(key: string, fallback: string | null): string | null {
+        const tKey = `settings.${key}.description`;
+        const translated = t(tKey);
+        return translated === tKey ? fallback : translated;
+    }
 
     function getSettingValue(id: string): string {
         const setting = form.data.settings.find((s) => s.id === id);
@@ -73,51 +95,57 @@ export default function Index({ settingGroups }: Props) {
                             }
                         />
                         <Label htmlFor={setting.key} className="font-normal">
-                            {setting.description ?? setting.key}
+                            {settingLabel(setting.key)}
                         </Label>
                     </div>
                 );
             case 'integer':
                 return (
                     <div className="space-y-2">
-                        <Label htmlFor={setting.key}>{setting.key}</Label>
+                        <Label htmlFor={setting.key}>{settingLabel(setting.key)}</Label>
                         <Input
                             id={setting.key}
                             type="number"
                             value={value}
                             onChange={(e) => updateSetting(setting.id, e.target.value)}
                         />
-                        {setting.description && (
-                            <p className="text-xs text-muted-foreground">{setting.description}</p>
+                        {settingDescription(setting.key, setting.description) && (
+                            <p className="text-xs text-muted-foreground">
+                                {settingDescription(setting.key, setting.description)}
+                            </p>
                         )}
                     </div>
                 );
             case 'json':
                 return (
                     <div className="space-y-2">
-                        <Label htmlFor={setting.key}>{setting.key}</Label>
+                        <Label htmlFor={setting.key}>{settingLabel(setting.key)}</Label>
                         <textarea
                             id={setting.key}
                             className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             value={value}
                             onChange={(e) => updateSetting(setting.id, e.target.value)}
                         />
-                        {setting.description && (
-                            <p className="text-xs text-muted-foreground">{setting.description}</p>
+                        {settingDescription(setting.key, setting.description) && (
+                            <p className="text-xs text-muted-foreground">
+                                {settingDescription(setting.key, setting.description)}
+                            </p>
                         )}
                     </div>
                 );
             default:
                 return (
                     <div className="space-y-2">
-                        <Label htmlFor={setting.key}>{setting.key}</Label>
+                        <Label htmlFor={setting.key}>{settingLabel(setting.key)}</Label>
                         <Input
                             id={setting.key}
                             value={value}
                             onChange={(e) => updateSetting(setting.id, e.target.value)}
                         />
-                        {setting.description && (
-                            <p className="text-xs text-muted-foreground">{setting.description}</p>
+                        {settingDescription(setting.key, setting.description) && (
+                            <p className="text-xs text-muted-foreground">
+                                {settingDescription(setting.key, setting.description)}
+                            </p>
                         )}
                     </div>
                 );
@@ -144,7 +172,7 @@ export default function Index({ settingGroups }: Props) {
                     {sortedGroups.map((group) => (
                         <Card key={group}>
                             <CardHeader>
-                                <CardTitle>{group}</CardTitle>
+                                <CardTitle>{t(`settings.group.${group}`)}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {settingGroups[group].map((setting) => (
