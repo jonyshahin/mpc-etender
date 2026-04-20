@@ -99,8 +99,8 @@ export default function Show({ vendor, documentUrls }: Props) {
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
     const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
 
-    const rejectForm = useForm({ rejection_reason: '' });
-    const suspendForm = useForm({ rejection_reason: '' });
+    const rejectForm = useForm({ reason: '' });
+    const suspendForm = useForm({ reason: '' });
 
     function handleApprove() {
         router.put(`/admin/vendors/${vendor.id}/prequalify`);
@@ -412,14 +412,14 @@ export default function Show({ vendor, documentUrls }: Props) {
                             id="reject-reason"
                             className="mt-1.5 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             placeholder={t('form.enter_rejection_reason')}
-                            value={rejectForm.data.rejection_reason}
+                            value={rejectForm.data.reason}
                             onChange={(e) =>
-                                rejectForm.setData('rejection_reason', e.target.value)
+                                rejectForm.setData('reason', e.target.value)
                             }
                         />
-                        {rejectForm.errors.rejection_reason && (
+                        {rejectForm.errors.reason && (
                             <p className="mt-1 text-sm text-destructive">
-                                {rejectForm.errors.rejection_reason}
+                                {rejectForm.errors.reason}
                             </p>
                         )}
                     </div>
@@ -456,14 +456,14 @@ export default function Show({ vendor, documentUrls }: Props) {
                             id="suspend-reason"
                             className="mt-1.5 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             placeholder={t('form.enter_suspension_reason')}
-                            value={suspendForm.data.rejection_reason}
+                            value={suspendForm.data.reason}
                             onChange={(e) =>
-                                suspendForm.setData('rejection_reason', e.target.value)
+                                suspendForm.setData('reason', e.target.value)
                             }
                         />
-                        {suspendForm.errors.rejection_reason && (
+                        {suspendForm.errors.reason && (
                             <p className="mt-1 text-sm text-destructive">
-                                {suspendForm.errors.rejection_reason}
+                                {suspendForm.errors.reason}
                             </p>
                         )}
                     </div>
