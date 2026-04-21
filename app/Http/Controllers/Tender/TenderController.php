@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tender;
 
+use App\Exceptions\TenderPublishException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tender\StoreTenderRequest;
 use App\Http\Requests\Tender\UpdateTenderRequest;
@@ -61,6 +62,16 @@ class TenderController extends Controller
 
     public function store(StoreTenderRequest $request): RedirectResponse
     {
+        $data = $request->validated();
+        $publish = (bool) ($data['publish'] ?? false);
+        unset($data['publish']);
+
+        $authDowngraded = false;
+        if ($publish && ! $request->user()->hasPermission('tenders.publish')) {
+            $publish = false;
+            $authDowngraded = true;
+        }
+
         $documents = $request->file('documents', []);
         $documentsMeta = $request->input('documents', []);
 
@@ -78,11 +89,29 @@ class TenderController extends Controller
             }
         }
 
-        $tender = $this->tenderService->create($request->validated(), $request->user(), $docsArray);
+        try {
+            $tender = $this->tenderService->create($data, $request->user(), $docsArray, $publish);
+        } catch (TenderPublishException $e) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('messages.tender_publish_failed', ['reason' => $e->getMessage()]),
+            ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender created as draft.')]);
+            return back()->withInput();
+        }
 
-        return redirect()->route('tenders.show', $tender);
+        $toastMessage = match (true) {
+            $authDowngraded => __('messages.tender_saved_draft_no_publish_permission'),
+            $publish => __('messages.tender_published'),
+            default => __('messages.tender_saved_draft'),
+        };
+
+        Inertia::flash('toast', [
+            'type' => $authDowngraded ? 'warning' : 'success',
+            'message' => $toastMessage,
+        ]);
+
+        return to_route('tenders.show', $tender);
     }
 
     public function show(Request $request, Tender $tender): Response

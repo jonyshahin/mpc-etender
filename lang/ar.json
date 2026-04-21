@@ -416,6 +416,11 @@
     "form.whatsapp": "واتساب",
     "form.whatsapp_number": "رقم الواتساب",
 
+    "messages.tender_publish_failed": "تعذر نشر المناقصة: :reason",
+    "messages.tender_published": "تم نشر المناقصة بنجاح.",
+    "messages.tender_saved_draft": "تم حفظ المناقصة كمسودة.",
+    "messages.tender_saved_draft_no_publish_permission": "تم حفظ المناقصة كمسودة. ليس لديك صلاحية النشر.",
+
     "nav.admin": "الإدارة",
     "nav.admin_dashboard": "لوحة تحكم الإدارة",
     "nav.approvals": "الموافقات",

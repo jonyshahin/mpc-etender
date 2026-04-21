@@ -416,6 +416,11 @@
     "form.whatsapp": "WhatsApp",
     "form.whatsapp_number": "WhatsApp Number",
 
+    "messages.tender_publish_failed": "Could not publish tender: :reason",
+    "messages.tender_published": "Tender published successfully.",
+    "messages.tender_saved_draft": "Tender saved as draft.",
+    "messages.tender_saved_draft_no_publish_permission": "Tender saved as draft. You do not have permission to publish.",
+
     "nav.admin": "Administration",
     "nav.admin_dashboard": "Admin Dashboard",
     "nav.approvals": "Approvals",

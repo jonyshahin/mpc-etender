@@ -53,6 +53,17 @@ class StoreTenderRequest extends FormRequest
             'documents.*.file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xlsx,jpg,jpeg,png,zip'],
             'documents.*.title' => ['required', 'string', 'max:255'],
             'documents.*.doc_type' => ['required', 'in:specification,drawing,contract_terms,boq_template,site_photo,other'],
+
+            'publish' => ['sometimes', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('publish')) {
+            $this->merge([
+                'publish' => filter_var($this->input('publish'), FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 }

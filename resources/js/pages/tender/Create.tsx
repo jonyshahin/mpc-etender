@@ -1,6 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState, ReactNode } from 'react';
 import { Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
@@ -207,7 +208,6 @@ export default function Create({ projects, categories }: Props) {
         is_two_envelope: false,
         technical_pass_score: '',
         category_ids: [] as string[],
-        status: 'draft',
     });
 
     function next() {
@@ -309,7 +309,7 @@ export default function Create({ projects, categories }: Props) {
             .reduce((sum, c) => sum + (parseFloat(c.weight_percentage) || 0), 0);
     }
 
-    function handleSubmit(status: 'draft' | 'published') {
+    function handleSubmit(action: 'draft' | 'published') {
         const payload: Record<string, any> = {
             ...form.data,
             category_ids: categoryIds,
@@ -338,7 +338,7 @@ export default function Create({ projects, categories }: Props) {
                     max_score: c.max_score,
                     sort_order: i,
                 })),
-            status,
+            publish: action === 'published' ? 1 : 0,
         };
 
         const validDocs = documents.filter((d) => d.file && d.title.trim() !== '');
@@ -350,6 +350,11 @@ export default function Create({ projects, categories }: Props) {
 
         router.post('/tenders', payload, {
             forceFormData: true,
+            preserveScroll: true,
+            onError: (errors) => {
+                const first = Object.values(errors)[0];
+                if (first) toast.error(String(first));
+            },
         });
     }
 

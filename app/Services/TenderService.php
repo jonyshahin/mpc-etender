@@ -24,15 +24,17 @@ class TenderService
     ) {}
 
     /**
-     * Create a new tender in draft status.
+     * Create a new tender. When $publish is true, the draft is created and
+     * then published within the same DB transaction — if publish() fails,
+     * the whole create rolls back, leaving no orphan draft.
      */
-    public function create(array $data, User $creator, array $documents = []): Tender
+    public function create(array $data, User $creator, array $documents = [], bool $publish = false): Tender
     {
-        return DB::transaction(function () use ($data, $creator, $documents) {
+        return DB::transaction(function () use ($data, $creator, $documents, $publish) {
             $categoryIds = $data['category_ids'] ?? [];
             $boqSections = $data['boq_sections'] ?? [];
             $criteria = $data['evaluation_criteria'] ?? [];
-            unset($data['category_ids'], $data['boq_sections'], $data['evaluation_criteria'], $data['documents']);
+            unset($data['category_ids'], $data['boq_sections'], $data['evaluation_criteria'], $data['documents'], $data['publish']);
 
             $data['created_by'] = $creator->id;
             $data['status'] = TenderStatus::Draft;
@@ -90,6 +92,11 @@ class TenderService
                     'version' => 1,
                     'is_current' => true,
                 ]);
+            }
+
+            if ($publish) {
+                $this->publish($tender);
+                $tender->refresh();
             }
 
             return $tender;
