@@ -416,6 +416,10 @@
     "form.whatsapp": "واتساب",
     "form.whatsapp_number": "رقم الواتساب",
 
+    "messages.publish_reason_deadline_past": "انقضى الموعد النهائي لتقديم العروض.",
+    "messages.publish_reason_no_boq": "يجب إضافة قسم واحد على الأقل في جدول الكميات مع بنود.",
+    "messages.publish_reason_no_criteria": "يجب إضافة معيار تقييم واحد على الأقل.",
+    "messages.publish_reason_weights_imbalanced": "يجب أن يكون مجموع أوزان معايير التقييم 100٪ لكل مظروف.",
     "messages.tender_publish_failed": "تعذر نشر المناقصة: :reason",
     "messages.tender_published": "تم نشر المناقصة بنجاح.",
     "messages.tender_saved_draft": "تم حفظ المناقصة كمسودة.",

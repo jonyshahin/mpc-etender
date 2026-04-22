@@ -174,9 +174,18 @@ class TenderController extends Controller
     {
         $this->authorize('publish', $tender);
 
-        $this->tenderService->publish($tender);
+        try {
+            $this->tenderService->publish($tender);
+        } catch (TenderPublishException $e) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('messages.tender_publish_failed', ['reason' => $e->getMessage()]),
+            ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender published successfully.')]);
+            return back();
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('messages.tender_published')]);
 
         return redirect()->route('tenders.show', $tender);
     }

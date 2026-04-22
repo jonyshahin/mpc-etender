@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -54,5 +55,57 @@ class UserFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn () => ['is_active' => false]);
+    }
+
+    /**
+     * Build a fresh role and seed it with the requested permission slugs,
+     * then assign it to the user. Each call mints a new role so tests
+     * never share a mutable role across cases.
+     */
+    private function withRoleHavingPermissions(array $slugs): static
+    {
+        return $this->afterCreating(function (User $user) use ($slugs) {
+            $role = Role::factory()->create();
+            foreach ($slugs as $slug) {
+                $perm = Permission::firstOrCreate(
+                    ['slug' => $slug],
+                    ['name' => ucwords(str_replace('.', ' ', $slug)), 'module' => explode('.', $slug)[0]]
+                );
+                $role->permissions()->attach($perm->id);
+            }
+            $user->update(['role_id' => $role->id]);
+        });
+    }
+
+    public function admin(): static
+    {
+        return $this->withRoleHavingPermissions([
+            'tenders.view', 'tenders.create', 'tenders.update', 'tenders.publish', 'tenders.cancel',
+            'tenders.delete', 'tenders.manage_boq', 'tenders.issue_addenda', 'tenders.answer_clarifications',
+            'vendors.view', 'vendors.create', 'vendors.update', 'vendors.qualify',
+            'bids.view', 'bids.open', 'evaluations.view', 'evaluations.manage_committees',
+        ]);
+    }
+
+    public function procurementOfficerWithoutPublish(): static
+    {
+        return $this->withRoleHavingPermissions([
+            'tenders.view', 'tenders.create', 'tenders.update', 'tenders.manage_boq',
+            // tenders.publish intentionally omitted
+        ]);
+    }
+
+    public function projectManager(): static
+    {
+        return $this->withRoleHavingPermissions([
+            'tenders.view', 'tenders.create', 'tenders.update', 'tenders.publish', 'tenders.cancel',
+        ]);
+    }
+
+    public function evaluator(): static
+    {
+        return $this->withRoleHavingPermissions([
+            'tenders.view', 'evaluations.view', 'evaluations.score',
+        ]);
     }
 }

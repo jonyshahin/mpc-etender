@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\TenderStatus;
+use App\Exceptions\TenderPublishException;
 use App\Models\AuditLog;
 use App\Models\BoqItem;
 use App\Models\BoqSection;
@@ -43,7 +44,7 @@ class TenderService
             $tender = Tender::create($data);
 
             if ($categoryIds) {
-                $tender->categories()->attach($categoryIds);
+                $tender->categories()->attach(array_values(array_unique($categoryIds)));
             }
 
             foreach ($boqSections as $sectionIndex => $sectionData) {
@@ -124,9 +125,13 @@ class TenderService
 
     /**
      * Publish a draft tender, making it visible to qualified vendors.
+     *
+     * @throws TenderPublishException when prerequisites are not met
      */
     public function publish(Tender $tender): void
     {
+        $this->assertPublishPrerequisites($tender);
+
         $tender->update([
             'status' => TenderStatus::Published,
             'publish_date' => now(),
@@ -143,6 +148,57 @@ class TenderService
             'user_agent' => request()->userAgent(),
             'created_at' => now(),
         ]);
+    }
+
+    /**
+     * Enforce the four preconditions for publishing. Each failure throws a
+     * TenderPublishException with a translation key the controller wraps in
+     * messages.tender_publish_failed.
+     *
+     * Weight comparison strategy: weight_percentage is decimal(5,2), so we
+     * multiply each value by 100 and sum as integers — 40.00 → 4000 — and
+     * compare against 10000. This avoids floating-point drift entirely and
+     * keeps equality a strict `===` instead of a tolerance window.
+     */
+    private function assertPublishPrerequisites(Tender $tender): void
+    {
+        $tender->loadMissing(['boqSections.items', 'evaluationCriteria']);
+
+        // 1. At least one BOQ section that has at least one item.
+        $hasBoqItems = $tender->boqSections->contains(fn (BoqSection $s) => $s->items->isNotEmpty());
+        if (! $hasBoqItems) {
+            throw new TenderPublishException(__('messages.publish_reason_no_boq'));
+        }
+
+        // 2. At least one evaluation criterion.
+        $criteria = $tender->evaluationCriteria;
+        if ($criteria->isEmpty()) {
+            throw new TenderPublishException(__('messages.publish_reason_no_criteria'));
+        }
+
+        // 3a. Two-envelope coverage: both technical AND financial must have criteria.
+        if ($tender->is_two_envelope) {
+            $envelopes = $criteria->pluck('envelope')->map(fn ($e) => is_object($e) ? $e->value : $e)->unique();
+            if (! $envelopes->contains('technical') || ! $envelopes->contains('financial')) {
+                throw new TenderPublishException(__('messages.publish_reason_weights_imbalanced'));
+            }
+        }
+
+        // 3b. Per-envelope weight sum === 100.00 (checked as integer hundredths).
+        $grouped = $criteria->groupBy(fn (EvaluationCriterion $c) => is_object($c->envelope) ? $c->envelope->value : $c->envelope);
+        foreach ($grouped as $envelopeCriteria) {
+            $sumHundredths = $envelopeCriteria->sum(
+                fn (EvaluationCriterion $c) => (int) round(((float) $c->weight_percentage) * 100)
+            );
+            if ($sumHundredths !== 10000) {
+                throw new TenderPublishException(__('messages.publish_reason_weights_imbalanced'));
+            }
+        }
+
+        // 4. Submission deadline must still be in the future.
+        if ($tender->submission_deadline !== null && $tender->submission_deadline->isPast()) {
+            throw new TenderPublishException(__('messages.publish_reason_deadline_past'));
+        }
     }
 
     /**

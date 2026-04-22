@@ -416,6 +416,10 @@
     "form.whatsapp": "WhatsApp",
     "form.whatsapp_number": "WhatsApp Number",
 
+    "messages.publish_reason_deadline_past": "submission deadline has already passed.",
+    "messages.publish_reason_no_boq": "at least one BOQ section with items is required.",
+    "messages.publish_reason_no_criteria": "at least one evaluation criterion is required.",
+    "messages.publish_reason_weights_imbalanced": "evaluation criterion weights must sum to 100% per envelope.",
     "messages.tender_publish_failed": "Could not publish tender: :reason",
     "messages.tender_published": "Tender published successfully.",
     "messages.tender_saved_draft": "Tender saved as draft.",

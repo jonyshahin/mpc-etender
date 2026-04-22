@@ -44,6 +44,15 @@ function validTenderPayload(string $projectId, array $overrides = []): array
         'is_two_envelope' => false,
         'submission_deadline' => now()->addDays(30)->format('Y-m-d H:i:s'),
         'opening_date' => now()->addDays(31)->format('Y-m-d H:i:s'),
+        // BOQ + criteria are required for publish to succeed (prerequisites in TenderService::publish).
+        'boq_sections' => [[
+            'title_en' => 'Main',
+            'sort_order' => 0,
+            'items' => [['item_code' => 'A.1', 'description_en' => 'Item', 'unit' => 'Ton', 'quantity' => 10, 'sort_order' => 0]],
+        ]],
+        'evaluation_criteria' => [
+            ['name_en' => 'Price', 'weight_percentage' => 100, 'envelope' => 'financial', 'max_score' => 100, 'sort_order' => 0],
+        ],
     ], $overrides);
 }
 
