@@ -4,10 +4,11 @@ namespace App\Notifications;
 
 use App\Models\VendorCategoryRequest;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class VendorCategoryRequestRejected extends Notification
+class VendorCategoryRequestRejected extends Notification implements ShouldQueue
 {
     use Queueable;
 

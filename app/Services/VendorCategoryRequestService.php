@@ -146,7 +146,10 @@ class VendorCategoryRequestService
     {
         $this->assertOpen($req);
 
-        return DB::transaction(function () use ($req, $reviewer, $comments) {
+        // Pivot mutation + state change + audit in one transaction. The
+        // notification is dispatched AFTER commit so a mail/queue failure
+        // can't roll back the approval.
+        $result = DB::transaction(function () use ($req, $reviewer, $comments) {
             $addIds = $req->items()->where('operation', 'add')->pluck('category_id')->all();
             $removeIds = $req->items()->where('operation', 'remove')->pluck('category_id')->all();
 
@@ -177,10 +180,12 @@ class VendorCategoryRequestService
                 'created_at' => now(),
             ]);
 
-            $req->vendor->notify(new VendorCategoryRequestApproved($req));
-
             return $req->fresh(['items.category', 'evidence', 'reviewer']);
         });
+
+        $result->vendor->notify(new VendorCategoryRequestApproved($result));
+
+        return $result;
     }
 
     public function reject(VendorCategoryRequest $req, User $reviewer, string $comments): VendorCategoryRequest
@@ -213,9 +218,11 @@ class VendorCategoryRequestService
             'created_at' => now(),
         ]);
 
-        $req->vendor->notify(new VendorCategoryRequestRejected($req));
+        $fresh = $req->fresh();
+        // Dispatched to queue (ShouldQueue) — mail failure can't affect the caller.
+        $fresh->vendor->notify(new VendorCategoryRequestRejected($fresh));
 
-        return $req->fresh();
+        return $fresh;
     }
 
     /**
