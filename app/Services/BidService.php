@@ -121,15 +121,15 @@ class BidService
     public function validateSubmissionAllowed(Tender $tender, Vendor $vendor): void
     {
         if (! $tender->is_open_for_submission) {
-            throw new \RuntimeException('Tender is not open for submissions.');
+            throw new \RuntimeException(__('messages.bid.tender_closed'));
         }
 
         if ($vendor->prequalification_status !== VendorStatus::Qualified) {
-            throw new \RuntimeException('Vendor is not qualified.');
+            throw new \RuntimeException(__('messages.bid.vendor_not_qualified'));
         }
 
         if (! $vendor->is_active) {
-            throw new \RuntimeException('Vendor account is not active.');
+            throw new \RuntimeException(__('messages.bid.vendor_not_active'));
         }
 
         $matchingCategories = $vendor->categories()
@@ -137,7 +137,7 @@ class BidService
             ->exists();
 
         if (! $matchingCategories) {
-            throw new \RuntimeException('Vendor does not match any tender category.');
+            throw new \RuntimeException(__('messages.bid.category_mismatch'));
         }
 
         // Check if vendor already has an active bid
@@ -147,7 +147,7 @@ class BidService
             ->exists();
 
         if ($existingBid) {
-            throw new \RuntimeException('Vendor already has an active bid for this tender.');
+            throw new \RuntimeException(__('messages.bid.duplicate'));
         }
     }
 }

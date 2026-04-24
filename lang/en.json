@@ -481,6 +481,12 @@
     "messages.vendor_password_reset_success": "Your password has been reset. You can now sign in.",
     "messages.vendor_temp_password_set": "Temporary password generated. Share it with the vendor securely.",
 
+    "messages.bid.tender_closed": "Tender is not open for submissions.",
+    "messages.bid.vendor_not_qualified": "Vendor is not qualified.",
+    "messages.bid.vendor_not_active": "Vendor account is not active.",
+    "messages.bid.category_mismatch": "Vendor does not match any tender category.",
+    "messages.bid.duplicate": "Vendor already has an active bid for this tender.",
+
     "alert.must_change_password_desc": "An administrator set a temporary password for your account. Please choose a new password before continuing.",
     "alert.must_change_password_title": "Password change required",
     "alert.temp_password_one_time": "This password will not be shown again. Copy it now.",

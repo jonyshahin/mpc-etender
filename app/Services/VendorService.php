@@ -46,11 +46,18 @@ class VendorService
      */
     public function prequalify(Vendor $vendor, User $reviewer): void
     {
+        // Captured before update() — Eloquent syncs $original on save, so
+        // getOriginal() after update() returns the just-saved value.
+        $oldIsActive = $vendor->is_active;
+
         $vendor->update([
             'prequalification_status' => VendorStatus::Qualified,
             'qualified_at' => now(),
             'qualified_by' => $reviewer->id,
             'rejection_reason' => null,
+            // Suspend flips this to false; re-qualifying must restore it or
+            // the bid-start guard blocks the vendor forever (BUG-09).
+            'is_active' => true,
         ]);
 
         AuditLog::create([
@@ -58,8 +65,8 @@ class VendorService
             'auditable_type' => Vendor::class,
             'auditable_id' => $vendor->id,
             'action' => 'approved',
-            'old_values' => ['prequalification_status' => 'pending'],
-            'new_values' => ['prequalification_status' => 'qualified'],
+            'old_values' => ['prequalification_status' => 'pending', 'is_active' => $oldIsActive],
+            'new_values' => ['prequalification_status' => 'qualified', 'is_active' => true],
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'created_at' => now(),
@@ -94,6 +101,10 @@ class VendorService
      */
     public function suspend(Vendor $vendor, User $reviewer, string $reason): void
     {
+        // Captured before update() — see prequalify() for the getOriginal gotcha.
+        $oldStatus = $vendor->prequalification_status?->value;
+        $oldIsActive = $vendor->is_active;
+
         $vendor->update([
             'prequalification_status' => VendorStatus::Suspended,
             'rejection_reason' => $reason,
@@ -105,8 +116,8 @@ class VendorService
             'auditable_type' => Vendor::class,
             'auditable_id' => $vendor->id,
             'action' => 'updated',
-            'old_values' => ['prequalification_status' => $vendor->getOriginal('prequalification_status')],
-            'new_values' => ['prequalification_status' => 'suspended', 'rejection_reason' => $reason],
+            'old_values' => ['prequalification_status' => $oldStatus, 'is_active' => $oldIsActive],
+            'new_values' => ['prequalification_status' => 'suspended', 'rejection_reason' => $reason, 'is_active' => false],
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'created_at' => now(),

@@ -468,6 +468,12 @@
     "messages.vendor_password_reset_sent": "[en] Password reset email sent to :email.",
     "messages.vendor_password_reset_success": "[en] Your password has been reset. You can now sign in.",
     "messages.vendor_temp_password_set": "[en] Temporary password generated. Share it with the vendor securely.",
+
+    "messages.bid.tender_closed": "[en] Tender is not open for submissions.",
+    "messages.bid.vendor_not_qualified": "[en] Vendor is not qualified.",
+    "messages.bid.vendor_not_active": "[en] Vendor account is not active.",
+    "messages.bid.category_mismatch": "[en] Vendor does not match any tender category.",
+    "messages.bid.duplicate": "[en] Vendor already has an active bid for this tender.",
     "alert.must_change_password_desc": "[en] An administrator set a temporary password for your account. Please choose a new password before continuing.",
     "alert.must_change_password_title": "[en] Password change required",
     "alert.temp_password_one_time": "[en] This password will not be shown again. Copy it now.",
