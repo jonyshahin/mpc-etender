@@ -37,7 +37,11 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $vendor = $request->user('vendor');
-        $user = $request->user();
+        // Must pin to the web guard explicitly — $request->user() with no args
+        // returns whatever guard resolved (including Vendor in actingAs() tests),
+        // and Vendor has no hasPermission() method. Pinning ensures we only
+        // look up User model attributes here.
+        $user = $request->user('web');
 
         return [
             ...parent::share($request),
