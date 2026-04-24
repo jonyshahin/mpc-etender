@@ -79,6 +79,7 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
     Route::get('category-requests/create', [Vendor\CategoryRequestController::class, 'create'])->name('category-requests.create');
     Route::post('category-requests', [Vendor\CategoryRequestController::class, 'store'])->name('category-requests.store');
     Route::get('category-requests/{categoryRequest}', [Vendor\CategoryRequestController::class, 'show'])->name('category-requests.show');
+    Route::get('category-requests/{categoryRequest}/evidence/{evidence}/download', [Vendor\CategoryRequestController::class, 'downloadEvidence'])->name('category-requests.evidence.download');
     Route::delete('category-requests/{categoryRequest}', [Vendor\CategoryRequestController::class, 'destroy'])->name('category-requests.destroy');
 
     // Notifications
