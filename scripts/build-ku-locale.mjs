@@ -193,7 +193,7 @@ const SORANI = {
     // ── pages.vendor.* (auth-context) ────────────────────────────────
     'pages.vendor.business_categories': 'پۆلە بازرگانییەکان',
 
-    // ── admin.category_requests.* (admin review queue — C.3.2) ───────
+    // ── admin.category_requests.* (admin review queue — C.3.2 + detail C.3.3) ──
     'admin.category_requests.page_title': 'داواکارییەکانی گۆڕینی پۆلی دابینکەر',
     'admin.category_requests.page_subtitle':
         'پێداچوونەوەی داواکارییە ڕاوەستاوەکانی دابینکەران بۆ زیادکردن یان سڕینەوەی پۆل لە لیستی پەسەندکراویان.',
@@ -208,6 +208,31 @@ const SORANI = {
     'admin.category_requests.empty_filtered':
         'هیچ داواکارییەکی گۆڕینی پۆل لەگەڵ ئەم پاڵاوتنە ناگونجێت.',
     'admin.category_requests.show_all': 'پیشاندانی هەموو',
+    'admin.category_requests.show_title': 'وردەکارییەکانی داواکاری',
+    'admin.category_requests.back_to_queue': 'گەڕانەوە بۆ لیستی چاوەڕوانی',
+    'admin.category_requests.actions_label': 'کردارەکانی پێداچوونەوە',
+    'admin.category_requests.decision_by': 'بڕیاری لەلایەن',
+    'admin.category_requests.withdrawn_by_vendor': 'دابینکەر ئەم داواکارییەی کشاندەوە.',
+    'admin.category_requests.approve_confirm_title': 'ئەم داواکارییە پەسەند بکەیت؟',
+    'admin.category_requests.approve_confirm_description':
+        'لیستی پۆلە پەسەندکراوەکانی دابینکەر یەکسەر نوێ دەکرێتەوە. لە ڕێگای ئیمەیڵەوە ئاگادار دەکرێتەوە.',
+    'admin.category_requests.reject_confirm_title': 'ئەم داواکارییە ڕەت بکەیتەوە؟',
+    'admin.category_requests.reject_confirm_description':
+        'لیستی پۆلی دابینکەر ناگۆڕێت. لە ڕێگای ئیمەیڵەوە بە تێبینییەکانت ئاگادار دەکرێتەوە.',
+    'admin.category_requests.reviewer_comments_placeholder': 'تێبینی بۆ دابینکەر (بۆی دەردەکەوێت)',
+    'admin.category_requests.reviewer_comments_required': 'کاتی ڕەتکردنەوە تێبینی پێویستە.',
+    'admin.category_requests.reject_comments_required':
+        'تکایە تێبینی دابنێ کە هۆکاری ڕەتکردنەوە ڕوون بکاتەوە.',
+
+    // ── btn.* additions (C.3.3) ──────────────────────────────────────
+    'btn.approve_request': 'پەسەندکردنی داواکاری',
+    'btn.reject_request': 'ڕەتکردنەوەی داواکاری',
+
+    // ── messages.* (admin review actions — fire as toast from Show page) ──
+    'messages.vendor_category_request_approved':
+        'داواکاری گۆڕینی پۆل پەسەند کرا. دابینکەر ئاگادار کرایەوە.',
+    'messages.vendor_category_request_rejected':
+        'داواکاری گۆڕینی پۆل ڕەت کرایەوە. دابینکەر ئاگادار کرایەوە.',
 };
 
 // Build ku.json

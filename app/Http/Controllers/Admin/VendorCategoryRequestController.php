@@ -60,13 +60,50 @@ class VendorCategoryRequestController extends Controller
     {
         $this->ensureCanReview($request);
 
+        $categoryRequest->load([
+            'items.category:id,name_en,name_ar,parent_id',
+            'evidence:id,request_id,original_name,mime_type,size,path,created_at',
+            'vendor:id,company_name,company_name_ar,email',
+            'reviewer:id,name',
+        ]);
+
+        $mapItem = fn ($i) => [
+            'category_id' => $i->category_id,
+            'name_en' => $i->category?->name_en,
+            'name_ar' => $i->category?->name_ar,
+            'parent_id' => $i->category?->parent_id,
+        ];
+
         return Inertia::render('admin/VendorCategoryRequests/Show', [
-            'request' => $categoryRequest->load([
-                'vendor:id,company_name,company_name_ar,email,phone',
-                'items.category:id,name_en,name_ar',
-                'evidence',
-                'reviewer:id,name',
-            ]),
+            'request' => [
+                'id' => $categoryRequest->id,
+                'status' => $categoryRequest->status,
+                'justification' => $categoryRequest->justification,
+                'reviewer_comments' => $categoryRequest->reviewer_comments,
+                'withdraw_reason' => $categoryRequest->withdraw_reason,
+                'vendor' => [
+                    'id' => $categoryRequest->vendor->id,
+                    'company_name' => $categoryRequest->vendor->company_name,
+                    'company_name_ar' => $categoryRequest->vendor->company_name_ar,
+                    'email' => $categoryRequest->vendor->email,
+                ],
+                'reviewer' => $categoryRequest->reviewer
+                    ? ['id' => $categoryRequest->reviewer->id, 'name' => $categoryRequest->reviewer->name]
+                    : null,
+                'reviewed_at' => $categoryRequest->reviewed_at?->toIso8601String(),
+                'created_at' => $categoryRequest->created_at->toIso8601String(),
+                'updated_at' => $categoryRequest->updated_at->toIso8601String(),
+                'adds' => $categoryRequest->items->where('operation', 'add')->map($mapItem)->values(),
+                'removes' => $categoryRequest->items->where('operation', 'remove')->map($mapItem)->values(),
+                'evidence' => $categoryRequest->evidence->map(fn ($e) => [
+                    'id' => $e->id,
+                    'original_name' => $e->original_name,
+                    'mime_type' => $e->mime_type,
+                    'size' => $e->size,
+                    'created_at' => $e->created_at->toIso8601String(),
+                    'download_url' => route('admin.vendor-category-requests.evidence.download', $e->id),
+                ])->values(),
+            ],
         ]);
     }
 
