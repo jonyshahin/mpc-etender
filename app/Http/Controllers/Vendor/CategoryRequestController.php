@@ -22,14 +22,18 @@ class CategoryRequestController extends Controller
     {
         $vendor = $request->user('vendor');
 
+        $requests = $vendor->categoryRequests()
+            ->withCount([
+                'items as adds_count' => fn ($q) => $q->where('operation', 'add'),
+                'items as removes_count' => fn ($q) => $q->where('operation', 'remove'),
+                'evidence as evidence_count',
+            ])
+            ->orderByDesc('created_at')
+            ->paginate(15)
+            ->withQueryString();
+
         return Inertia::render('vendor/CategoryRequests/Index', [
-            'requests' => $vendor->categoryRequests()
-                ->with(['items.category:id,name_en,name_ar', 'evidence'])
-                ->latest()
-                ->get(),
-            'currentCategories' => $vendor->categories()
-                ->orderBy('name_en')
-                ->get(['categories.id', 'name_en', 'name_ar']),
+            'requests' => $requests,
         ]);
     }
 
