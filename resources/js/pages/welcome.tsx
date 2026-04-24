@@ -28,9 +28,9 @@ export default function Welcome({
                 />
             </Head>
 
-            <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 text-foreground">
+            <div className="min-h-screen text-foreground">
                 {/* ── Header ── */}
-                <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
+                <header className="border-b border-border/50 bg-background">
                     <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-3">
                             <AppLogoIcon className="size-14 object-contain" />
@@ -70,7 +70,7 @@ export default function Welcome({
 
                 {/* ── Hero ── */}
                 <section className="mx-auto max-w-6xl px-6 py-20 text-center">
-                    <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
+                    <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                         <span className="relative flex h-2 w-2">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
@@ -152,7 +152,7 @@ export default function Welcome({
                 </section>
 
                 {/* ── Footer ── */}
-                <footer className="border-t border-border/50 bg-muted/30">
+                <footer className="border-t border-border/50 bg-muted">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row">
                         <p>© {new Date().getFullYear()} MPC Group. All rights reserved.</p>
                         <p>MPC e-Tender · Digital Procurement Platform</p>

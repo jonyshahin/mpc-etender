@@ -19,16 +19,19 @@
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Transparent html so body::before (branded backdrop) shows through.
+             The <body> has bg-background as a fallback paint before the image
+             loads; the body::after veil handles readability contrast. --}}
         <style>
-            html {
-                background-color: oklch(1 0 0);
-            }
-
+            html,
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: transparent;
             }
         </style>
+
+        {{-- Preload hero backdrop variant (1920w). fetchpriority=low so it
+             never competes with LCP content for the critical path. --}}
+        <link rel="preload" as="image" href="/images/app-background-1920.webp" type="image/webp" fetchpriority="low" />
 
         <link rel="icon" href="/mpc-logo.png" type="image/png">
         <link rel="apple-touch-icon" href="/mpc-logo.png">
