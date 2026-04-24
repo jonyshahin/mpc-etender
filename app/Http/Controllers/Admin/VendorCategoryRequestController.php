@@ -10,6 +10,7 @@ use App\Services\FileUploadService;
 use App\Services\VendorCategoryRequestService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,13 +26,29 @@ class VendorCategoryRequestController extends Controller
         $this->ensureCanReview($request);
 
         $status = $request->input('status', 'pending');
+
         $query = VendorCategoryRequest::query()
-            ->with(['vendor:id,company_name,company_name_ar,email', 'items.category:id,name_en,name_ar', 'reviewer:id,name'])
-            ->latest();
+            ->with([
+                'vendor:id,company_name,company_name_ar,email',
+                'reviewer:id,name',
+            ])
+            ->withCount([
+                'items as adds_count' => fn ($q) => $q->where('operation', 'add'),
+                'items as removes_count' => fn ($q) => $q->where('operation', 'remove'),
+                'evidence as evidence_count',
+            ]);
 
         if ($status !== 'all') {
             $query->where('status', $status);
         }
+
+        // MySQL-only FIELD() surfaces pending first in the "all" view.
+        // SQLite (Pest) can't parse FIELD(); tests don't assert cross-status
+        // ordering, so the conditional keeps both drivers happy.
+        $query->when(
+            DB::getDriverName() === 'mysql',
+            fn ($q) => $q->orderByRaw("FIELD(status, 'pending', 'under_review', 'approved', 'rejected', 'withdrawn')"),
+        )->orderByDesc('created_at');
 
         return Inertia::render('admin/VendorCategoryRequests/Index', [
             'requests' => $query->paginate(20)->withQueryString(),

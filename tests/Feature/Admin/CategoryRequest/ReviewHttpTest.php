@@ -44,18 +44,27 @@ beforeEach(function () {
     $this->req->items()->create(['category_id' => $this->addCat->id, 'operation' => 'add']);
 });
 
-// ADMIN-01 / ADMIN-02: GET-render tests for the index page are deferred to
-// C.3 when the React admin page (admin/VendorCategoryRequests/Index.tsx) is
-// added to the Vite manifest. Permission behavior for this route is fully
-// covered by:
-//   - PermissionGateTest::ADMIN-PERM-01..04 at the FormRequest layer
-//   - The controller's ensureCanReview() — exercised indirectly by every
-//     ADMIN-03..06 POST test below which requires the same permission.
-test('ADMIN-01: admin index GET render (pending until C.3 ships React page)')
-    ->skip('Deferred to C.3 — React page admin/VendorCategoryRequests/Index.tsx not yet in Vite manifest.');
+// ADMIN-01 / ADMIN-02: GET-render + permission tests for the admin index.
+// Activated in C.3.2 when admin/VendorCategoryRequests/Index.tsx shipped.
+test('ADMIN-01: admin with permission sees the queue', function () {
+    $this->actingAs($this->reviewer, 'web')
+        ->get(route('admin.vendor-category-requests.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/VendorCategoryRequests/Index')
+            ->has('requests.data')
+            ->where('filters.status', 'pending'),
+        );
+});
 
-test('ADMIN-02: admin without permission forbidden on index GET (pending until C.3)')
-    ->skip('Deferred to C.3 — same reason as ADMIN-01.');
+test('ADMIN-02: admin without permission is forbidden', function () {
+    $noPermRole = Role::factory()->create();
+    $noPermUser = User::factory()->create(['role_id' => $noPermRole->id]);
+
+    $this->actingAs($noPermUser, 'web')
+        ->get(route('admin.vendor-category-requests.index'))
+        ->assertForbidden();
+});
 
 test('ADMIN-03: approving mutates pivot + fires notification', function () {
     Notification::fake();

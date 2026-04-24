@@ -192,6 +192,22 @@ const SORANI = {
 
     // ── pages.vendor.* (auth-context) ────────────────────────────────
     'pages.vendor.business_categories': 'پۆلە بازرگانییەکان',
+
+    // ── admin.category_requests.* (admin review queue — C.3.2) ───────
+    'admin.category_requests.page_title': 'داواکارییەکانی گۆڕینی پۆلی دابینکەر',
+    'admin.category_requests.page_subtitle':
+        'پێداچوونەوەی داواکارییە ڕاوەستاوەکانی دابینکەران بۆ زیادکردن یان سڕینەوەی پۆل لە لیستی پەسەندکراویان.',
+    'admin.category_requests.col_vendor': 'دابینکەر',
+    'admin.category_requests.col_submitted': 'ڕێکەوتی ناردن',
+    'admin.category_requests.col_changes': 'گۆڕانکارییەکان',
+    'admin.category_requests.col_evidence': 'بەڵگەکان',
+    'admin.category_requests.col_reviewer': 'پێداچووە لەلایەن',
+    'admin.category_requests.col_reviewed': 'ڕێکەوتی بڕیار',
+    'admin.category_requests.filter_label': 'پاڵاوتن بەپێی دۆخ',
+    'admin.category_requests.filter_all': 'هەموو دۆخەکان',
+    'admin.category_requests.empty_filtered':
+        'هیچ داواکارییەکی گۆڕینی پۆل لەگەڵ ئەم پاڵاوتنە ناگونجێت.',
+    'admin.category_requests.show_all': 'پیشاندانی هەموو',
 };
 
 // Build ku.json

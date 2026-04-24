@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\VendorCategoryRequest;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -36,14 +37,23 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $vendor = $request->user('vendor');
+        $user = $request->user();
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user() ? array_merge(
-                    $request->user()->only('id', 'name', 'email', 'language_pref'),
-                    ['role_slug' => $request->user()->role?->slug]
+                'user' => $user ? array_merge(
+                    $user->only('id', 'name', 'email', 'language_pref'),
+                    [
+                        'role_slug' => $user->role?->slug,
+                        // Only non-zero when the user can review — otherwise the
+                        // sidebar badge never renders. Kept as 0 (not omitted)
+                        // so the client-side type stays stable.
+                        'pending_vendor_category_requests_count' => $user->hasPermission('vendors.review_category_requests')
+                            ? VendorCategoryRequest::open()->count()
+                            : 0,
+                    ]
                 ) : null,
                 'vendor' => $vendor ? array_merge(
                     $vendor->only('id', 'company_name', 'email', 'prequalification_status', 'language_pref'),

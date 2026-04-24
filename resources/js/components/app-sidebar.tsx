@@ -9,6 +9,7 @@ import {
     FileText,
     FolderKanban,
     LayoutGrid,
+    ListChecks,
     MonitorDot,
     ScrollText,
     Settings,
@@ -43,6 +44,9 @@ export function AppSidebar() {
     const { t } = useTranslation();
     const roleSlug = (auth as any).user?.role_slug;
     const isAdmin = roleSlug === 'super_admin' || roleSlug === 'admin';
+    const pendingCategoryRequests = Number(
+        (auth as any).user?.pending_vendor_category_requests_count ?? 0,
+    );
     const side = page.props.dir === 'rtl' ? 'right' : 'left';
 
     const mainNavItems: NavItem[] = [
@@ -58,6 +62,7 @@ export function AppSidebar() {
         { title: t('nav.users'), href: '/admin/users', icon: Users },
         { title: t('nav.projects'), href: '/admin/projects', icon: FolderKanban },
         { title: t('nav.vendors'), href: '/admin/vendors', icon: Building2 },
+        { title: t('nav.category_requests'), href: '/admin/vendor-category-requests', icon: ListChecks },
         { title: t('nav.roles'), href: '/admin/roles', icon: Shield },
         { title: t('nav.categories'), href: '/admin/categories', icon: Tags },
         { title: t('nav.settings'), href: '/admin/settings', icon: Settings },
@@ -85,20 +90,30 @@ export function AppSidebar() {
                     <SidebarGroup className="px-2 py-0">
                         <SidebarGroupLabel>{t('nav.admin')}</SidebarGroupLabel>
                         <SidebarMenu>
-                            {adminNavItems.map((item) => (
-                                <SidebarMenuItem key={String(item.href)}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={isCurrentUrl(item.href)}
-                                        tooltip={{ children: item.title }}
-                                    >
-                                        <Link href={item.href} prefetch>
-                                            {item.icon && <item.icon />}
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {adminNavItems.map((item) => {
+                                const showBadge =
+                                    item.href === '/admin/vendor-category-requests' &&
+                                    pendingCategoryRequests > 0;
+                                return (
+                                    <SidebarMenuItem key={String(item.href)}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isCurrentUrl(item.href)}
+                                            tooltip={{ children: item.title }}
+                                        >
+                                            <Link href={item.href} prefetch>
+                                                {item.icon && <item.icon />}
+                                                <span>{item.title}</span>
+                                                {showBadge && (
+                                                    <span className="ms-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
+                                                        {pendingCategoryRequests}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroup>
                 )}
