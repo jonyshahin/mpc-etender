@@ -29,10 +29,6 @@
             }
         </style>
 
-        {{-- Preload hero backdrop variant (1920w). fetchpriority=low so it
-             never competes with LCP content for the critical path. --}}
-        <link rel="preload" as="image" href="/images/app-background-1920.webp" type="image/webp" fetchpriority="low" />
-
         <link rel="icon" href="/mpc-logo.png" type="image/png">
         <link rel="apple-touch-icon" href="/mpc-logo.png">
 

@@ -142,46 +142,34 @@
     }
 }
 
-/* ---------- Branded global backdrop ---------- */
-:root {
-    --app-bg-image: url('/images/app-background-1920.webp');
-    --app-bg-image-fallback: url('/images/app-background-1920.jpg');
-
-    /* Light-mode overlay: heavy near-opaque wash so text is readable while
-       the fabric texture still whispers through. */
-    --app-bg-overlay: rgba(248, 250, 252, 0.92);
-    --app-bg-blur: 0px;
-}
+/* ---------- Branded global backdrop (dark mode only) ----------
+   Asset: near-black hex-tile pattern, designed for dark-mode viewing.
+   Light mode uses plain bg-background — no image, no overlay.
+   image-set() does real WebP/JPEG format negotiation (browser fetches
+   only the first supported format, not both). */
 
 .dark {
-    /* Dark-mode overlay: mild charcoal wash — fabric is the point here. */
+    --app-bg-image: image-set(
+        url('/images/app-background-1920.webp') type('image/webp'),
+        url('/images/app-background-1920.jpg') type('image/jpeg')
+    );
     --app-bg-overlay: rgba(9, 11, 18, 0.55);
-    --app-bg-blur: 0px;
 }
 
-html,
-body {
-    min-height: 100vh;
-}
-
-/* Fabric lives on a fixed pseudo-element so it never scrolls and never
-   repeats inside pages. Sits behind all content. */
-body::before {
+.dark body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -2;
-    background-image: var(--app-bg-image), var(--app-bg-image-fallback);
+    background-image: var(--app-bg-image);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    filter: blur(var(--app-bg-blur));
     will-change: transform;
     transform: translateZ(0);
 }
 
-/* Readability veil between image and content. */
-body::after {
+.dark body::after {
     content: '';
     position: fixed;
     inset: 0;
@@ -190,39 +178,39 @@ body::after {
     pointer-events: none;
 }
 
-/* Responsive variant selection. */
 @media (min-width: 1920px) {
-    :root {
-        --app-bg-image: url('/images/app-background-3840.webp');
-        --app-bg-image-fallback: url('/images/app-background-3840.jpg');
-    }
-}
-@media (max-width: 768px) {
-    :root {
-        --app-bg-image: url('/images/app-background-1280.webp');
-        --app-bg-image-fallback: url('/images/app-background-1280.jpg');
+    .dark {
+        --app-bg-image: image-set(
+            url('/images/app-background-3840.webp') type('image/webp'),
+            url('/images/app-background-3840.jpg') type('image/jpeg')
+        );
     }
 }
 
-/* Accessibility. */
-@media (prefers-contrast: more) {
-    :root {
-        --app-bg-overlay: rgba(248, 250, 252, 0.98);
+@media (max-width: 768px) {
+    .dark {
+        --app-bg-image: image-set(
+            url('/images/app-background-1280.webp') type('image/webp'),
+            url('/images/app-background-1280.jpg') type('image/jpeg')
+        );
     }
+}
+
+@media (prefers-contrast: more) {
     .dark {
         --app-bg-overlay: rgba(9, 11, 18, 0.92);
     }
 }
 
 @media (prefers-reduced-data: reduce), (prefers-reduced-motion: reduce) {
-    body::before {
+    .dark body::before {
         background-image: none;
     }
 }
 
 @media print {
-    body::before,
-    body::after {
+    .dark body::before,
+    .dark body::after {
         display: none;
     }
 }
