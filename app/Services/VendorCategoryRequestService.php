@@ -10,6 +10,7 @@ use App\Notifications\VendorCategoryRequestApproved;
 use App\Notifications\VendorCategoryRequestRejected;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -154,10 +155,30 @@ class VendorCategoryRequestService
             $removeIds = $req->items()->where('operation', 'remove')->pluck('category_id')->all();
 
             if ($addIds) {
-                $req->vendor->categories()->syncWithoutDetaching($addIds);
+                // Laravel's attach/syncWithoutDetaching builds raw INSERTs that
+                // bypass the pivot model's HasUuids creating event, so `id` is
+                // not auto-populated. SQLite tolerates NULL in the UUID primary
+                // key; MySQL rejects it. Pre-generate the UUID per row.
+                foreach ($addIds as $addId) {
+                    $exists = DB::table('vendor_categories')
+                        ->where('vendor_id', $req->vendor_id)
+                        ->where('category_id', $addId)
+                        ->exists();
+                    if (! $exists) {
+                        DB::table('vendor_categories')->insert([
+                            'id' => (string) Str::uuid(),
+                            'vendor_id' => $req->vendor_id,
+                            'category_id' => $addId,
+                            'created_at' => now(),
+                        ]);
+                    }
+                }
             }
             if ($removeIds) {
-                $req->vendor->categories()->detach($removeIds);
+                DB::table('vendor_categories')
+                    ->where('vendor_id', $req->vendor_id)
+                    ->whereIn('category_id', $removeIds)
+                    ->delete();
             }
 
             $req->update([
