@@ -37,18 +37,28 @@ class CategoryRequestController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
         $vendor = $request->user('vendor');
 
+        // Server-side guard: the React list page already disables the CTA when an
+        // open request exists, but a vendor typing the URL directly or reloading
+        // a stale tab could bypass that. Redirect back with an error toast.
+        if ($vendor->categoryRequests()->open()->exists()) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('vendor.category_requests.open_request_exists'),
+            ]);
+
+            return redirect()->route('vendor.category-requests.index');
+        }
+
         return Inertia::render('vendor/CategoryRequests/Create', [
-            'categories' => Category::active()
-                ->roots()
-                ->with('children:id,name_en,name_ar,parent_id,is_active')
+            'availableCategories' => Category::active()
                 ->orderBy('sort_order')
+                ->orderBy('name_en')
                 ->get(['id', 'name_en', 'name_ar', 'parent_id']),
-            'currentCategoryIds' => $vendor->categories()->pluck('categories.id'),
-            'hasOpenRequest' => $vendor->categoryRequests()->open()->exists(),
+            'currentlyApprovedIds' => $vendor->categories()->pluck('categories.id')->toArray(),
         ]);
     }
 
