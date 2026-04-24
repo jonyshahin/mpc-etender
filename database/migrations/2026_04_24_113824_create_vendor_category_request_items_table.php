@@ -11,6 +11,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Self-repair: an earlier deploy attempt created this table successfully
+        // but then failed on the ALTER TABLE ... ADD UNIQUE (MySQL 64-char
+        // identifier limit). MySQL DDL is not transactional — the CREATE TABLE
+        // was NOT rolled back, so the table exists without the unique index and
+        // the migration was never recorded. Drop-if-exists makes this migration
+        // idempotent against that half-built state.
+        Schema::dropIfExists('vendor_category_request_items');
+
         Schema::create('vendor_category_request_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('request_id')
