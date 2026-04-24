@@ -47,7 +47,10 @@ class HandleInertiaRequests extends Middleware
                 ) : null,
                 'vendor' => $vendor ? array_merge(
                     $vendor->only('id', 'company_name', 'email', 'prequalification_status', 'language_pref'),
-                    ['must_change_password' => (bool) $vendor->must_change_password]
+                    [
+                        'must_change_password' => (bool) $vendor->must_change_password,
+                        'open_category_requests_count' => $vendor->categoryRequests()->open()->count(),
+                    ]
                 ) : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

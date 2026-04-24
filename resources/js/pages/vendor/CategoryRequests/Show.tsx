@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
 
 type CategoryItem = {
@@ -328,14 +329,13 @@ export default function Show({ request }: Props) {
                     </DialogHeader>
 
                     <div className="space-y-2">
-                        <textarea
+                        <Textarea
                             value={withdrawReason}
                             onChange={(e) => setWithdrawReason(e.target.value)}
                             placeholder={t(
                                 'vendor.category_requests.withdraw_reason_placeholder',
                             )}
                             rows={3}
-                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={processing}
                         />
                     </div>
