@@ -153,8 +153,7 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | POST | `/vendor/tenders/{tender}/clarifications` | `vendor.tenders.clarifications.store` | Ask clarification |
 | GET | `/vendor/bids` | `vendor.bids.index` | List vendor's bids |
 | GET | `/vendor/bids/{bid}` | `vendor.bids.show` | View bid details |
-| GET | `/vendor/tenders/{tender}/bid` | `vendor.bids.create` | Start new bid |
-| POST | `/vendor/tenders/{tender}/bid` | `vendor.bids.store` | Create draft bid |
+| GET | `/vendor/tenders/{tender}/bid` | `vendor.bids.create` | Start or resume bid (redirects to `vendor.bids.show`) |
 | PUT | `/vendor/bids/{bid}` | `vendor.bids.update` | Update bid pricing |
 | POST | `/vendor/bids/{bid}/submit` | `vendor.bids.submit` | Submit (seal) bid |
 | POST | `/vendor/bids/{bid}/withdraw` | `vendor.bids.withdraw` | Withdraw bid |

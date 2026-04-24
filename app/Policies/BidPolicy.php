@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\BidStatus;
 use App\Enums\VendorStatus;
 use App\Models\Bid;
 use App\Models\Tender;
@@ -35,7 +36,8 @@ class BidPolicy
     }
 
     /**
-     * Only qualified vendors in a matching category can create bids.
+     * Only qualified, active vendors in a matching category can create bids
+     * on tenders that are open for submission.
      */
     public function create(Vendor $vendor, Tender $tender): bool
     {
@@ -48,11 +50,33 @@ class BidPolicy
     }
 
     /**
-     * Submission only before the tender deadline.
+     * Owner can edit pricing while the bid is a draft and the tender accepts submissions.
+     */
+    public function update(Vendor $vendor, Bid $bid): bool
+    {
+        return $vendor->id === $bid->vendor_id
+            && $bid->status === BidStatus::Draft
+            && $bid->tender->is_open_for_submission;
+    }
+
+    /**
+     * Same gate as update — submission only before deadline, only on a draft owned by this vendor.
      */
     public function submit(Vendor $vendor, Bid $bid): bool
     {
         return $vendor->id === $bid->vendor_id
+            && $bid->status === BidStatus::Draft
+            && $bid->tender->is_open_for_submission;
+    }
+
+    /**
+     * Withdraw is only valid for an already-submitted bid before the deadline.
+     * After deadline, sealed bids cannot be withdrawn.
+     */
+    public function withdraw(Vendor $vendor, Bid $bid): bool
+    {
+        return $vendor->id === $bid->vendor_id
+            && $bid->status === BidStatus::Submitted
             && $bid->tender->is_open_for_submission;
     }
 }

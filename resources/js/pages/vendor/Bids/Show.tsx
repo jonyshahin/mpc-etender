@@ -1,13 +1,36 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, ArrowLeft, Save, SendHorizonal } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import Heading from '@/components/heading';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/hooks/use-translation';
+
+type BoqItem = {
+    id: string;
+    item_code: string;
+    description_en: string;
+    description_ar: string | null;
+    unit: string;
+    quantity: string;
+};
+
+type BoqSection = {
+    id: string;
+    title: string;
+    title_ar: string | null;
+    items: BoqItem[];
+};
+
+type BoqPriceEntry = {
+    unit_price: string | number;
+    total_price: string | number;
+};
 
 type Props = {
     bid: {
@@ -15,33 +38,123 @@ type Props = {
         bid_reference: string;
         status: string;
         total_amount: string | null;
+        currency: string;
         technical_notes: string | null;
         submitted_at: string | null;
         is_sealed: boolean;
-        tender?: { id: string; title_en: string; reference_number: string };
-        boq_prices?: Array<{
-            id: string;
-            boq_item_id: string;
-            unit_price: string;
-            total_price: string;
-            boq_item?: {
-                item_code: string;
-                description_en: string;
-                unit: string;
-                quantity: string;
-            };
-        }>;
+        withdrawal_reason: string | null;
     };
+    tender: {
+        id: string;
+        reference_number: string;
+        title_en: string;
+        title_ar: string | null;
+        currency: string;
+        status: string;
+        submission_deadline: string | null;
+        opening_date: string | null;
+        boq_sections: BoqSection[];
+    };
+    boqPrices: Record<string, BoqPriceEntry>;
+    canEdit: boolean;
+    canSubmit: boolean;
     canWithdraw: boolean;
 };
 
-export default function Show({ bid, canWithdraw }: Props) {
+export default function Show({ bid, tender, boqPrices, canEdit, canSubmit, canWithdraw }: Props) {
     const { t } = useTranslation();
-    const [showWithdraw, setShowWithdraw] = useState(false);
-    const [withdrawReason, setWithdrawReason] = useState('');
-    const [withdrawing, setWithdrawing] = useState(false);
 
-    function handleWithdraw() {
+    // Editable price state — initialized from server-truth, then owned by the form.
+    // Rendered as `<Input>` cells when canEdit, otherwise the boqPrices prop is
+    // read directly for the read-only display.
+    const [prices, setPrices] = useState<Record<string, { unit_price: number; total_price: number }>>(() => {
+        const initial: Record<string, { unit_price: number; total_price: number }> = {};
+        tender.boq_sections.forEach((section) => {
+            section.items.forEach((item) => {
+                const existing = boqPrices[item.id];
+                initial[item.id] = {
+                    unit_price: existing ? Number(existing.unit_price) : 0,
+                    total_price: existing ? Number(existing.total_price) : 0,
+                };
+            });
+        });
+        return initial;
+    });
+
+    const [technicalNotes, setTechnicalNotes] = useState(bid.technical_notes ?? '');
+    const [saving, setSaving] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [withdrawing, setWithdrawing] = useState(false);
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+    const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+    const [withdrawReason, setWithdrawReason] = useState('');
+
+    const handlePriceChange = useCallback((itemId: string, quantity: string, value: string) => {
+        const unitPrice = parseFloat(value) || 0;
+        const qty = parseFloat(quantity) || 0;
+        setPrices((prev) => ({
+            ...prev,
+            [itemId]: {
+                unit_price: unitPrice,
+                total_price: unitPrice * qty,
+            },
+        }));
+    }, []);
+
+    const sectionTotals = useMemo(() => {
+        const totals: Record<string, number> = {};
+        tender.boq_sections.forEach((section) => {
+            totals[section.id] = section.items.reduce((sum, item) => {
+                const price = canEdit
+                    ? prices[item.id]?.total_price ?? 0
+                    : Number(boqPrices[item.id]?.total_price ?? 0);
+                return sum + price;
+            }, 0);
+        });
+        return totals;
+    }, [prices, boqPrices, tender.boq_sections, canEdit]);
+
+    const grandTotal = useMemo(
+        () => Object.values(sectionTotals).reduce((sum, v) => sum + v, 0),
+        [sectionTotals],
+    );
+
+    function buildPayload() {
+        const boq_prices = Object.entries(prices)
+            .filter(([, entry]) => entry.unit_price > 0)
+            .map(([boq_item_id, entry]) => ({
+                boq_item_id,
+                unit_price: entry.unit_price,
+                total_price: entry.total_price,
+            }));
+        return { boq_prices, technical_notes: technicalNotes };
+    }
+
+    function saveDraft() {
+        setSaving(true);
+        router.put(`/vendor/bids/${bid.id}`, buildPayload(), {
+            preserveScroll: true,
+            onFinish: () => setSaving(false),
+        });
+    }
+
+    function submitBid() {
+        setSubmitting(true);
+        // Two-step on purpose: PUT to persist final prices, then POST submit to seal.
+        // Splitting the requests means the seal step has nothing to validate beyond
+        // the policy check, and a failure on save doesn't leave the bid half-sealed.
+        router.put(`/vendor/bids/${bid.id}`, buildPayload(), {
+            preserveScroll: true,
+            onSuccess: () => {
+                router.post(`/vendor/bids/${bid.id}/submit`, {}, {
+                    onFinish: () => setSubmitting(false),
+                });
+            },
+            onError: () => setSubmitting(false),
+        });
+    }
+
+    function withdraw() {
         setWithdrawing(true);
         router.post(
             `/vendor/bids/${bid.id}/withdraw`,
@@ -49,15 +162,11 @@ export default function Show({ bid, canWithdraw }: Props) {
             {
                 onFinish: () => {
                     setWithdrawing(false);
-                    setShowWithdraw(false);
+                    setShowWithdrawDialog(false);
                 },
-            }
+            },
         );
     }
-
-    const grandTotal = bid.boq_prices
-        ? bid.boq_prices.reduce((sum, p) => sum + Number(p.total_price), 0)
-        : null;
 
     return (
         <>
@@ -77,27 +186,39 @@ export default function Show({ bid, canWithdraw }: Props) {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
                         <p className="font-mono text-sm text-muted-foreground">{bid.bid_reference}</p>
-                        <Heading title={bid.tender ? bid.tender.title_en : t('pages.vendor.bid_details')} />
+                        <Heading title={tender.title_en} />
                         <div className="flex items-center gap-2">
                             <StatusBadge status={bid.status} />
-                            {bid.tender && (
-                                <span className="font-mono text-xs text-muted-foreground">
-                                    {bid.tender.reference_number}
-                                </span>
-                            )}
+                            <span className="font-mono text-xs text-muted-foreground">{tender.reference_number}</span>
                         </div>
                     </div>
 
                     {canWithdraw && (
-                        <Button
-                            variant="destructive"
-                            onClick={() => setShowWithdraw(true)}
-                        >
+                        <Button variant="destructive" onClick={() => setShowWithdrawDialog(true)}>
                             <AlertTriangle className="mr-1 h-4 w-4" />
                             {t('btn.withdraw_bid')}
                         </Button>
                     )}
                 </div>
+
+                {/* Withdrawn / rejected banner */}
+                {(bid.status === 'withdrawn' || bid.status === 'rejected') && (
+                    <Card className="border-destructive/50 bg-destructive/5">
+                        <CardContent className="py-4">
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="h-5 w-5 text-destructive" />
+                                <div className="space-y-1">
+                                    <p className="font-medium text-destructive">
+                                        {bid.status === 'withdrawn' ? t('status.withdrawn') : t('status.rejected')}
+                                    </p>
+                                    {bid.withdrawal_reason && (
+                                        <p className="text-sm text-muted-foreground">{bid.withdrawal_reason}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Summary */}
                 <Card>
@@ -124,23 +245,21 @@ export default function Show({ bid, canWithdraw }: Props) {
                                 <dt className="text-sm font-medium text-muted-foreground">{t('table.total_amount')}</dt>
                                 <dd className="mt-1 text-sm font-semibold">
                                     {bid.total_amount
-                                        ? Number(bid.total_amount).toLocaleString(undefined, {
-                                              minimumFractionDigits: 2,
-                                          })
-                                        : bid.is_sealed
-                                          ? t('status.sealed')
-                                          : '\u2014'}
+                                        ? `${Number(bid.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${tender.currency}`
+                                        : canEdit
+                                          ? `${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${tender.currency}`
+                                          : '—'}
                                 </dd>
                             </div>
                         </dl>
                     </CardContent>
                 </Card>
 
-                {/* BOQ Pricing */}
-                {bid.boq_prices && bid.boq_prices.length > 0 && (
-                    <Card>
+                {/* BOQ pricing — editable cells when canEdit, read-only display otherwise */}
+                {tender.boq_sections.map((section) => (
+                    <Card key={section.id}>
                         <CardHeader>
-                            <CardTitle>{t('vendor.boq_pricing')}</CardTitle>
+                            <CardTitle>{section.title}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
@@ -156,69 +275,134 @@ export default function Show({ bid, canWithdraw }: Props) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {bid.boq_prices.map((price) => (
-                                            <tr key={price.id} className="border-b">
-                                                <td className="px-3 py-2 font-mono text-xs">
-                                                    {price.boq_item?.item_code ?? '\u2014'}
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    {price.boq_item?.description_en ?? '\u2014'}
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    {price.boq_item?.unit ?? '\u2014'}
-                                                </td>
-                                                <td className="px-3 py-2 text-right">
-                                                    {price.boq_item
-                                                        ? Number(price.boq_item.quantity).toLocaleString()
-                                                        : '\u2014'}
-                                                </td>
-                                                <td className="px-3 py-2 text-right">
-                                                    {Number(price.unit_price).toLocaleString(undefined, {
-                                                        minimumFractionDigits: 2,
-                                                    })}
-                                                </td>
-                                                <td className="px-3 py-2 text-right font-medium">
-                                                    {Number(price.total_price).toLocaleString(undefined, {
-                                                        minimumFractionDigits: 2,
-                                                    })}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {section.items.map((item) => {
+                                            const editEntry = prices[item.id] ?? { unit_price: 0, total_price: 0 };
+                                            const readEntry = boqPrices[item.id];
+                                            const displayUnit = canEdit
+                                                ? editEntry.unit_price
+                                                : Number(readEntry?.unit_price ?? 0);
+                                            const displayTotal = canEdit
+                                                ? editEntry.total_price
+                                                : Number(readEntry?.total_price ?? 0);
+
+                                            return (
+                                                <tr key={item.id} className="border-b">
+                                                    <td className="px-3 py-2 font-mono text-xs">{item.item_code}</td>
+                                                    <td className="px-3 py-2">{item.description_en}</td>
+                                                    <td className="px-3 py-2">{item.unit}</td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {Number(item.quantity).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {canEdit ? (
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                className="ml-auto w-32 text-right"
+                                                                value={editEntry.unit_price || ''}
+                                                                onChange={(e) =>
+                                                                    handlePriceChange(item.id, item.quantity, e.target.value)
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            displayUnit.toLocaleString(undefined, { minimumFractionDigits: 2 })
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right font-medium">
+                                                        {displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
-                                    {grandTotal !== null && (
-                                        <tfoot>
-                                            <tr className="font-semibold">
-                                                <td colSpan={5} className="px-3 py-2 text-right">
-                                                    {t('tender.grand_total')}
-                                                </td>
-                                                <td className="px-3 py-2 text-right">
-                                                    {grandTotal.toLocaleString(undefined, {
-                                                        minimumFractionDigits: 2,
-                                                    })}
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    )}
+                                    <tfoot>
+                                        <tr className="font-semibold">
+                                            <td colSpan={5} className="px-3 py-2 text-right">
+                                                {t('tender.section_subtotal')}
+                                            </td>
+                                            <td className="px-3 py-2 text-right">
+                                                {(sectionTotals[section.id] ?? 0).toLocaleString(undefined, {
+                                                    minimumFractionDigits: 2,
+                                                })}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </CardContent>
                     </Card>
-                )}
+                ))}
+
+                {/* Grand Total */}
+                <Card>
+                    <CardContent className="flex items-center justify-between py-4">
+                        <span className="text-lg font-semibold">{t('tender.grand_total')}</span>
+                        <span className="text-lg font-bold">
+                            {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tender.currency}
+                        </span>
+                    </CardContent>
+                </Card>
 
                 {/* Technical Notes */}
-                {bid.technical_notes && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>{t('tender.technical_notes')}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('tender.technical_notes')}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {canEdit ? (
+                            <>
+                                <Label htmlFor="technical_notes" className="sr-only">
+                                    {t('tender.technical_notes')}
+                                </Label>
+                                <textarea
+                                    id="technical_notes"
+                                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    placeholder={t('tender.technical_notes_placeholder')}
+                                    value={technicalNotes}
+                                    onChange={(e) => setTechnicalNotes(e.target.value)}
+                                />
+                            </>
+                        ) : bid.technical_notes ? (
                             <p className="text-sm whitespace-pre-line">{bid.technical_notes}</p>
-                        </CardContent>
-                    </Card>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">—</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Editable actions */}
+                {canEdit && (
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Button variant="secondary" onClick={saveDraft} disabled={saving}>
+                            <Save className="mr-1 h-4 w-4" />
+                            {saving ? t('btn.saving') : t('btn.save_draft')}
+                        </Button>
+
+                        {canSubmit && (
+                            <Button onClick={() => setShowSubmitConfirm(true)} disabled={submitting}>
+                                <SendHorizonal className="mr-1 h-4 w-4" />
+                                {submitting ? t('btn.submitting') : t('btn.submit_bid')}
+                            </Button>
+                        )}
+                    </div>
                 )}
 
-                {/* Withdraw Dialog */}
-                <Dialog open={showWithdraw} onOpenChange={setShowWithdraw}>
+                {/* Submit confirm */}
+                <ConfirmDialog
+                    open={showSubmitConfirm}
+                    onOpenChange={setShowSubmitConfirm}
+                    title={t('tender.submit_bid_title')}
+                    description={t('tender.submit_bid_confirm')}
+                    confirmLabel={t('btn.submit')}
+                    onConfirm={() => {
+                        setShowSubmitConfirm(false);
+                        submitBid();
+                    }}
+                />
+
+                {/* Withdraw dialog (needs a free-text reason — can't reuse ConfirmDialog) */}
+                <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>{t('vendor.withdraw_bid_title')}</DialogTitle>
@@ -231,13 +415,15 @@ export default function Show({ bid, canWithdraw }: Props) {
                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 placeholder={t('vendor.withdraw_reason_placeholder')}
                                 value={withdrawReason}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setWithdrawReason(e.target.value)}
+                                onChange={(e) => setWithdrawReason(e.target.value)}
                                 required
                             />
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowWithdraw(false)}>{t('btn.cancel')}</Button>
-                            <Button variant="destructive" onClick={handleWithdraw} disabled={withdrawing || !withdrawReason.trim()}>
+                            <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
+                                {t('btn.cancel')}
+                            </Button>
+                            <Button variant="destructive" onClick={withdraw} disabled={withdrawing || !withdrawReason.trim()}>
                                 {withdrawing ? t('btn.withdrawing') : t('btn.withdraw')}
                             </Button>
                         </DialogFooter>

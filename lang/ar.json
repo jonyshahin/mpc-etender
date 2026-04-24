@@ -486,6 +486,9 @@
     "messages.bid.vendor_not_active": "حساب المقاول غير نشط.",
     "messages.bid.category_mismatch": "المقاول لا يطابق أي فئة من فئات المناقصة.",
     "messages.bid.duplicate": "لدى المقاول بالفعل عرض نشط لهذه المناقصة.",
+    "messages.bid.draft_saved": "تم حفظ المسودة.",
+    "messages.bid.submitted": "تم تقديم العرض وختمه بنجاح.",
+    "messages.bid.withdrawn": "تم سحب العرض بنجاح.",
 
     "alert.must_change_password_desc": "قام المسؤول بتعيين كلمة مرور مؤقتة لحسابك. الرجاء اختيار كلمة مرور جديدة قبل المتابعة.",
     "alert.must_change_password_title": "تغيير كلمة المرور مطلوب",

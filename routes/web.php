@@ -97,7 +97,6 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
     Route::get('bids', [Vendor\BidController::class, 'index'])->name('bids.index');
     Route::get('bids/{bid}', [Vendor\BidController::class, 'show'])->name('bids.show');
     Route::get('tenders/{tender}/bid', [Vendor\BidController::class, 'create'])->name('bids.create');
-    Route::post('tenders/{tender}/bid', [Vendor\BidController::class, 'store'])->name('bids.store');
     Route::put('bids/{bid}', [Vendor\BidController::class, 'update'])->name('bids.update');
     Route::post('bids/{bid}/submit', [Vendor\BidController::class, 'submit'])->name('bids.submit');
     Route::post('bids/{bid}/withdraw', [Vendor\BidController::class, 'withdraw'])->name('bids.withdraw');

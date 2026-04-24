@@ -486,6 +486,9 @@
     "messages.bid.vendor_not_active": "Vendor account is not active.",
     "messages.bid.category_mismatch": "Vendor does not match any tender category.",
     "messages.bid.duplicate": "Vendor already has an active bid for this tender.",
+    "messages.bid.draft_saved": "Draft saved.",
+    "messages.bid.submitted": "Bid submitted and sealed successfully.",
+    "messages.bid.withdrawn": "Bid withdrawn successfully.",
 
     "alert.must_change_password_desc": "An administrator set a temporary password for your account. Please choose a new password before continuing.",
     "alert.must_change_password_title": "Password change required",
