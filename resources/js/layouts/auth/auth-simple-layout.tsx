@@ -12,12 +12,12 @@ export default function AuthSimpleLayout({
         <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
             <div className="w-full max-w-sm">
                 <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-6">
+                    <div className="flex flex-col items-center gap-8">
                         <Link
                             href={home()}
                             className="flex flex-col items-center gap-2 font-medium"
                         >
-                            <AppLogoIcon className="size-24 object-contain md:size-28" />
+                            <AppLogoIcon className="size-36 object-contain md:size-40" />
                             <span className="sr-only">{title}</span>
                         </Link>
 

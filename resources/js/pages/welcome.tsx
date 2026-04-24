@@ -1,8 +1,9 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Building2,
     CheckCircle2,
     FileText,
+    Globe,
     Lock,
     ShieldCheck,
     Users,
@@ -15,8 +16,18 @@ export default function Welcome({
 }: {
     canRegister?: boolean;
 }) {
-    const { auth } = usePage().props;
-    const user = (auth as { user?: { name?: string } | null }).user;
+    const page = usePage();
+    const user = (page.props.auth as { user?: { name?: string } | null }).user;
+    const locale = (page.props as { locale?: string }).locale ?? 'en';
+    const isArabic = locale === 'ar';
+
+    const toggleLanguage = () => {
+        router.put(
+            '/user/language',
+            { language: isArabic ? 'en' : 'ar' },
+            { onSuccess: () => window.location.reload() },
+        );
+    };
 
     return (
         <>
@@ -41,6 +52,15 @@ export default function Welcome({
                         </div>
 
                         <nav className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={toggleLanguage}
+                                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent"
+                                aria-label={isArabic ? 'Switch to English' : 'التبديل إلى العربية'}
+                            >
+                                <Globe className="size-4" />
+                                <span>{isArabic ? 'English' : 'العربية'}</span>
+                            </button>
                             {user ? (
                                 <Link
                                     href={dashboard()}
