@@ -194,7 +194,7 @@ export default function Register({ categories }: Props) {
 
     return (
         <>
-            <Head title="Vendor Registration" />
+            <Head title={t('auth.vendor_registration')} />
 
             <div className="flex min-h-screen items-center justify-center p-6 md:p-10">
                 <div className="w-full max-w-2xl">

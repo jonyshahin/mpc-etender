@@ -155,6 +155,8 @@ const SORANI = {
     'form.forgot_password': 'وشەی نهێنیت لەبیر چووە؟',
     'form.send_reset_link': 'ناردنی بەستەری گۆڕین',
     'form.email_your_registered_email': 'ئیمەیڵی تۆمارکراوت بنووسە',
+    'form.show_password': 'نیشاندانی وشەی نهێنی',
+    'form.hide_password': 'شاردنەوەی وشەی نهێنی',
 
     // ── btn.* (common pre-auth buttons) ──────────────────────────────
     'btn.submit': 'ناردن',
