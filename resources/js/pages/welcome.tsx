@@ -69,49 +69,60 @@ export default function Welcome({
                 </header>
 
                 {/* ── Hero ── */}
-                <section className="mx-auto max-w-6xl px-6 py-20 text-center">
-                    <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                        <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                        </span>
-                        System Online
-                    </div>
+                <section className="mx-auto max-w-6xl px-6 py-20">
+                    <div className="grid items-center gap-10 md:grid-cols-[auto_1fr] md:gap-16">
+                        <div className="flex justify-center md:justify-start">
+                            <img
+                                src="/mpc-logo.png"
+                                alt="MPC Group"
+                                className="w-40 md:w-80 lg:w-96"
+                            />
+                        </div>
+                        <div className="flex flex-col items-center text-center md:items-start md:text-start">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                                </span>
+                                System Online
+                            </div>
 
-                    <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-                        Tender management,
-                        <br />
-                        <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                            end to end.
-                        </span>
-                    </h1>
+                            <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                                Tender management,
+                                <br />
+                                <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                                    end to end.
+                                </span>
+                            </h1>
 
-                    <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
-                        MPC Group's construction procurement platform — from vendor prequalification through
-                        sealed bid submission, committee evaluation, multi-level approval, and award notification.
-                    </p>
+                            <p className="mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
+                                MPC Group's construction procurement platform — from vendor prequalification through
+                                sealed bid submission, committee evaluation, multi-level approval, and award notification.
+                            </p>
 
-                    <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-                        {!user && (
-                            <>
-                                <Link
-                                    href={login()}
-                                    className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                                >
-                                    <Lock className="size-4" />
-                                    Staff Login
-                                </Link>
-                                {canRegister && (
-                                    <a
-                                        href="/vendor/register"
-                                        className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
-                                    >
-                                        <Building2 className="size-4" />
-                                        Register as Vendor
-                                    </a>
+                            <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+                                {!user && (
+                                    <>
+                                        <Link
+                                            href={login()}
+                                            className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                                        >
+                                            <Lock className="size-4" />
+                                            Staff Login
+                                        </Link>
+                                        {canRegister && (
+                                            <a
+                                                href="/vendor/register"
+                                                className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
+                                            >
+                                                <Building2 className="size-4" />
+                                                Register as Vendor
+                                            </a>
+                                        )}
+                                    </>
                                 )}
-                            </>
-                        )}
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -173,7 +184,7 @@ function FeatureCard({
     description: string;
 }) {
     return (
-        <div className="rounded-lg border border-border/50 bg-card p-6 shadow-sm transition hover:border-border hover:shadow-md">
+        <div className="rounded-lg border border-[color:var(--brand-gold-soft)] bg-card p-6 shadow-sm transition hover:border-[color:var(--brand-gold)] hover:shadow-md">
             <div className="mb-4 flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
                 {icon}
             </div>

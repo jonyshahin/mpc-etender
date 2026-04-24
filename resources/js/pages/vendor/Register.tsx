@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -195,11 +196,17 @@ export default function Register({ categories }: Props) {
         <>
             <Head title="Vendor Registration" />
 
-            <div className="flex min-h-screen items-center justify-center bg-background p-4">
+            <div className="flex min-h-screen items-center justify-center p-6 md:p-10">
                 <div className="w-full max-w-2xl">
-                    <div className="mb-6 text-center">
-                        <h1 className="text-2xl font-bold">{t('auth.vendor_registration')}</h1>
-                        <p className="text-muted-foreground">{t('auth.registration_description')}</p>
+                    <div className="mb-8 flex flex-col items-center gap-6">
+                        <Link href="/" className="font-medium">
+                            <AppLogoIcon className="size-24 object-contain md:size-28" />
+                            <span className="sr-only">MPC Group</span>
+                        </Link>
+                        <div className="space-y-2 text-center">
+                            <h1 className="text-2xl font-bold">{t('auth.vendor_registration')}</h1>
+                            <p className="text-muted-foreground">{t('auth.registration_description')}</p>
+                        </div>
                     </div>
 
                     <StepIndicator currentStep={currentStep} />
