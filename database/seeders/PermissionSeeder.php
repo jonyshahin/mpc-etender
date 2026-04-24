@@ -17,6 +17,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'Delete Vendors', 'slug' => 'vendors.delete', 'module' => 'vendors'],
             ['name' => 'Qualify Vendors', 'slug' => 'vendors.qualify', 'module' => 'vendors'],
             ['name' => 'Review Vendor Documents', 'slug' => 'vendors.review_docs', 'module' => 'vendors'],
+            ['name' => 'Review Vendor Category Requests', 'slug' => 'vendors.review_category_requests', 'module' => 'vendors'],
 
             // Tenders
             ['name' => 'View Tenders', 'slug' => 'tenders.view', 'module' => 'tenders'],

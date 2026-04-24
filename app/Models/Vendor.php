@@ -88,6 +88,11 @@ class Vendor extends Authenticatable implements CanResetPasswordContract
             ->using(Concerns\UuidPivot::class);
     }
 
+    public function categoryRequests(): HasMany
+    {
+        return $this->hasMany(VendorCategoryRequest::class);
+    }
+
     public function bids(): HasMany
     {
         return $this->hasMany(Bid::class);

@@ -71,7 +71,15 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
     Route::delete('documents/{document}', [Vendor\DocumentController::class, 'destroy'])->name('documents.destroy');
 
     Route::get('categories', [Vendor\CategoryController::class, 'index'])->name('categories.index');
-    Route::put('categories', [Vendor\CategoryController::class, 'update'])->name('categories.update');
+    // PUT /vendor/categories removed (C.1) — category changes now go through the
+    // request-and-approve workflow below.
+
+    // Category change requests (request-and-approve workflow)
+    Route::get('category-requests', [Vendor\CategoryRequestController::class, 'index'])->name('category-requests.index');
+    Route::get('category-requests/create', [Vendor\CategoryRequestController::class, 'create'])->name('category-requests.create');
+    Route::post('category-requests', [Vendor\CategoryRequestController::class, 'store'])->name('category-requests.store');
+    Route::get('category-requests/{categoryRequest}', [Vendor\CategoryRequestController::class, 'show'])->name('category-requests.show');
+    Route::delete('category-requests/{categoryRequest}', [Vendor\CategoryRequestController::class, 'destroy'])->name('category-requests.destroy');
 
     // Notifications
     Route::get('notifications', [Notification\NotificationController::class, 'vendorIndex'])->name('notifications.index');
@@ -216,6 +224,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('vendors/{vendor}/suspend', [Admin\VendorController::class, 'suspend'])->name('vendors.suspend');
     Route::post('vendors/{vendor}/send-password-reset', [Admin\VendorController::class, 'sendPasswordReset'])->name('vendors.send-password-reset');
     Route::post('vendors/{vendor}/force-temporary-password', [Admin\VendorController::class, 'forceTemporaryPassword'])->name('vendors.force-temporary-password');
+
+    // Vendor category change requests — admin review queue
+    Route::get('vendor-category-requests', [Admin\VendorCategoryRequestController::class, 'index'])->name('vendor-category-requests.index');
+    Route::get('vendor-category-requests/{categoryRequest}', [Admin\VendorCategoryRequestController::class, 'show'])->name('vendor-category-requests.show');
+    Route::post('vendor-category-requests/{categoryRequest}/approve', [Admin\VendorCategoryRequestController::class, 'approve'])->name('vendor-category-requests.approve');
+    Route::post('vendor-category-requests/{categoryRequest}/reject', [Admin\VendorCategoryRequestController::class, 'reject'])->name('vendor-category-requests.reject');
+    Route::get('vendor-category-requests/evidence/{evidence}/download', [Admin\VendorCategoryRequestController::class, 'downloadEvidence'])->name('vendor-category-requests.evidence.download');
 
     // Audit Logs
     Route::get('audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');

@@ -24,7 +24,7 @@ class RolePermissionSeeder extends Seeder
         // Procurement Officer
         $procurement = Role::where('slug', 'procurement_officer')->first();
         $procurementSlugs = [
-            'vendors.view', 'vendors.create', 'vendors.update', 'vendors.qualify', 'vendors.review_docs',
+            'vendors.view', 'vendors.create', 'vendors.update', 'vendors.qualify', 'vendors.review_docs', 'vendors.review_category_requests',
             'tenders.view', 'tenders.create', 'tenders.update', 'tenders.publish', 'tenders.manage_boq',
             'tenders.issue_addenda', 'tenders.answer_clarifications',
             'bids.view', 'bids.open',
