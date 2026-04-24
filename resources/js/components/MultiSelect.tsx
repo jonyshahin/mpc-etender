@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, X } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { CheckIcon, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -119,11 +118,22 @@ export function MultiSelect({
                                         'cursor-pointer',
                                     )}
                                 >
-                                    <Checkbox
-                                        checked={value.includes(option.value)}
-                                        tabIndex={-1}
-                                        className="pointer-events-none"
-                                    />
+                                    {/* Decorative only — using a Radix <Checkbox> here loops
+                                        infinitely: its BubbleInput dispatches a synthetic click
+                                        that bubbles back into this button's onClick. */}
+                                    <div
+                                        aria-hidden="true"
+                                        className={cn(
+                                            'flex size-4 shrink-0 items-center justify-center rounded-[4px] border shadow-xs',
+                                            value.includes(option.value)
+                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                : 'border-input',
+                                        )}
+                                    >
+                                        {value.includes(option.value) && (
+                                            <CheckIcon className="size-3.5" />
+                                        )}
+                                    </div>
                                     {option.label}
                                 </button>
                             ))
