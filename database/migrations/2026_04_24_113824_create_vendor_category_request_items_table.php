@@ -20,7 +20,10 @@ return new class extends Migration
             $table->enum('operation', ['add', 'remove']);
             $table->timestamps();
 
-            $table->unique(['request_id', 'category_id', 'operation']);
+            // Explicit short name — Laravel's auto-generated name
+            // (vendor_category_request_items_request_id_category_id_operation_unique)
+            // is 69 chars and exceeds MySQL's 64-char identifier limit.
+            $table->unique(['request_id', 'category_id', 'operation'], 'vcri_req_cat_op_unique');
         });
     }
 
