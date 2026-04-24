@@ -11,7 +11,12 @@ export default function VerifyEmail({ status }: { status?: string }) {
     const { t } = useTranslation();
     return (
         <>
-            <Head title="Email verification" />
+            <Head title={t('auth.staff_verify_email_title')} />
+
+            <div className="mb-6 space-y-2 text-center">
+                <h1 className="text-xl font-medium">{t('auth.staff_verify_email_title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('auth.staff_verify_email_description')}</p>
+            </div>
 
             {status === 'verification-link-sent' && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
@@ -40,8 +45,3 @@ export default function VerifyEmail({ status }: { status?: string }) {
     );
 }
 
-VerifyEmail.layout = {
-    title: 'Verify email',
-    description:
-        'Please verify your email address by clicking on the link we just emailed to you.',
-};

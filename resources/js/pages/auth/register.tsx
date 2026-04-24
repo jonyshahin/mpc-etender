@@ -14,7 +14,13 @@ export default function Register() {
     const { t } = useTranslation();
     return (
         <>
-            <Head title="Register" />
+            <Head title={t('auth.staff_register_title')} />
+
+            <div className="mb-6 space-y-2 text-center">
+                <h1 className="text-xl font-medium">{t('auth.staff_register_title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('auth.staff_register_description')}</p>
+            </div>
+
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
@@ -110,7 +116,3 @@ export default function Register() {
     );
 }
 
-Register.layout = {
-    title: 'Create an account',
-    description: 'Enter your details below to create your account',
-};

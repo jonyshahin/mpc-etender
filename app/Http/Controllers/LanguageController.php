@@ -10,7 +10,7 @@ class LanguageController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $request->validate([
-            'language' => ['required', 'in:en,ar'],
+            'language' => ['required', 'in:en,ar,ku'],
         ]);
 
         $lang = $request->input('language');

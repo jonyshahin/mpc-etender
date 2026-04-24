@@ -20,7 +20,7 @@ class SetLocale
             }
         }
 
-        if ($locale && in_array($locale, ['en', 'ar'])) {
+        if ($locale && in_array($locale, ['en', 'ar', 'ku'])) {
             app()->setLocale($locale);
         }
 

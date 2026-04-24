@@ -11,7 +11,12 @@ export default function ConfirmPassword() {
     const { t } = useTranslation();
     return (
         <>
-            <Head title="Confirm password" />
+            <Head title={t('auth.staff_confirm_password_title')} />
+
+            <div className="mb-6 space-y-2 text-center">
+                <h1 className="text-xl font-medium">{t('auth.staff_confirm_password_title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('auth.staff_confirm_password_description')}</p>
+            </div>
 
             <Form {...store.form()} resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
@@ -46,8 +51,3 @@ export default function ConfirmPassword() {
     );
 }
 
-ConfirmPassword.layout = {
-    title: 'Confirm your password',
-    description:
-        'This is a secure area of the application. Please confirm your password before continuing.',
-};

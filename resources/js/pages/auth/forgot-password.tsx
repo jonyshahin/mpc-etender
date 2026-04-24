@@ -14,7 +14,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
     const { t } = useTranslation();
     return (
         <>
-            <Head title="Forgot password" />
+            <Head title={t('auth.staff_forgot_password_title')} />
+
+            <div className="space-y-2 text-center">
+                <h1 className="text-xl font-medium">{t('auth.staff_forgot_password_title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('auth.staff_forgot_password_description')}</p>
+            </div>
 
             {status && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
@@ -65,7 +70,3 @@ export default function ForgotPassword({ status }: { status?: string }) {
     );
 }
 
-ForgotPassword.layout = {
-    title: 'Forgot password',
-    description: 'Enter your email to receive a password reset link',
-};

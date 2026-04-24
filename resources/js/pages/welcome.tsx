@@ -9,6 +9,14 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/hooks/use-translation';
+import { LOCALES, LOCALE_BY_CODE, type LocaleCode } from '@/lib/locales';
 import { dashboard, login } from '@/routes';
 
 export default function Welcome({
@@ -16,22 +24,24 @@ export default function Welcome({
 }: {
     canRegister?: boolean;
 }) {
+    const { t } = useTranslation();
     const page = usePage();
     const user = (page.props.auth as { user?: { name?: string } | null }).user;
-    const locale = (page.props as { locale?: string }).locale ?? 'en';
-    const isArabic = locale === 'ar';
+    const locale = ((page.props as { locale?: string }).locale ?? 'en') as LocaleCode;
+    const currentLabel = LOCALE_BY_CODE[locale]?.label ?? 'English';
 
-    const toggleLanguage = () => {
+    const switchLocale = (target: LocaleCode) => {
+        if (target === locale) return;
         router.put(
             '/user/language',
-            { language: isArabic ? 'en' : 'ar' },
+            { language: target },
             { onSuccess: () => window.location.reload() },
         );
     };
 
     return (
         <>
-            <Head title="MPC e-Tender — Digital Procurement Platform">
+            <Head title={t('welcome.head_title')}>
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link
                     href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600"
@@ -46,27 +56,44 @@ export default function Welcome({
                         <div className="flex items-center gap-3">
                             <AppLogoIcon className="size-14 object-contain" />
                             <div>
-                                <p className="text-base font-semibold leading-tight">MPC e-Tender</p>
-                                <p className="text-xs text-muted-foreground">Digital Procurement Platform</p>
+                                <p className="text-base font-semibold leading-tight">
+                                    {t('welcome.brand_title')}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('welcome.brand_subtitle')}
+                                </p>
                             </div>
                         </div>
 
                         <nav className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={toggleLanguage}
-                                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent"
-                                aria-label={isArabic ? 'Switch to English' : 'التبديل إلى العربية'}
-                            >
-                                <Globe className="size-4" />
-                                <span>{isArabic ? 'English' : 'العربية'}</span>
-                            </button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition hover:bg-accent"
+                                    >
+                                        <Globe className="size-4" />
+                                        <span>{currentLabel}</span>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {LOCALES.map((l) => (
+                                        <DropdownMenuItem
+                                            key={l.code}
+                                            onSelect={() => switchLocale(l.code)}
+                                            disabled={l.code === locale}
+                                        >
+                                            {l.label}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             {user ? (
                                 <Link
                                     href={dashboard()}
                                     className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                                 >
-                                    Go to Dashboard
+                                    {t('welcome.cta_go_to_dashboard')}
                                 </Link>
                             ) : (
                                 <>
@@ -74,13 +101,13 @@ export default function Welcome({
                                         href={login()}
                                         className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition hover:bg-accent"
                                     >
-                                        Staff Login
+                                        {t('welcome.staff_login')}
                                     </Link>
                                     <a
                                         href="/vendor/login"
                                         className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                                     >
-                                        Vendor Portal
+                                        {t('welcome.vendor_portal')}
                                     </a>
                                 </>
                             )}
@@ -104,20 +131,19 @@ export default function Welcome({
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                                 </span>
-                                System Online
+                                {t('welcome.system_online')}
                             </div>
 
                             <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-                                Tender management,
+                                {t('welcome.hero_line_1')}
                                 <br />
                                 <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                                    end to end.
+                                    {t('welcome.hero_line_2')}
                                 </span>
                             </h1>
 
                             <p className="mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
-                                MPC Group's construction procurement platform — from vendor prequalification through
-                                sealed bid submission, committee evaluation, multi-level approval, and award notification.
+                                {t('welcome.hero_subhead')}
                             </p>
 
                             <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
@@ -128,7 +154,7 @@ export default function Welcome({
                                             className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                                         >
                                             <Lock className="size-4" />
-                                            Staff Login
+                                            {t('welcome.staff_login')}
                                         </Link>
                                         {canRegister && (
                                             <a
@@ -136,7 +162,7 @@ export default function Welcome({
                                                 className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
                                             >
                                                 <Building2 className="size-4" />
-                                                Register as Vendor
+                                                {t('welcome.cta_register_vendor')}
                                             </a>
                                         )}
                                     </>
@@ -151,33 +177,33 @@ export default function Welcome({
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         <FeatureCard
                             icon={<Building2 className="size-5" />}
-                            title="Vendor Prequalification"
-                            description="Document-backed vendor onboarding with admin review and category-based matching."
+                            title={t('welcome.card_prequal_title')}
+                            description={t('welcome.card_prequal_desc')}
                         />
                         <FeatureCard
                             icon={<FileText className="size-5" />}
-                            title="Tender Management"
-                            description="Multi-step tender creation with BOQ builder, document versioning, addenda, and clarifications."
+                            title={t('welcome.card_tender_title')}
+                            description={t('welcome.card_tender_desc')}
                         />
                         <FeatureCard
                             icon={<Lock className="size-5" />}
-                            title="Sealed Bidding"
-                            description="AES-256 encryption of bid pricing until opening date. Dual authorization for bid opening."
+                            title={t('welcome.card_sealed_title')}
+                            description={t('welcome.card_sealed_desc')}
                         />
                         <FeatureCard
                             icon={<Users className="size-5" />}
-                            title="Committee Evaluation"
-                            description="Technical and financial committees score bids independently. Two-envelope support."
+                            title={t('welcome.card_committee_title')}
+                            description={t('welcome.card_committee_desc')}
                         />
                         <FeatureCard
                             icon={<CheckCircle2 className="size-5" />}
-                            title="Approval Workflows"
-                            description="Value-based multi-level approval chains with delegation and auto-escalation."
+                            title={t('welcome.card_approval_title')}
+                            description={t('welcome.card_approval_desc')}
                         />
                         <FeatureCard
                             icon={<ShieldCheck className="size-5" />}
-                            title="Audit & Compliance"
-                            description="Append-only audit trail, document access logs, and full bilingual (EN/AR) support."
+                            title={t('welcome.card_audit_title')}
+                            description={t('welcome.card_audit_desc')}
                         />
                     </div>
                 </section>
@@ -185,8 +211,12 @@ export default function Welcome({
                 {/* ── Footer ── */}
                 <footer className="border-t border-border/50 bg-muted">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row">
-                        <p>© {new Date().getFullYear()} MPC Group. All rights reserved.</p>
-                        <p>MPC e-Tender · Digital Procurement Platform</p>
+                        <p>
+                            {t('welcome.footer_copyright', {
+                                year: new Date().getFullYear(),
+                            })}
+                        </p>
+                        <p>{t('welcome.footer_tagline')}</p>
                     </div>
                 </footer>
             </div>

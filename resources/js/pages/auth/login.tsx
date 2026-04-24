@@ -26,13 +26,19 @@ export default function Login({
     const { t } = useTranslation();
     return (
         <>
-            <Head title="Log in" />
+            <Head title={t('auth.staff_login_title')} />
 
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
-            >
+            <div className="flex flex-col gap-6">
+                <div className="space-y-2 text-center">
+                    <h1 className="text-xl font-medium">{t('auth.staff_login_title')}</h1>
+                    <p className="text-sm text-muted-foreground">{t('auth.staff_login_description')}</p>
+                </div>
+
+                <Form
+                    {...store.form()}
+                    resetOnSuccess={['password']}
+                    className="flex flex-col gap-6"
+                >
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
@@ -106,18 +112,14 @@ export default function Login({
                         )}
                     </>
                 )}
-            </Form>
+                </Form>
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
+                {status && (
+                    <div className="mb-4 text-center text-sm font-medium text-green-600">
+                        {status}
+                    </div>
+                )}
+            </div>
         </>
     );
 }
-
-Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
-};

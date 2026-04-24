@@ -24,5 +24,6 @@ export function useTranslation() {
         return value;
     }
 
-    return { t, locale: lang, dir: lang === 'ar' ? ('rtl' as const) : ('ltr' as const) };
+    const dir = (lang === 'ar' || lang === 'ku') ? ('rtl' as const) : ('ltr' as const);
+    return { t, locale: lang, dir };
 }

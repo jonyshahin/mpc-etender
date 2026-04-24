@@ -1,33 +1,52 @@
 import { router, usePage } from '@inertiajs/react';
 import { Globe } from 'lucide-react';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { LOCALES, LOCALE_BY_CODE, type LocaleCode } from '@/lib/locales';
 
 export function LanguageSwitcher() {
     const { locale } = usePage<{ locale: string }>().props;
-    const isArabic = locale === 'ar';
+    const current = (locale as LocaleCode) ?? 'en';
+    const currentLabel = LOCALE_BY_CODE[current]?.label ?? 'English';
 
-    const switchLanguage = () => {
-        router.put('/user/language', {
-            language: isArabic ? 'en' : 'ar',
-        }, {
-            onSuccess: () => {
-                window.location.reload();
-            },
-        });
+    const switchLocale = (target: LocaleCode) => {
+        if (target === current) return;
+        router.put(
+            '/user/language',
+            { language: target },
+            { onSuccess: () => window.location.reload() },
+        );
     };
 
     return (
         <SidebarMenuItem>
-            <SidebarMenuButton
-                onClick={switchLanguage}
-                tooltip={{ children: isArabic ? 'English' : 'العربية' }}
-            >
-                <Globe />
-                <span>{isArabic ? 'English' : 'العربية'}</span>
-            </SidebarMenuButton>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <SidebarMenuButton tooltip={{ children: currentLabel }}>
+                        <Globe />
+                        <span>{currentLabel}</span>
+                    </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="start">
+                    {LOCALES.map((l) => (
+                        <DropdownMenuItem
+                            key={l.code}
+                            onSelect={() => switchLocale(l.code)}
+                            disabled={l.code === current}
+                        >
+                            {l.label}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </SidebarMenuItem>
     );
 }

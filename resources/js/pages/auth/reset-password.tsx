@@ -17,7 +17,12 @@ export default function ResetPassword({ token, email }: Props) {
     const { t } = useTranslation();
     return (
         <>
-            <Head title="Reset password" />
+            <Head title={t('auth.staff_reset_password_title')} />
+
+            <div className="mb-6 space-y-2 text-center">
+                <h1 className="text-xl font-medium">{t('auth.staff_reset_password_title')}</h1>
+                <p className="text-sm text-muted-foreground">{t('auth.staff_reset_password_description')}</p>
+            </div>
 
             <Form
                 {...update.form()}
@@ -89,7 +94,3 @@ export default function ResetPassword({ token, email }: Props) {
     );
 }
 
-ResetPassword.layout = {
-    title: 'Reset password',
-    description: 'Please enter your new password below',
-};
