@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { Check, ChevronDown, ChevronRight, Info, Plus } from 'lucide-react';
 import Heading from '@/components/heading';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { ChevronRight, ChevronDown, Save } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
 type Category = {
@@ -19,32 +18,23 @@ type Category = {
 type Props = {
     categories: Category[];
     selectedCategoryIds: string[];
+    hasOpenRequest: boolean;
+    latestRequestId?: string | null;
 };
 
-export default function Categories({ categories, selectedCategoryIds }: Props) {
+export default function Categories({
+    categories,
+    selectedCategoryIds,
+    hasOpenRequest,
+    latestRequestId,
+}: Props) {
     const { t } = useTranslation();
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-    const form = useForm({
-        category_ids: selectedCategoryIds,
-    });
+    const approvedSet = new Set(selectedCategoryIds);
 
     const toggleExpand = (id: string) => {
         setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-    };
-
-    const toggleCategory = (id: string) => {
-        const current = form.data.category_ids;
-        if (current.includes(id)) {
-            form.setData('category_ids', current.filter((cid) => cid !== id));
-        } else {
-            form.setData('category_ids', [...current, id]);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        form.put('/vendor/categories');
     };
 
     return (
@@ -52,56 +42,94 @@ export default function Categories({ categories, selectedCategoryIds }: Props) {
             <Head title="Business Categories" />
 
             <div className="space-y-6">
-                <Heading title={t('pages.vendor.business_categories')} description={t('vendor.select_categories_description')} />
+                <div className="flex items-start justify-between gap-4">
+                    <Heading
+                        title={t('pages.vendor.business_categories')}
+                        description={t('vendor.categories_readonly_description')}
+                    />
 
-                <form onSubmit={handleSubmit}>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="space-y-3">
-                                {categories.map((category) => (
-                                    <div key={category.id} className="rounded-lg border p-4">
-                                        <div className="flex items-center gap-3">
-                                            {category.children && category.children.length > 0 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleExpand(category.id)}
-                                                    className="rounded p-1 hover:bg-muted"
-                                                >
-                                                    {expanded[category.id] ? (
-                                                        <ChevronDown className="h-4 w-4" />
-                                                    ) : (
-                                                        <ChevronRight className="h-4 w-4" />
-                                                    )}
-                                                </button>
-                                            )}
-                                            {(!category.children || category.children.length === 0) && (
-                                                <div className="w-6" />
-                                            )}
-                                            <Checkbox
-                                                id={`category-${category.id}`}
-                                                checked={form.data.category_ids.includes(category.id)}
-                                                onCheckedChange={() => toggleCategory(category.id)}
-                                            />
-                                            <Label htmlFor={`category-${category.id}`} className="cursor-pointer font-medium">
-                                                {category.name_en}
-                                                {category.name_ar && (
-                                                    <span className="ms-2 text-muted-foreground">({category.name_ar})</span>
+                    {hasOpenRequest && latestRequestId ? (
+                        <Button variant="outline" asChild>
+                            <Link href={`/vendor/category-requests/${latestRequestId}`}>
+                                {t('btn.view_open_request')}
+                            </Link>
+                        </Button>
+                    ) : (
+                        <Button asChild>
+                            <Link href="/vendor/category-requests/create">
+                                <Plus className="me-2 h-4 w-4" />
+                                {t('btn.request_category_change')}
+                            </Link>
+                        </Button>
+                    )}
+                </div>
+
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>{t('vendor.categories_mpc_controlled')}</AlertDescription>
+                </Alert>
+
+                <div className="space-y-3">
+                    {categories.map((parent) => {
+                        const hasChildren = (parent.children?.length ?? 0) > 0;
+                        const isExpanded = expanded[parent.id] ?? true;
+                        const parentApproved = approvedSet.has(parent.id);
+
+                        return (
+                            <Card key={parent.id}>
+                                <CardContent className="pt-6">
+                                    <div className="flex items-center gap-3">
+                                        {hasChildren ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleExpand(parent.id)}
+                                                className="rounded p-1 hover:bg-muted"
+                                                aria-label={t('btn.toggle')}
+                                            >
+                                                {isExpanded ? (
+                                                    <ChevronDown className="h-4 w-4" />
+                                                ) : (
+                                                    <ChevronRight className="h-4 w-4" />
                                                 )}
-                                            </Label>
-                                        </div>
+                                            </button>
+                                        ) : (
+                                            <div className="w-6" />
+                                        )}
 
-                                        {expanded[category.id] && category.children && category.children.length > 0 && (
-                                            <div className="ms-12 mt-3 space-y-2 border-s-2 border-muted ps-4">
-                                                {category.children.map((child) => (
-                                                    <div key={child.id} className="flex items-center gap-3">
-                                                        <Checkbox
-                                                            id={`category-${child.id}`}
-                                                            checked={form.data.category_ids.includes(child.id)}
-                                                            onCheckedChange={() => toggleCategory(child.id)}
-                                                        />
-                                                        <Label
-                                                            htmlFor={`category-${child.id}`}
-                                                            className="cursor-pointer"
+                                        <CategoryApprovalIcon approved={parentApproved} />
+
+                                        <span
+                                            className={
+                                                parentApproved
+                                                    ? 'font-medium'
+                                                    : 'font-medium text-muted-foreground'
+                                            }
+                                        >
+                                            {parent.name_en}
+                                            {parent.name_ar && (
+                                                <span className="ms-2 text-muted-foreground">
+                                                    ({parent.name_ar})
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+
+                                    {hasChildren && isExpanded && (
+                                        <div className="ms-12 mt-3 space-y-2 border-s-2 border-muted ps-4">
+                                            {parent.children!.map((child) => {
+                                                const childApproved = approvedSet.has(child.id);
+                                                return (
+                                                    <div
+                                                        key={child.id}
+                                                        className="flex items-center gap-3"
+                                                    >
+                                                        <CategoryApprovalIcon approved={childApproved} />
+                                                        <span
+                                                            className={
+                                                                childApproved
+                                                                    ? ''
+                                                                    : 'text-muted-foreground'
+                                                            }
                                                         >
                                                             {child.name_en}
                                                             {child.name_ar && (
@@ -109,29 +137,31 @@ export default function Categories({ categories, selectedCategoryIds }: Props) {
                                                                     ({child.name_ar})
                                                                 </span>
                                                             )}
-                                                        </Label>
+                                                        </span>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {form.errors.category_ids && (
-                                <p className="mt-4 text-sm text-destructive">{form.errors.category_ids}</p>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-6 flex justify-end">
-                        <Button type="submit" disabled={form.processing}>
-                            <Save className="mr-2 h-4 w-4" />
-                            {form.processing ? t('btn.saving') : t('btn.save_categories')}
-                        </Button>
-                    </div>
-                </form>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
             </div>
         </>
+    );
+}
+
+function CategoryApprovalIcon({ approved }: { approved: boolean }) {
+    if (approved) {
+        return (
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Check className="h-3 w-3" />
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-muted-foreground/30" />
     );
 }

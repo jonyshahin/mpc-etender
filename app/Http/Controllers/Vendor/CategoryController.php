@@ -30,6 +30,10 @@ class CategoryController extends Controller
                 ->get(['id', 'name_en', 'name_ar', 'parent_id']),
             'selectedCategoryIds' => $vendor->categories()->pluck('categories.id'),
             'hasOpenRequest' => $vendor->categoryRequests()->open()->exists(),
+            'latestRequestId' => $vendor->categoryRequests()
+                ->open()
+                ->latest()
+                ->value('id'),
         ]);
     }
 }
