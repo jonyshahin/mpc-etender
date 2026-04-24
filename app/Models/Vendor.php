@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Enums\VendorStatus;
+use App\Notifications\VendorResetPasswordNotification;
 use Database\Factories\VendorFactory;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,10 +21,10 @@ use Laravel\Sanctum\HasApiTokens;
  *
  * Relationships: documents, categories, bids, notifications, qualifiedBy, awards.
  */
-class Vendor extends Authenticatable
+class Vendor extends Authenticatable implements CanResetPasswordContract
 {
     /** @use HasFactory<VendorFactory> */
-    use HasApiTokens, HasFactory, HasUuids, Notifiable;
+    use CanResetPassword, HasApiTokens, HasFactory, HasUuids, Notifiable;
 
     public $incrementing = false;
 
@@ -47,6 +50,7 @@ class Vendor extends Authenticatable
         'language_pref',
         'is_active',
         'last_login_at',
+        'must_change_password',
     ];
 
     protected $hidden = [
@@ -62,7 +66,13 @@ class Vendor extends Authenticatable
             'qualified_at' => 'datetime',
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new VendorResetPasswordNotification($token));
     }
 
     // ── Relationships ──

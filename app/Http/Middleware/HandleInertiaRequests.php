@@ -45,11 +45,20 @@ class HandleInertiaRequests extends Middleware
                     $request->user()->only('id', 'name', 'email', 'language_pref'),
                     ['role_slug' => $request->user()->role?->slug]
                 ) : null,
-                'vendor' => $vendor ? $vendor->only('id', 'company_name', 'email', 'prequalification_status', 'language_pref') : null,
+                'vendor' => $vendor ? array_merge(
+                    $vendor->only('id', 'company_name', 'email', 'prequalification_status', 'language_pref'),
+                    ['must_change_password' => (bool) $vendor->must_change_password]
+                ) : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => app()->getLocale(),
             'dir' => app()->getLocale() === 'ar' ? 'rtl' : 'ltr',
+            // Flash values surfaced from admin one-shot actions. `temporary_password`
+            // is set by forceTemporaryPassword() and lives for exactly one request
+            // so the admin detail page can open the copy-once modal.
+            'flash' => [
+                'temporary_password' => fn () => $request->session()->get('temporary_password'),
+            ],
         ];
     }
 }

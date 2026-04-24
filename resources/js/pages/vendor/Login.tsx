@@ -70,15 +70,23 @@ export default function Login() {
                                     )}
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="remember"
-                                        checked={form.data.remember}
-                                        onCheckedChange={(checked) => form.setData('remember', checked === true)}
-                                    />
-                                    <Label htmlFor="remember" className="cursor-pointer text-sm">
-                                        {t('auth.remember_me')}
-                                    </Label>
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="remember"
+                                            checked={form.data.remember}
+                                            onCheckedChange={(checked) => form.setData('remember', checked === true)}
+                                        />
+                                        <Label htmlFor="remember" className="cursor-pointer text-sm">
+                                            {t('auth.remember_me')}
+                                        </Label>
+                                    </div>
+                                    <Link
+                                        href="/vendor/forgot-password"
+                                        className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                                    >
+                                        {t('form.forgot_password')}
+                                    </Link>
                                 </div>
 
                                 <Button type="submit" className="w-full" disabled={form.processing}>

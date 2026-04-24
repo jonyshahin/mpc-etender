@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\AuditLog;
+use App\Models\User;
+use App\Models\Vendor;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,12 +25,17 @@ class LogAuditTrail
             return;
         }
 
-        $user = $request->user();
-        $vendor = $request->user('vendor');
+        // Gate on model instance, not guard name. $request->user() without a
+        // guard argument can return whichever guard is currently auth'd in the
+        // session — for Vendor-guard requests that would be the Vendor model,
+        // whose UUID doesn't exist in `users` and fails the FK constraint.
+        $authenticated = $request->user('web') ?? $request->user('vendor');
+        $userId = $authenticated instanceof User ? $authenticated->id : null;
+        $vendorId = $authenticated instanceof Vendor ? $authenticated->id : null;
 
         AuditLog::forceCreate([
-            'user_id' => $user?->id,
-            'vendor_id' => $vendor?->id,
+            'user_id' => $userId,
+            'vendor_id' => $vendorId,
             'auditable_type' => 'http_request',
             'auditable_id' => $request->route()?->getName() ?? $request->path(),
             'action' => strtolower($request->method()),

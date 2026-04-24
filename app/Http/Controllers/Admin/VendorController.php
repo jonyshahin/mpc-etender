@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VendorPrequalificationRequest;
+use App\Models\AuditLog;
 use App\Models\Vendor;
 use App\Services\FileUploadService;
 use App\Services\VendorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -95,5 +99,80 @@ class VendorController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Vendor suspended.')]);
 
         return back();
+    }
+
+    public function sendPasswordReset(Request $request, Vendor $vendor): RedirectResponse
+    {
+        $this->authorize('update', $vendor);
+
+        // Admin already knows the vendor exists — unlike the guest flow we
+        // should surface real failures (throttle, mail driver error, etc.)
+        // instead of lying about a successful send.
+        $status = Password::broker('vendors')->sendResetLink(['email' => $vendor->email]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('messages.vendor_password_reset_send_failed', [
+                    'reason' => __($status),
+                ]),
+            ]);
+
+            return back();
+        }
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'vendor_id' => $vendor->id,
+            'auditable_type' => Vendor::class,
+            'auditable_id' => $vendor->id,
+            'action' => 'password_reset_admin_sent',
+            'old_values' => null,
+            'new_values' => null,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('messages.vendor_password_reset_sent', ['email' => $vendor->email]),
+        ]);
+
+        return back();
+    }
+
+    public function forceTemporaryPassword(Request $request, Vendor $vendor): RedirectResponse
+    {
+        $this->authorize('update', $vendor);
+
+        $temp = Str::password(12);
+
+        $vendor->update([
+            'password' => Hash::make($temp),
+            'must_change_password' => true,
+        ]);
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'vendor_id' => $vendor->id,
+            'auditable_type' => Vendor::class,
+            'auditable_id' => $vendor->id,
+            'action' => 'password_reset_admin_temp',
+            'old_values' => null,
+            'new_values' => ['must_change_password' => true],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('messages.vendor_temp_password_set'),
+        ]);
+
+        // Surfaced ONCE on the next request via flash bag — admin must copy
+        // it on the detail page or it's gone.
+        return back()->with('temporary_password', $temp);
     }
 }

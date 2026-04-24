@@ -1,15 +1,19 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useTranslation } from '@/hooks/use-translation';
 import {
+    AlertTriangle,
     ArrowLeft,
     CheckCircle,
     XCircle,
     Ban,
+    Copy,
     Download,
     ExternalLink,
     FileText,
     Globe,
+    KeyRound,
     Phone,
     Mail,
     MapPin,
@@ -18,6 +22,7 @@ import {
 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,6 +41,12 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type VendorDocument = {
     id: string;
@@ -96,11 +107,43 @@ function formatDate(value: string | null): string {
 
 export default function Show({ vendor, documentUrls }: Props) {
     const { t } = useTranslation();
+    const page = usePage();
+    const temporaryPassword = (page.props as { flash?: { temporary_password?: string } }).flash?.temporary_password;
+
     const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
     const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+    const [confirmSendOpen, setConfirmSendOpen] = useState(false);
+    const [confirmTempOpen, setConfirmTempOpen] = useState(false);
+    const [tempModalOpen, setTempModalOpen] = useState(false);
+
+    // Flash prop arrives once on the request following forceTemporaryPassword();
+    // openingness is driven off it so a refresh does NOT re-open the modal.
+    useEffect(() => {
+        if (temporaryPassword) setTempModalOpen(true);
+    }, [temporaryPassword]);
 
     const rejectForm = useForm({ reason: '' });
     const suspendForm = useForm({ reason: '' });
+
+    function handleSendPasswordReset() {
+        router.post(`/admin/vendors/${vendor.id}/send-password-reset`, {}, {
+            preserveScroll: true,
+            onFinish: () => setConfirmSendOpen(false),
+        });
+    }
+
+    function handleForceTempPassword() {
+        router.post(`/admin/vendors/${vendor.id}/force-temporary-password`, {}, {
+            preserveScroll: true,
+            onFinish: () => setConfirmTempOpen(false),
+        });
+    }
+
+    async function copyTempPassword() {
+        if (!temporaryPassword) return;
+        await navigator.clipboard.writeText(temporaryPassword);
+        toast.success(t('messages.temp_password_copied'));
+    }
 
     function handleApprove() {
         router.put(`/admin/vendors/${vendor.id}/prequalify`);
@@ -180,6 +223,23 @@ export default function Show({ vendor, documentUrls }: Props) {
                                 {t('btn.suspend')}
                             </Button>
                         )}
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    <KeyRound className="me-2 h-4 w-4" />
+                                    {t('btn.reset_password')}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => setConfirmSendOpen(true)}>
+                                    {t('btn.send_reset_email')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => setConfirmTempOpen(true)}>
+                                    {t('btn.generate_temp_password')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
@@ -481,6 +541,72 @@ export default function Show({ vendor, documentUrls }: Props) {
                         >
                             {t('btn.suspend_vendor')}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirm: send password reset email */}
+            <Dialog open={confirmSendOpen} onOpenChange={setConfirmSendOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('dialog.send_reset_email_title')}</DialogTitle>
+                        <DialogDescription>
+                            {t('dialog.send_reset_email_desc', { email: vendor.email })}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmSendOpen(false)}>
+                            {t('btn.cancel')}
+                        </Button>
+                        <Button onClick={handleSendPasswordReset}>
+                            {t('btn.send')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirm: generate temporary password */}
+            <Dialog open={confirmTempOpen} onOpenChange={setConfirmTempOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('dialog.generate_temp_title')}</DialogTitle>
+                        <DialogDescription>{t('dialog.generate_temp_desc')}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmTempOpen(false)}>
+                            {t('btn.cancel')}
+                        </Button>
+                        <Button variant="destructive" onClick={handleForceTempPassword}>
+                            {t('btn.generate')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* One-time temporary password display */}
+            <Dialog open={tempModalOpen} onOpenChange={setTempModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('dialog.temp_password_title')}</DialogTitle>
+                        <DialogDescription>{t('dialog.temp_password_desc')}</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="my-4 flex items-center gap-2">
+                        <code className="flex-1 rounded bg-muted px-3 py-2 font-mono text-lg">
+                            {temporaryPassword}
+                        </code>
+                        <Button size="icon" variant="outline" onClick={copyTempPassword} aria-label={t('btn.copy_to_clipboard')}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>{t('alert.temp_password_one_time')}</AlertDescription>
+                    </Alert>
+
+                    <DialogFooter>
+                        <Button onClick={() => setTempModalOpen(false)}>{t('btn.done')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

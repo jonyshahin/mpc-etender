@@ -1,11 +1,11 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save } from 'lucide-react';
+import { KeyRound, Save } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
 type Props = {
@@ -53,7 +53,16 @@ export default function Profile({ vendor }: Props) {
             <Head title="Company Profile" />
 
             <div className="space-y-6">
-                <Heading title={t('pages.vendor.company_profile')} description={t('vendor.update_company_info')} />
+                <div className="flex items-start justify-between gap-4">
+                    <Heading title={t('pages.vendor.company_profile')} description={t('vendor.update_company_info')} />
+                    <Link
+                        href="/vendor/password/change"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                        <KeyRound className="h-4 w-4" />
+                        {t('btn.change_password')}
+                    </Link>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="grid gap-6 lg:grid-cols-2">

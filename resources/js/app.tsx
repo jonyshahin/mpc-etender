@@ -22,7 +22,10 @@ createInertiaApp({
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
-            case name === 'vendor/Login' || name === 'vendor/Register':
+            case name === 'vendor/Login' ||
+                name === 'vendor/Register' ||
+                name === 'vendor/ForgotPassword' ||
+                name === 'vendor/ResetPassword':
                 return AuthLayout;
             case name.startsWith('vendor/'):
                 return VendorLayout;

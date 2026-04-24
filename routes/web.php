@@ -36,13 +36,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/project/{project}', [Dashboard\DashboardController::class, 'project'])->name('dashboard.project');
 });
 
-// ── Vendor public routes (registration & login) ──
+// ── Vendor public routes (registration & login & password reset) ──
 Route::prefix('vendor')->name('vendor.')->group(function () {
     Route::middleware('guest:vendor')->group(function () {
         Route::get('register', [Vendor\RegisterController::class, 'create'])->name('register');
         Route::post('register', [Vendor\RegisterController::class, 'store'])->name('register.store');
         Route::get('login', [Vendor\LoginController::class, 'create'])->name('login');
         Route::post('login', [Vendor\LoginController::class, 'store'])->name('login.store');
+
+        Route::get('forgot-password', [Vendor\Auth\PasswordResetLinkController::class, 'create'])->name('password.request');
+        Route::post('forgot-password', [Vendor\Auth\PasswordResetLinkController::class, 'store'])->name('password.email');
+        Route::get('reset-password/{token}', [Vendor\Auth\NewPasswordController::class, 'create'])->name('password.reset');
+        Route::post('reset-password', [Vendor\Auth\NewPasswordController::class, 'store'])->name('password.update');
     });
 
     Route::post('logout', [Vendor\LoginController::class, 'destroy'])->name('logout')
@@ -50,7 +55,12 @@ Route::prefix('vendor')->name('vendor.')->group(function () {
 });
 
 // ── Vendor authenticated routes ──
-Route::middleware('auth:vendor')->prefix('vendor')->name('vendor.')->group(function () {
+Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')->name('vendor.')->group(function () {
+    // Self-service password change (always accessible while authenticated,
+    // including when must_change_password is true).
+    Route::get('password/change', [Vendor\Auth\PasswordController::class, 'edit'])->name('password.change.show');
+    Route::put('password/change', [Vendor\Auth\PasswordController::class, 'update'])->name('password.change');
+
     Route::get('dashboard', [Vendor\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('profile', [Vendor\ProfileController::class, 'edit'])->name('profile.edit');
@@ -204,6 +214,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::put('vendors/{vendor}/prequalify', [Admin\VendorController::class, 'prequalify'])->name('vendors.prequalify');
     Route::put('vendors/{vendor}/reject', [Admin\VendorController::class, 'reject'])->name('vendors.reject');
     Route::put('vendors/{vendor}/suspend', [Admin\VendorController::class, 'suspend'])->name('vendors.suspend');
+    Route::post('vendors/{vendor}/send-password-reset', [Admin\VendorController::class, 'sendPasswordReset'])->name('vendors.send-password-reset');
+    Route::post('vendors/{vendor}/force-temporary-password', [Admin\VendorController::class, 'forceTemporaryPassword'])->name('vendors.force-temporary-password');
 
     // Audit Logs
     Route::get('audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
