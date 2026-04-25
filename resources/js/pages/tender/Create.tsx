@@ -238,7 +238,12 @@ export default function Create({ projects, categories }: Props) {
     }
 
     function addBoqSection() {
-        setBoqSections([...boqSections, { title: '', title_ar: '', items: [] }]);
+        // Default title to "Section N" so a user who skips the field still
+        // satisfies boq_sections.*.title_en's required_with rule (BUG-11 tier 2).
+        setBoqSections([
+            ...boqSections,
+            { title: `Section ${boqSections.length + 1}`, title_ar: '', items: [] },
+        ]);
     }
 
     function updateSection(index: number, field: keyof BoqSection, value: any) {
@@ -252,11 +257,13 @@ export default function Create({ projects, categories }: Props) {
     }
 
     function addBoqItem(sectionIndex: number) {
+        // 'EA' (each) is the most common construction-BOQ unit and a safe
+        // default that satisfies the required_with rule on items.*.unit.
         const updated = [...boqSections];
         updated[sectionIndex].items.push({
             item_code: '',
             description_en: '',
-            unit: '',
+            unit: 'EA',
             quantity: '',
         });
         setBoqSections(updated);
@@ -300,9 +307,13 @@ export default function Create({ projects, categories }: Props) {
     }
 
     function addCriterion() {
+        // weight_percentage and max_score are required_with on the server.
+        // Pre-filling matches the placeholder hints (100/100) so the most
+        // common single-criterion case (one financial criterion at 100%)
+        // saves without any extra input (BUG-11 tier 2).
         setCriteria([
             ...criteria,
-            { name_en: '', envelope: 'technical', weight_percentage: '', max_score: '' },
+            { name_en: '', envelope: 'technical', weight_percentage: '100', max_score: '100' },
         ]);
     }
 
