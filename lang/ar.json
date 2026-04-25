@@ -465,6 +465,7 @@
     "messages.publish_reason_no_criteria": "يجب إضافة معيار تقييم واحد على الأقل.",
     "messages.publish_reason_weights_imbalanced": "يجب أن يكون مجموع أوزان معايير التقييم 100٪ لكل مظروف.",
     "messages.temp_password_copied": "تم نسخ كلمة المرور المؤقتة إلى الحافظة.",
+    "messages.tender_create_failed": "تعذر حفظ المناقصة — يرجى مراجعة الحقول المظللة.",
     "messages.tender_publish_failed": "تعذر نشر المناقصة: :reason",
     "messages.tender_published": "تم نشر المناقصة بنجاح.",
     "messages.tender_saved_draft": "تم حفظ المناقصة كمسودة.",

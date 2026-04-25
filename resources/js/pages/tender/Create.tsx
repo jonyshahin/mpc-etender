@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState, ReactNode } from 'react';
 import { Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -61,6 +61,12 @@ const CURRENCIES = [
     { value: 'IQD', label: 'IQD' },
     { value: 'EUR', label: 'EUR' },
 ];
+
+function FieldError({ errors, path }: { errors: Record<string, string>; path: string }) {
+    const msg = errors[path];
+    if (!msg) return null;
+    return <p className="text-sm text-destructive">{msg}</p>;
+}
 
 function StepIndicator({ current, steps }: { current: number; steps: string[] }) {
     return (
@@ -210,6 +216,13 @@ export default function Create({ projects, categories }: Props) {
         category_ids: [] as string[],
     });
 
+    // Wizard data spans useState (boqSections, criteria, documents, categoryIds)
+    // + useForm (scalars), and submission goes through router.post — that path
+    // never populates useForm.errors. Read errors directly from the page props
+    // bag so the post-submit Inertia partial reload surfaces them. Long-term
+    // cleanup is unifying onto useForm + form.post() (BUG-12).
+    const errors = (usePage().props.errors ?? {}) as Record<string, string>;
+
     function next() {
         if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
     }
@@ -351,9 +364,14 @@ export default function Create({ projects, categories }: Props) {
         router.post('/tenders', payload, {
             forceFormData: true,
             preserveScroll: true,
-            onError: (errors) => {
-                const first = Object.values(errors)[0];
-                if (first) toast.error(String(first));
+            onError: (errs) => {
+                // Logged so future-us has evidence on every silent-failure
+                // bug report. Fallback toast guarantees the user always sees
+                // *something* even if the errors object is empty or oddly
+                // shaped (BUG-11).
+                console.log('[tender create] validation errors:', errs);
+                const first = Object.values(errs ?? {})[0];
+                toast.error(first ? String(first) : t('messages.tender_create_failed'));
             },
         });
     }
@@ -390,11 +408,7 @@ export default function Create({ projects, categories }: Props) {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        {form.errors.project_id && (
-                                            <p className="text-sm text-destructive">
-                                                {form.errors.project_id}
-                                            </p>
-                                        )}
+                                        <FieldError errors={errors} path="project_id" />
                                     </div>
 
                                     <div className="space-y-2">
@@ -414,6 +428,7 @@ export default function Create({ projects, categories }: Props) {
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <FieldError errors={errors} path="tender_type" />
                                     </div>
                                 </div>
 
@@ -427,11 +442,7 @@ export default function Create({ projects, categories }: Props) {
                                                 form.setData('title_en', e.target.value)
                                             }
                                         />
-                                        {form.errors.title_en && (
-                                            <p className="text-sm text-destructive">
-                                                {form.errors.title_en}
-                                            </p>
-                                        )}
+                                        <FieldError errors={errors} path="title_en" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="title_ar">{t('form.title_ar')}</Label>
@@ -443,6 +454,7 @@ export default function Create({ projects, categories }: Props) {
                                             }
                                             dir="rtl"
                                         />
+                                        <FieldError errors={errors} path="title_ar" />
                                     </div>
                                 </div>
 
@@ -457,6 +469,7 @@ export default function Create({ projects, categories }: Props) {
                                                 form.setData('description_en', e.target.value)
                                             }
                                         />
+                                        <FieldError errors={errors} path="description_en" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="description_ar">{t('form.description_ar')}</Label>
@@ -469,6 +482,7 @@ export default function Create({ projects, categories }: Props) {
                                             }
                                             dir="rtl"
                                         />
+                                        <FieldError errors={errors} path="description_ar" />
                                     </div>
                                 </div>
 
@@ -483,6 +497,7 @@ export default function Create({ projects, categories }: Props) {
                                                 form.setData('estimated_value', e.target.value)
                                             }
                                         />
+                                        <FieldError errors={errors} path="estimated_value" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="currency">{t('form.currency')}</Label>
@@ -501,6 +516,7 @@ export default function Create({ projects, categories }: Props) {
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <FieldError errors={errors} path="currency" />
                                     </div>
                                 </div>
 
@@ -520,11 +536,7 @@ export default function Create({ projects, categories }: Props) {
                                                 )
                                             }
                                         />
-                                        {form.errors.submission_deadline && (
-                                            <p className="text-sm text-destructive">
-                                                {form.errors.submission_deadline}
-                                            </p>
-                                        )}
+                                        <FieldError errors={errors} path="submission_deadline" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="opening_date">{t('form.opening_date')}</Label>
@@ -536,11 +548,7 @@ export default function Create({ projects, categories }: Props) {
                                                 form.setData('opening_date', e.target.value)
                                             }
                                         />
-                                        {form.errors.opening_date && (
-                                            <p className="text-sm text-destructive">
-                                                {form.errors.opening_date}
-                                            </p>
-                                        )}
+                                        <FieldError errors={errors} path="opening_date" />
                                     </div>
                                 </div>
 
@@ -577,6 +585,7 @@ export default function Create({ projects, categories }: Props) {
                                                     )
                                                 }
                                             />
+                                            <FieldError errors={errors} path="technical_pass_score" />
                                         </div>
                                     )}
                                 </div>
@@ -599,6 +608,8 @@ export default function Create({ projects, categories }: Props) {
                                         {t('empty.no_boq_sections_hint')}
                                     </p>
                                 )}
+
+                                <FieldError errors={errors} path="boq_sections" />
 
                                 {boqSections.map((section, si) => (
                                     <Card key={si}>
@@ -643,6 +654,7 @@ export default function Create({ projects, categories }: Props) {
                                                                 )
                                                             }
                                                         />
+                                                        <FieldError errors={errors} path={`boq_sections.${si}.title_en`} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label>{t('form.section_title_ar')}</Label>
@@ -657,6 +669,7 @@ export default function Create({ projects, categories }: Props) {
                                                             }
                                                             dir="rtl"
                                                         />
+                                                        <FieldError errors={errors} path={`boq_sections.${si}.title_ar`} />
                                                     </div>
                                                 </div>
 
@@ -701,7 +714,7 @@ export default function Create({ projects, categories }: Props) {
                                                                                 key={ii}
                                                                                 className="border-b last:border-0"
                                                                             >
-                                                                                <td className="px-3 py-2">
+                                                                                <td className="px-3 py-2 align-top">
                                                                                     <Input
                                                                                         value={
                                                                                             item.item_code
@@ -721,8 +734,9 @@ export default function Create({ projects, categories }: Props) {
                                                                                         className="h-8"
                                                                                         placeholder="A.1"
                                                                                     />
+                                                                                    <FieldError errors={errors} path={`boq_sections.${si}.items.${ii}.item_code`} />
                                                                                 </td>
-                                                                                <td className="px-3 py-2">
+                                                                                <td className="px-3 py-2 align-top">
                                                                                     <Input
                                                                                         value={
                                                                                             item.description_en
@@ -742,8 +756,9 @@ export default function Create({ projects, categories }: Props) {
                                                                                         className="h-8"
                                                                                         placeholder="Description"
                                                                                     />
+                                                                                    <FieldError errors={errors} path={`boq_sections.${si}.items.${ii}.description_en`} />
                                                                                 </td>
-                                                                                <td className="px-3 py-2">
+                                                                                <td className="px-3 py-2 align-top">
                                                                                     <Input
                                                                                         value={
                                                                                             item.unit
@@ -761,10 +776,11 @@ export default function Create({ projects, categories }: Props) {
                                                                                             )
                                                                                         }
                                                                                         className="h-8 w-20"
-                                                                                        placeholder="m2"
+                                                                                        placeholder="EA"
                                                                                     />
+                                                                                    <FieldError errors={errors} path={`boq_sections.${si}.items.${ii}.unit`} />
                                                                                 </td>
-                                                                                <td className="px-3 py-2">
+                                                                                <td className="px-3 py-2 align-top">
                                                                                     <Input
                                                                                         type="number"
                                                                                         value={
@@ -785,6 +801,7 @@ export default function Create({ projects, categories }: Props) {
                                                                                         className="h-8 w-24"
                                                                                         placeholder="0"
                                                                                     />
+                                                                                    <FieldError errors={errors} path={`boq_sections.${si}.items.${ii}.quantity`} />
                                                                                 </td>
                                                                                 <td className="px-3 py-2">
                                                                                     <Button
@@ -833,6 +850,8 @@ export default function Create({ projects, categories }: Props) {
                                     </p>
                                 )}
 
+                                <FieldError errors={errors} path="documents" />
+
                                 {documents.map((doc, i) => (
                                     <Card key={i}>
                                         <CardContent className="pt-4">
@@ -850,6 +869,7 @@ export default function Create({ projects, categories }: Props) {
                                                         }
                                                         placeholder={t('form.document_title_placeholder')}
                                                     />
+                                                    <FieldError errors={errors} path={`documents.${i}.title`} />
                                                 </div>
                                                 <div className="w-48 space-y-2">
                                                     <Label>{t('form.type')}</Label>
@@ -873,6 +893,7 @@ export default function Create({ projects, categories }: Props) {
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
+                                                    <FieldError errors={errors} path={`documents.${i}.doc_type`} />
                                                 </div>
                                                 <div className="flex-1 space-y-2">
                                                     <Label>{t('form.file')}</Label>
@@ -886,6 +907,7 @@ export default function Create({ projects, categories }: Props) {
                                                             )
                                                         }
                                                     />
+                                                    <FieldError errors={errors} path={`documents.${i}.file`} />
                                                 </div>
                                                 <Button
                                                     type="button"
@@ -922,6 +944,7 @@ export default function Create({ projects, categories }: Props) {
                                         {categoryIds.length} {t('tender.categories_selected')}
                                     </p>
                                 )}
+                                <FieldError errors={errors} path="category_ids" />
                             </div>
                         )}
 
@@ -957,6 +980,8 @@ export default function Create({ projects, categories }: Props) {
                                     </p>
                                 )}
 
+                                <FieldError errors={errors} path="evaluation_criteria" />
+
                                 {criteria.map((c, i) => (
                                     <Card key={i}>
                                         <CardContent className="pt-4">
@@ -974,6 +999,7 @@ export default function Create({ projects, categories }: Props) {
                                                         }
                                                         placeholder={t('tender.criterion_name_placeholder')}
                                                     />
+                                                    <FieldError errors={errors} path={`evaluation_criteria.${i}.name_en`} />
                                                 </div>
                                                 <div className="w-36 space-y-2">
                                                     <Label>{t('form.envelope')}</Label>
@@ -995,6 +1021,7 @@ export default function Create({ projects, categories }: Props) {
                                                             </SelectItem>
                                                         </SelectContent>
                                                     </Select>
+                                                    <FieldError errors={errors} path={`evaluation_criteria.${i}.envelope`} />
                                                 </div>
                                                 <div className="w-28 space-y-2">
                                                     <Label>{t('form.weight_pct')}</Label>
@@ -1010,6 +1037,7 @@ export default function Create({ projects, categories }: Props) {
                                                         }
                                                         placeholder="0"
                                                     />
+                                                    <FieldError errors={errors} path={`evaluation_criteria.${i}.weight_percentage`} />
                                                 </div>
                                                 <div className="w-28 space-y-2">
                                                     <Label>{t('form.max_score')}</Label>
@@ -1025,6 +1053,7 @@ export default function Create({ projects, categories }: Props) {
                                                         }
                                                         placeholder="100"
                                                     />
+                                                    <FieldError errors={errors} path={`evaluation_criteria.${i}.max_score`} />
                                                 </div>
                                                 <Button
                                                     type="button"

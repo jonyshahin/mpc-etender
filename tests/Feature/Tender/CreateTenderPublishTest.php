@@ -118,6 +118,24 @@ test('publish flag accepts FormData-style truthy values', function (mixed $truth
     'true bool' => true,
 ]);
 
+test('missing evaluation_criteria.max_score returns the validation key in session errors (BUG-11)', function () {
+    [$user, $project] = createTenderCreator();
+
+    $payload = validTenderPayload($project->id, ['publish' => true]);
+    unset($payload['evaluation_criteria'][0]['max_score']);
+
+    $response = $this->actingAs($user)->post(
+        route('tenders.store'),
+        $payload,
+    );
+
+    // Validation failure should surface the dotted error key the wizard now
+    // renders inline. If this assertion ever stops matching the React side's
+    // FieldError path string, BUG-11 is regressing.
+    $response->assertSessionHasErrors('evaluation_criteria.0.max_score');
+    expect(Tender::where('title_en', 'Post-Fix Publish Test')->exists())->toBeFalse();
+});
+
 test('publish is downgraded to draft when user lacks tenders.publish permission', function () {
     [$user, $project] = createTenderCreator(['tenders.create']);
 

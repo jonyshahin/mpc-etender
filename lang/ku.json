@@ -453,6 +453,7 @@
     "messages.publish_reason_no_criteria": "[en] at least one evaluation criterion is required.",
     "messages.publish_reason_weights_imbalanced": "[en] evaluation criterion weights must sum to 100% per envelope.",
     "messages.temp_password_copied": "[en] Temporary password copied to clipboard.",
+    "messages.tender_create_failed": "[en] Could not save tender — please review the highlighted fields.",
     "messages.tender_publish_failed": "[en] Could not publish tender: :reason",
     "messages.tender_published": "[en] Tender published successfully.",
     "messages.tender_saved_draft": "[en] Tender saved as draft.",
