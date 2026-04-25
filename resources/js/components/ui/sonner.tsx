@@ -1,4 +1,5 @@
 import { useFlashToast } from '@/hooks/use-flash-toast';
+import { useErrorToast } from '@/hooks/use-error-toast';
 import { useAppearance } from '@/hooks/use-appearance';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
@@ -7,6 +8,7 @@ function Toaster({ ...props }: ToasterProps) {
     const isRtl = document.documentElement.dir === 'rtl';
 
     useFlashToast();
+    useErrorToast();
 
     return (
         <Sonner

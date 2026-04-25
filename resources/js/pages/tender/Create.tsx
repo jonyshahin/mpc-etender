@@ -1,7 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState, ReactNode } from 'react';
 import { Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
-import { toast } from 'sonner';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
@@ -375,14 +374,19 @@ export default function Create({ projects, categories }: Props) {
         router.post('/tenders', payload, {
             forceFormData: true,
             preserveScroll: true,
+            // preserveState keeps the wizard's useState arrays (boqSections,
+            // criteria, documents, categoryIds) and currentStep intact after
+            // the redirect-back-with-errors. Without it, Inertia's default
+            // remount drops the user back at Step 1 of an empty wizard with
+            // their data gone — the visible symptom that "nothing happened"
+            // when validation actually failed (BUG-11 tier 3).
+            preserveState: true,
             onError: (errs) => {
-                // Logged so future-us has evidence on every silent-failure
-                // bug report. Fallback toast guarantees the user always sees
-                // *something* even if the errors object is empty or oddly
-                // shaped (BUG-11).
+                // Per-call diagnostic log. The global useErrorToast hook
+                // (resources/js/hooks/use-error-toast.ts) handles the
+                // user-visible bottom-center toast as a backstop in case
+                // this callback isn't invoked for any reason.
                 console.log('[tender create] validation errors:', errs);
-                const first = Object.values(errs ?? {})[0];
-                toast.error(first ? String(first) : t('messages.tender_create_failed'));
             },
         });
     }
