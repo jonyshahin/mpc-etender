@@ -118,6 +118,33 @@ test('publish flag accepts FormData-style truthy values', function (mixed $truth
     'true bool' => true,
 ]);
 
+test('validation error message uses user-readable label, not the raw dotted path (BUG-14)', function () {
+    [$user, $project] = createTenderCreator();
+
+    $payload = validTenderPayload($project->id);
+    // Force a required_with violation on a deeply-nested array field whose
+    // raw error key would otherwise leak as "boq_sections.0.items.0.description_en".
+    unset($payload['boq_sections'][0]['items'][0]['description_en']);
+
+    $response = $this->actingAs($user)->post(
+        route('tenders.store'),
+        $payload,
+    );
+
+    $response->assertSessionHasErrors('boq_sections.0.items.0.description_en');
+
+    $message = session('errors')->first('boq_sections.0.items.0.description_en');
+
+    // Raw structural path must NOT appear in user-facing copy.
+    expect($message)->not->toContain('boq_sections');
+    expect($message)->not->toContain('items');
+    expect($message)->not->toContain('description_en');
+    // Translatable label IS substituted.
+    expect($message)->toContain('Description');
+    // The noisy "when X is present" suffix is dropped — see messages() override.
+    expect($message)->not->toContain('when');
+});
+
 test('missing evaluation_criteria.max_score returns the validation key in session errors (BUG-11)', function () {
     [$user, $project] = createTenderCreator();
 

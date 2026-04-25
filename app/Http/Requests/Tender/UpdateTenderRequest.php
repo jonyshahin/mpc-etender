@@ -31,4 +31,28 @@ class UpdateTenderRequest extends FormRequest
             'category_ids.*' => ['uuid', 'exists:categories,id'],
         ];
     }
+
+    /**
+     * Translatable user-readable labels — same rationale as StoreTenderRequest
+     * (BUG-14). UpdateTenderRequest has no nested array rules so messages()
+     * overrides aren't needed here.
+     */
+    public function attributes(): array
+    {
+        return [
+            'title_en' => __('form.title_en'),
+            'title_ar' => __('form.title_ar'),
+            'description_en' => __('form.description_en'),
+            'description_ar' => __('form.description_ar'),
+            'tender_type' => __('form.tender_type'),
+            'estimated_value' => __('form.estimated_value'),
+            'currency' => __('form.currency'),
+            'submission_deadline' => __('form.submission_deadline'),
+            'opening_date' => __('form.opening_date'),
+            'is_two_envelope' => __('form.two_envelope_system'),
+            'technical_pass_score' => __('form.technical_pass_score'),
+            'category_ids' => __('form.categories'),
+            'category_ids.*' => __('form.category'),
+        ];
+    }
 }
