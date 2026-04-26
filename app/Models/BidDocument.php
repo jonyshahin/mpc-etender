@@ -26,10 +26,13 @@ class BidDocument extends Model
     protected $fillable = [
         'bid_id',
         'title',
+        'original_filename',
         'file_path',
         'file_size',
         'mime_type',
         'doc_type',
+        'envelope_type',
+        'uploaded_by_vendor_id',
         'uploaded_at',
     ];
 

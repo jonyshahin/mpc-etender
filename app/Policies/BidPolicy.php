@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\BidStatus;
 use App\Enums\VendorStatus;
 use App\Models\Bid;
+use App\Models\BidDocument;
 use App\Models\Tender;
 use App\Models\User;
 use App\Models\Vendor;
@@ -78,5 +79,34 @@ class BidPolicy
         return $vendor->id === $bid->vendor_id
             && $bid->status === BidStatus::Submitted
             && $bid->tender->is_open_for_submission;
+    }
+
+    /**
+     * Vendor can attach / remove documents while the bid is a draft and the
+     * tender accepts submissions. Mirrors update() for pricing.
+     */
+    public function manageDocuments(Vendor $vendor, Bid $bid): bool
+    {
+        return $vendor->id === $bid->vendor_id
+            && $bid->status === BidStatus::Draft
+            && $bid->tender->is_open_for_submission;
+    }
+
+    /**
+     * Vendor can view (download) any document on their own bid at any status —
+     * they're the owner. Phase A scope.
+     *
+     * Signature is (vendor, bid, doc) — Gate dispatches by the second arg's
+     * class (Bid), and the controller passes the document as the extra arg.
+     *
+     * TODO(BUG-20): extend to evaluators with phase-aware gating —
+     * technical envelope readable during technical evaluation, financial
+     * envelope readable only after financial opening. Will need an actor
+     * union type (Vendor|User) and dispatch on $doc->envelope_type +
+     * tender's two opening dates (which BUG-20 introduces).
+     */
+    public function viewDocument(Vendor $vendor, Bid $bid, BidDocument $doc): bool
+    {
+        return $vendor->id === $bid->vendor_id && $doc->bid_id === $bid->id;
     }
 }

@@ -35,7 +35,12 @@ class BidService
             'tender_id' => $tender->id,
             'vendor_id' => $vendor->id,
             'bid_reference' => $tender->reference_number.'-B'.str_pad($tender->bids()->count() + 1, 3, '0', STR_PAD_LEFT),
-            'envelope_type' => $tender->is_two_envelope ? 'technical' : 'single',
+            // Legacy column from a pre-BUG-18 design that tried to model two-envelope
+            // bids as multiple bid rows. We now keep one bid row per (tender, vendor)
+            // (DB unique constraint, BUG-19) and the envelope split lives entirely on
+            // bid_documents.envelope_type. Always 'single' here regardless of
+            // tender->is_two_envelope. Don't read this column elsewhere.
+            'envelope_type' => 'single',
             'status' => BidStatus::Draft,
             'currency' => $tender->currency,
             'is_sealed' => false,
@@ -85,6 +90,18 @@ class BidService
         // Verify all unit_prices > 0
         if ($bid->boqPrices()->where('unit_price', '<=', 0)->exists()) {
             throw new \RuntimeException('All unit prices must be greater than zero.');
+        }
+
+        // Two-envelope tenders require at least one technical document. The
+        // financial envelope is implicitly satisfied by the BOQ pricing above
+        // (Sub-phase A treats financial documents as optional). BUG-18.
+        if ($tender->is_two_envelope) {
+            $hasTechnicalDoc = $bid->documents()
+                ->where('envelope_type', 'technical')
+                ->exists();
+            if (! $hasTechnicalDoc) {
+                throw new \RuntimeException(__('messages.bid.technical_envelope_required'));
+            }
         }
 
         $this->sealingService->sealBid($bid);

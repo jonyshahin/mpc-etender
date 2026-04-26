@@ -502,6 +502,9 @@
     "messages.bid.submitted": "تم تقديم العرض وختمه بنجاح.",
     "messages.bid.withdrawn": "تم سحب العرض بنجاح.",
     "messages.bid.create_failed_unexpected": "تعذر إنشاء العرض. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
+    "messages.bid.document_uploaded": "تم رفع المستند.",
+    "messages.bid.document_deleted": "تمت إزالة المستند.",
+    "messages.bid.technical_envelope_required": "مطلوب مستند فني واحد على الأقل قبل تقديم عرض بنظام المظروفين.",
     "vendor.tender.continue_bid": "متابعة العرض",
     "vendor.tender.view_bid": "عرض العطاء",
 

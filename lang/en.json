@@ -502,6 +502,9 @@
     "messages.bid.submitted": "Bid submitted and sealed successfully.",
     "messages.bid.withdrawn": "Bid withdrawn successfully.",
     "messages.bid.create_failed_unexpected": "Could not create bid. Please contact support if this continues.",
+    "messages.bid.document_uploaded": "Document uploaded.",
+    "messages.bid.document_deleted": "Document removed.",
+    "messages.bid.technical_envelope_required": "At least one technical document is required before submitting a two-envelope bid.",
     "vendor.tender.continue_bid": "Continue Bid",
     "vendor.tender.view_bid": "View Bid",
 

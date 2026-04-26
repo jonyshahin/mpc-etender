@@ -2,23 +2,30 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\BidDocType;
 use App\Enums\BidStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Vendor\BidDocumentRequest;
 use App\Http\Requests\Vendor\BidSubmissionRequest;
 use App\Models\Bid;
+use App\Models\BidDocument;
 use App\Models\Tender;
 use App\Services\BidService;
+use App\Services\FileUploadService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BidController extends Controller
 {
     public function __construct(
         private BidService $bidService,
+        private FileUploadService $fileUploadService,
     ) {}
 
     /**
@@ -175,15 +182,34 @@ class BidController extends Controller
         abort_unless(Gate::forUser($vendor)->check('view', $bid), 403);
 
         $bid->load([
-            'tender:id,title_en,title_ar,reference_number,currency,status,submission_deadline,opening_date',
+            'tender:id,title_en,title_ar,reference_number,currency,status,submission_deadline,opening_date,is_two_envelope',
             'tender.boqSections:id,tender_id,title,title_ar,sort_order',
             'tender.boqSections.items:id,section_id,item_code,description_en,description_ar,unit,quantity,sort_order',
             'boqPrices:id,bid_id,boq_item_id,unit_price,total_price,remarks',
+            'documents',
         ]);
 
         $tender = $bid->tender;
         $canEdit = $bid->status === BidStatus::Draft && $tender->is_open_for_submission;
         $canWithdraw = $bid->status === BidStatus::Submitted && $tender->is_open_for_submission;
+
+        // Group documents by envelope for the React side. The bid row carries
+        // 'single' as a legacy value (see BidService::createDraft); the actual
+        // envelope split lives on bid_documents.envelope_type.
+        $groupedDocs = $bid->documents
+            ->groupBy(fn ($d) => $d->envelope_type)
+            ->map(fn ($docs) => $docs->map(fn ($d) => [
+                'id' => $d->id,
+                'title' => $d->title,
+                'original_filename' => $d->original_filename,
+                'file_size' => $d->file_size,
+                'mime_type' => $d->mime_type,
+                'doc_type' => $d->doc_type instanceof BidDocType ? $d->doc_type->value : $d->doc_type,
+                'envelope_type' => $d->envelope_type,
+                'uploaded_at' => $d->uploaded_at,
+                'download_url' => route('vendor.bids.documents.download', [$bid, $d]),
+            ]))
+            ->toArray();
 
         return Inertia::render('vendor/Bids/Show', [
             'bid' => [
@@ -206,6 +232,7 @@ class BidController extends Controller
                 'status' => $tender->status->value,
                 'submission_deadline' => $tender->submission_deadline,
                 'opening_date' => $tender->opening_date,
+                'is_two_envelope' => (bool) $tender->is_two_envelope,
                 'boq_sections' => $tender->boqSections
                     ->sortBy('sort_order')
                     ->values()
@@ -232,9 +259,91 @@ class BidController extends Controller
                     'total_price' => $p->total_price,
                 ],
             ]),
+            'documents' => [
+                'single' => $groupedDocs['single'] ?? [],
+                'technical' => $groupedDocs['technical'] ?? [],
+                'financial' => $groupedDocs['financial'] ?? [],
+            ],
             'canEdit' => $canEdit,
             'canSubmit' => $canEdit,
+            'canManageDocuments' => $canEdit,
             'canWithdraw' => $canWithdraw,
         ]);
+    }
+
+    /**
+     * Upload a document onto a draft bid. PDF only, max 5 MB, validated by
+     * BidDocumentRequest. Storage goes through FileUploadService per the
+     * project upload mandate. Caller picks envelope via the form payload —
+     * 'single' for single-envelope tenders, 'technical' or 'financial' for
+     * two-envelope (BUG-18 sub-phase A).
+     */
+    public function storeDocument(BidDocumentRequest $request, Bid $bid): RedirectResponse
+    {
+        $vendor = $request->user('vendor');
+        abort_unless(Gate::forUser($vendor)->check('manageDocuments', $bid), 403);
+
+        $file = $request->file('file');
+        $validated = $request->validated();
+
+        $path = $this->fileUploadService->upload(
+            $file,
+            "vendors/{$vendor->id}/bids/{$bid->id}/documents",
+            'pdf',
+        );
+
+        $bid->documents()->create([
+            'title' => $validated['title'],
+            'original_filename' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'doc_type' => $validated['doc_type'],
+            'envelope_type' => $validated['envelope_type'],
+            'uploaded_by_vendor_id' => $vendor->id,
+            'uploaded_at' => now(),
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('messages.bid.document_uploaded')]);
+
+        return back();
+    }
+
+    /**
+     * Remove a document from a draft bid. Owner-only, draft-only.
+     */
+    public function destroyDocument(Request $request, Bid $bid, BidDocument $document): RedirectResponse
+    {
+        $vendor = $request->user('vendor');
+        abort_unless(Gate::forUser($vendor)->check('manageDocuments', $bid), 403);
+        abort_unless($document->bid_id === $bid->id, 404);
+
+        $this->fileUploadService->delete($document->file_path);
+        $document->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('messages.bid.document_deleted')]);
+
+        return back();
+    }
+
+    /**
+     * Stream a bid document to the requesting vendor. Goes through the
+     * BidPolicy::viewDocument gate so we never expose raw S3 URLs to the
+     * React client. Future BUG-20 work extends the policy with phase-aware
+     * gating for evaluators.
+     */
+    public function downloadDocument(Request $request, Bid $bid, BidDocument $document): StreamedResponse
+    {
+        $vendor = $request->user('vendor');
+        // Gate dispatches by the FIRST argument's class — pass $bid (registered to
+        // BidPolicy) and let the policy method receive $document as the extra arg.
+        // Avoids needing a separate BidDocumentPolicy for the one-method override.
+        abort_unless(Gate::forUser($vendor)->check('viewDocument', [$bid, $document]), 403);
+        abort_unless($document->bid_id === $bid->id, 404);
+
+        return Storage::disk('s3')->download(
+            $document->file_path,
+            $document->original_filename ?? $document->title,
+        );
     }
 }

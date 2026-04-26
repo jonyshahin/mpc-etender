@@ -100,6 +100,11 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
     Route::put('bids/{bid}', [Vendor\BidController::class, 'update'])->name('bids.update');
     Route::post('bids/{bid}/submit', [Vendor\BidController::class, 'submit'])->name('bids.submit');
     Route::post('bids/{bid}/withdraw', [Vendor\BidController::class, 'withdraw'])->name('bids.withdraw');
+
+    // Bid documents (technical / financial / single envelope attachments)
+    Route::post('bids/{bid}/documents', [Vendor\BidController::class, 'storeDocument'])->name('bids.documents.store');
+    Route::delete('bids/{bid}/documents/{document}', [Vendor\BidController::class, 'destroyDocument'])->name('bids.documents.destroy');
+    Route::get('bids/{bid}/documents/{document}/download', [Vendor\BidController::class, 'downloadDocument'])->name('bids.documents.download');
 });
 
 // ── Tender management routes (MPC users) ──
