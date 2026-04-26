@@ -121,6 +121,11 @@ type Tender = {
 type Props = {
     tender: Tender;
     canEdit: boolean;
+    // BUG-23: separate gate for the addendum form. canEdit covers
+    // tender-content edits (Draft only). canIssueAddendum covers
+    // amendments to a Published tender — distinct concern, distinct
+    // permission (`tenders.issue_addenda`).
+    canIssueAddendum: boolean;
     canPublish: boolean;
     canCancel: boolean;
 };
@@ -137,7 +142,7 @@ function formatFileSize(bytes: number) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function Show({ tender, canEdit, canPublish, canCancel }: Props) {
+export default function Show({ tender, canEdit, canPublish, canCancel, canIssueAddendum }: Props) {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('Overview');
     const [showPublishConfirm, setShowPublishConfirm] = useState(false);
@@ -838,7 +843,10 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                             </p>
                         )}
 
-                        {canEdit && (
+                        {/* BUG-23: addendum form gated by canIssueAddendum
+                            (separate from canEdit which covers tender-content
+                            editing and is correctly false on Published). */}
+                        {canIssueAddendum && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="text-base">{t('tender.issue_addendum')}</CardTitle>

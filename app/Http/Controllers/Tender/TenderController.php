@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tender;
 
+use App\Enums\TenderStatus;
 use App\Exceptions\TenderPublishException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tender\StoreTenderRequest;
@@ -134,6 +135,14 @@ class TenderController extends Controller
             'canEdit' => $request->user()->can('update', $tender),
             'canPublish' => $request->user()->can('publish', $tender),
             'canCancel' => $request->user()->can('cancel', $tender),
+            // BUG-23: addendum issuance is a separate concern from tender
+            // editing. canEdit is correctly gated to Draft (you can't edit
+            // a published tender's BOQ/docs/etc), but addenda are precisely
+            // the mechanism for amending PUBLISHED tenders. Bundling the
+            // addendum form under canEdit hid the form on every published
+            // tender's Addenda tab. Mirrors StoreAddendumRequest::authorize.
+            'canIssueAddendum' => $request->user()->hasPermission('tenders.issue_addenda')
+                && $tender->status === TenderStatus::Published,
         ]);
     }
 
