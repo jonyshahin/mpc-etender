@@ -140,10 +140,14 @@ class BidService
             throw new \RuntimeException(__('messages.bid.category_mismatch'));
         }
 
-        // Check if vendor already has an active bid
+        // Bid submission is final — once a (tender_id, vendor_id) row exists
+        // in any state (draft, submitted, withdrawn, opened, etc.) the
+        // vendor cannot start another bid for that tender. Mirrors the DB
+        // unique constraint at migrations/...000018_create_bids_table.php.
+        // Without this guard the INSERT in createDraft() trips SQLSTATE 23000
+        // on the withdraw → start-bid path (BUG-19).
         $existingBid = $tender->bids()
             ->where('vendor_id', $vendor->id)
-            ->whereNotIn('status', [BidStatus::Withdrawn->value])
             ->exists();
 
         if ($existingBid) {

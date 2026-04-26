@@ -5,6 +5,7 @@ use App\Models\Bid;
 use App\Models\BidBoqPrice;
 use App\Models\Tender;
 use App\Models\Vendor;
+use App\Services\BidService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -203,3 +204,96 @@ test('vendor.bids.create reuses existing draft and redirects to show', function 
         ->get(route('vendor.bids.create', $tender))
         ->assertRedirect(route('vendor.bids.show', $existing));
 });
+
+test('vendor.bids.create reuses an existing WITHDRAWN bid instead of inserting a duplicate (BUG-19)', function () {
+    [$vendor, $tender] = bidFixture();
+    $withdrawn = Bid::factory()->create([
+        'tender_id' => $tender->id,
+        'vendor_id' => $vendor->id,
+        'status' => BidStatus::Withdrawn,
+        'is_sealed' => false,
+        'submitted_at' => now()->subDay(),
+        'withdrawal_reason' => 'pricing error',
+    ]);
+
+    $response = $this->actingAs($vendor, 'vendor')
+        ->get(route('vendor.bids.create', $tender));
+
+    // Lands on the withdrawn bid's Show page — universal page handles read-only.
+    $response->assertRedirect(route('vendor.bids.show', $withdrawn));
+    // Pre-BUG-19 the controller would have INSERTed a second bid here.
+    expect(Bid::where('tender_id', $tender->id)->where('vendor_id', $vendor->id)->count())->toBe(1);
+});
+
+test('validateSubmissionAllowed rejects when vendor has a withdrawn bid (BUG-19)', function () {
+    [$vendor, $tender] = bidFixture();
+    Bid::factory()->create([
+        'tender_id' => $tender->id,
+        'vendor_id' => $vendor->id,
+        'status' => BidStatus::Withdrawn,
+        'is_sealed' => false,
+        'withdrawal_reason' => 'pricing error',
+    ]);
+
+    expect(fn () => app(BidService::class)->validateSubmissionAllowed($tender, $vendor))
+        ->toThrow(RuntimeException::class, __('messages.bid.duplicate'));
+});
+
+test('TenderBrowseController exposes existingBid with status, regardless of withdrawn state (BUG-19)', function () {
+    [$vendor, $tender] = bidFixture();
+    $bid = Bid::factory()->create([
+        'tender_id' => $tender->id,
+        'vendor_id' => $vendor->id,
+        'status' => BidStatus::Withdrawn,
+        'is_sealed' => false,
+        'withdrawal_reason' => 'pricing error',
+    ]);
+
+    $response = $this->actingAs($vendor, 'vendor')
+        ->get(route('vendor.tenders.show', $tender));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('vendor/Tenders/Show')
+        ->where('canBid', false)
+        ->where('existingBid.id', $bid->id)
+        ->where('existingBid.status', 'withdrawn')
+    );
+});
+
+test('TenderBrowseController existingBid.status drives the React button label per status (BUG-19)', function () {
+    // Drive the prop shape for each status so the React conditional has the data
+    // it needs to choose vendor.tender.continue_bid vs vendor.tender.view_bid.
+    $cases = [
+        [BidStatus::Draft, 'draft'],
+        [BidStatus::Submitted, 'submitted'],
+        [BidStatus::Withdrawn, 'withdrawn'],
+        [BidStatus::Opened, 'opened'],
+    ];
+
+    foreach ($cases as [$enumStatus, $expectedString]) {
+        [$vendor, $tender] = bidFixture();
+        Bid::factory()->create([
+            'tender_id' => $tender->id,
+            'vendor_id' => $vendor->id,
+            'status' => $enumStatus,
+            'is_sealed' => $enumStatus !== BidStatus::Draft,
+        ]);
+
+        $response = $this->actingAs($vendor, 'vendor')
+            ->get(route('vendor.tenders.show', $tender));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->where('existingBid.status', $expectedString)
+        );
+    }
+});
+
+// Note: the QueryException backstop in BidController::create (catches
+// Illuminate\Database\QueryException → translated toast → redirect) is
+// verified by code review only. Pest can't reliably trigger the catch
+// block without bypassing the service-level guard via a fragile partial
+// mock, and the catch is straightforward boilerplate (report + flash +
+// redirect). Defensive layer for the case where a future refactor drifts
+// the application guards out of sync with the DB unique constraint.

@@ -8,6 +8,7 @@ use App\Http\Requests\Vendor\BidSubmissionRequest;
 use App\Models\Bid;
 use App\Models\Tender;
 use App\Services\BidService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -39,9 +40,10 @@ class BidController extends Controller
 
     /**
      * Entry point from a tender's "Start Bid" button. Reuses an existing
-     * non-withdrawn draft if present, otherwise creates one. Always lands
-     * the vendor on vendor.bids.show — the universal bid page handles the
-     * editable / read-only / withdrawn states from there.
+     * bid for this (tender, vendor) regardless of status — submission is
+     * final, the DB unique constraint enforces it, and the universal
+     * Show page handles draft / submitted / withdrawn / etc. display
+     * (BUG-19). Always lands the vendor on vendor.bids.show.
      */
     public function create(Request $request, Tender $tender): RedirectResponse
     {
@@ -49,20 +51,27 @@ class BidController extends Controller
 
         $bid = $tender->bids()
             ->where('vendor_id', $vendor->id)
-            ->whereNot('status', BidStatus::Withdrawn->value)
             ->first();
 
         if ($bid === null) {
-            // Policy gate runs only on the new-draft path so an existing draft
-            // remains reachable even if the vendor's status later changes
-            // (e.g. suspended after creating a draft they want to revisit).
-            // BidService::validateSubmissionAllowed inside createDraft still
-            // produces the per-failure translated toast — the policy is a
-            // defensive backup, not the user-facing message channel.
+            // Policy gate runs only on the new-draft path. The existing-bid
+            // path above always reaches the Show page so a vendor whose
+            // status later changes (e.g. suspended) can still revisit
+            // their prior bid.
             abort_unless(Gate::forUser($vendor)->check('create', [Bid::class, $tender]), 403);
 
             try {
                 $bid = $this->bidService->createDraft($tender, $vendor);
+            } catch (QueryException $e) {
+                // Defensive backstop: if the application-level guards in
+                // BidService::validateSubmissionAllowed ever miss the
+                // (tender_id, vendor_id) unique constraint, surface a
+                // generic translated toast — never leak the SQL message
+                // to the vendor. report() so ops still gets the trace.
+                report($e);
+                Inertia::flash('toast', ['type' => 'error', 'message' => __('messages.bid.create_failed_unexpected')]);
+
+                return redirect()->route('vendor.tenders.show', $tender);
             } catch (\RuntimeException $e) {
                 Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
 

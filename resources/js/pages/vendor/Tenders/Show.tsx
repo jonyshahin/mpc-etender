@@ -55,7 +55,7 @@ type Props = {
         }>;
     };
     canBid: boolean;
-    existingBidId: string | null;
+    existingBid: { id: string; status: string } | null;
 };
 
 function formatFileSize(bytes: number): string {
@@ -64,7 +64,7 @@ function formatFileSize(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function Show({ tender, canBid, existingBidId }: Props) {
+export default function Show({ tender, canBid, existingBid }: Props) {
     const { t } = useTranslation();
     const clarificationForm = useForm({ question: '' });
 
@@ -99,7 +99,7 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                     </div>
 
                     <div className="flex gap-2">
-                        {canBid && !existingBidId && (
+                        {canBid && !existingBid && (
                             <Button asChild>
                                 <Link href={`/vendor/tenders/${tender.id}/bid`}>
                                     <Plus className="mr-1 h-4 w-4" />
@@ -107,10 +107,16 @@ export default function Show({ tender, canBid, existingBidId }: Props) {
                                 </Link>
                             </Button>
                         )}
-                        {existingBidId && (
+                        {existingBid && (
                             <Button asChild variant="outline">
-                                <Link href={`/vendor/bids/${existingBidId}`}>
-                                    {t('btn.continue_bid')}
+                                <Link href={`/vendor/bids/${existingBid.id}`}>
+                                    {/* "Continue Bid" is only meaningful for an unsubmitted draft.
+                                       Any other status (submitted / withdrawn / opened / etc.) is
+                                       terminal from the vendor's perspective, so the button reads
+                                       "View Bid" — submission is final per BUG-19. */}
+                                    {t(existingBid.status === 'draft'
+                                        ? 'vendor.tender.continue_bid'
+                                        : 'vendor.tender.view_bid')}
                                 </Link>
                             </Button>
                         )}

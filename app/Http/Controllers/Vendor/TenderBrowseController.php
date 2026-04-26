@@ -74,9 +74,14 @@ class TenderBrowseController extends Controller
             'accessed_at' => now(),
         ]);
 
+        // Bid uniqueness is per (tender_id, vendor_id) at the DB level —
+        // see migrations/...000018_create_bids_table.php. Treat any prior
+        // bid (draft / submitted / withdrawn / etc.) as occupying the
+        // (tender, vendor) slot. Submission is final per product spec
+        // (BUG-19). The status field below lets the React side pick
+        // Continue-Bid vs View-Bid labels.
         $existingBid = $tender->bids()
             ->where('vendor_id', $vendor->id)
-            ->whereNot('status', 'withdrawn')
             ->first();
 
         $vendorCategoryIds = $vendor->categories()->pluck('categories.id');
@@ -92,7 +97,9 @@ class TenderBrowseController extends Controller
         return Inertia::render('vendor/Tenders/Show', [
             'tender' => $tender,
             'canBid' => $canBid,
-            'existingBidId' => $existingBid?->id,
+            'existingBid' => $existingBid
+                ? ['id' => $existingBid->id, 'status' => $existingBid->status->value]
+                : null,
         ]);
     }
 }
