@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -82,6 +83,38 @@ export default function Index({ settingGroups }: Props) {
 
     function renderSettingInput(setting: Setting) {
         const value = getSettingValue(setting.id);
+
+        // BUG-28 interim mitigation: the "2FA mandatory for internal users"
+        // toggle persists to system_settings but no enforcement code reads it
+        // (verdict COSMETIC, investigation commit 218f6ac). Forcing the UI to
+        // disabled + unchecked + "Coming soon" badge prevents the false-
+        // security signal until the full enforcement layer ships (~5-7d).
+        // Persisted DB value is left untouched — flipping it from here would
+        // be a behavior change masquerading as a UI fix. When the full
+        // enforcement build lands, delete this whole branch.
+        if (setting.key === 'security.2fa_mandatory_internal') {
+            return (
+                <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                        <Checkbox id={setting.key} checked={false} disabled />
+                        <Label
+                            htmlFor={setting.key}
+                            className="font-normal text-muted-foreground"
+                        >
+                            {settingLabel(setting.key)}
+                        </Label>
+                        <Badge variant="secondary" className="ms-2">
+                            {t('common.coming_soon')}
+                        </Badge>
+                    </div>
+                    {settingDescription(setting.key, setting.description) && (
+                        <p className="text-xs text-muted-foreground ms-7">
+                            {settingDescription(setting.key, setting.description)}
+                        </p>
+                    )}
+                </div>
+            );
+        }
 
         switch (setting.type) {
             case 'boolean':
