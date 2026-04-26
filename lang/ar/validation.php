@@ -177,7 +177,8 @@ return [
     */
 
     'custom' => [
-        //
+        // BUG-26: MinHoursAfter rule message.
+        'min_hours_after' => 'يجب أن يكون :attribute بعد :other بـ :hours ساعة على الأقل.',
     ],
 
     /*
@@ -205,6 +206,7 @@ return [
         'site_visit_date' => 'تاريخ زيارة الموقع',
         'extends_deadline' => 'تمديد الموعد النهائي للتقديم',
         'new_deadline' => 'الموعد النهائي الجديد',
+        'new_opening_date' => 'تاريخ الفتح الجديد',
         'project_id' => 'المشروع',
         'project_ids' => 'المشاريع',
 

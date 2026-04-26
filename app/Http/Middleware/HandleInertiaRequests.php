@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use App\Models\VendorCategoryRequest;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -70,6 +71,16 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => app()->getLocale(),
             'dir' => in_array(app()->getLocale(), ['ar', 'ku'], true) ? 'rtl' : 'ltr',
+            // BUG-26: surface the deadline-to-opening buffer to the React
+            // wizard + addendum form so they can pre-fill the second date
+            // field reactively. Lazy via closure so we don't query the
+            // settings table on every request when the value isn't read.
+            'tenderConfig' => [
+                'min_hours_between_deadline_and_opening' => fn () => (int) (
+                    SystemSetting::where('key', 'tender.min_hours_between_deadline_and_opening')
+                        ->value('value') ?? 24
+                ),
+            ],
             // Flash values surfaced from admin one-shot actions. `temporary_password`
             // is set by forceTemporaryPassword() and lives for exactly one request
             // so the admin detail page can open the copy-once modal.

@@ -34,6 +34,9 @@ class SystemSettingSeeder extends Seeder
             // Display
             ['key' => 'display.items_per_page', 'value' => '25', 'group' => 'display', 'type' => 'integer', 'description' => 'Default pagination size'],
             ['key' => 'display.date_format', 'value' => 'Y-m-d', 'group' => 'display', 'type' => 'string', 'description' => 'Date display format'],
+
+            // Tender (BUG-26: enforce buffer between submission_deadline and opening_date)
+            ['key' => 'tender.min_hours_between_deadline_and_opening', 'value' => '24', 'group' => 'tender', 'type' => 'integer', 'description' => 'Minimum hours between submission deadline and opening date; enforced when creating tenders or extending deadlines via addenda'],
         ];
 
         foreach ($settings as $setting) {

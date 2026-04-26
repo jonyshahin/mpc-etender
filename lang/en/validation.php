@@ -182,6 +182,10 @@ return [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+        // BUG-26: MinHoursAfter rule message for any field that must
+        // be N hours after another field in the same payload (currently
+        // addenda new_opening_date vs new_deadline).
+        'min_hours_after' => 'The :attribute must be at least :hours hours after :other.',
     ],
 
     /*
@@ -208,6 +212,7 @@ return [
         'site_visit_date' => 'site visit date',
         'extends_deadline' => 'extend submission deadline',
         'new_deadline' => 'new deadline',
+        'new_opening_date' => 'new opening date',
         'project_id' => 'project',
         'project_ids' => 'projects',
 

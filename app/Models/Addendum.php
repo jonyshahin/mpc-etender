@@ -34,6 +34,7 @@ class Addendum extends Model
         'file_path',
         'extends_deadline',
         'new_deadline',
+        'new_opening_date',
         'published_at',
     ];
 
@@ -42,6 +43,7 @@ class Addendum extends Model
         return [
             'extends_deadline' => 'boolean',
             'new_deadline' => 'datetime',
+            'new_opening_date' => 'datetime',
             'published_at' => 'datetime',
         ];
     }

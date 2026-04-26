@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\TenderStatus;
+use App\Models\Addendum;
+use App\Models\AuditLog;
 use App\Models\Tender;
 use App\Models\User;
 use App\Services\TenderService;
@@ -112,13 +114,20 @@ it('T-A-01: allows addendum on a Published tender', function () {
     expect($tender->addenda()->count())->toBe(1);
 });
 
-// T-A-03
-it('T-A-03: extends deadline via addendum', function () {
+// T-A-03 — Happy path. Updated 2026-04-27 (BUG-26): payload now includes
+// new_opening_date alongside new_deadline. Asserts BOTH dates cascade,
+// not just the submission deadline.
+it('T-A-03: extends deadline via addendum and cascades opening date', function () {
     $tender = Tender::factory()->published()->create([
         'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
     ]);
     $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
     $originalDeadline = $tender->submission_deadline;
+    $originalOpening = $tender->opening_date;
+
+    $newDeadline = Carbon::now()->addDays(17);
+    $newOpening = Carbon::now()->addDays(18); // 24h after new deadline = buffer min
 
     $this->actingAs($this->admin)->post(
         route('tenders.addenda.store', $tender),
@@ -126,12 +135,189 @@ it('T-A-03: extends deadline via addendum', function () {
             'subject' => 'Deadline Extension',
             'content_en' => 'Extended by one week.',
             'extends_deadline' => true,
-            'new_deadline' => Carbon::now()->addDays(17)->format('Y-m-d H:i:s'),
+            'new_deadline' => $newDeadline->format('Y-m-d H:i:s'),
+            'new_opening_date' => $newOpening->format('Y-m-d H:i:s'),
         ]
     )->assertRedirect();
 
     $tender->refresh();
     expect($tender->submission_deadline->gt($originalDeadline))->toBeTrue();
+    expect($tender->opening_date->gt($originalOpening))->toBeTrue();
+    expect($tender->opening_date->gt($tender->submission_deadline))->toBeTrue();
+});
+
+// T-A-04 — Validation: missing new_opening_date when extending deadline.
+it('T-A-04: rejects deadline extension without new opening date', function () {
+    $tender = Tender::factory()->published()->create([
+        'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
+    ]);
+    $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
+
+    $this->actingAs($this->admin)->post(
+        route('tenders.addenda.store', $tender),
+        [
+            'subject' => 'Deadline Extension',
+            'content_en' => 'Extended.',
+            'extends_deadline' => true,
+            'new_deadline' => Carbon::now()->addDays(17)->format('Y-m-d H:i:s'),
+            // new_opening_date deliberately omitted — should fail required_if.
+        ]
+    )->assertSessionHasErrors('new_opening_date');
+
+    expect($tender->fresh()->addenda()->count())->toBe(0);
+});
+
+// T-A-05 — Validation: opening date must be after new deadline.
+it('T-A-05: rejects deadline extension when new opening date is before new deadline', function () {
+    $tender = Tender::factory()->published()->create([
+        'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
+    ]);
+    $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
+
+    $this->actingAs($this->admin)->post(
+        route('tenders.addenda.store', $tender),
+        [
+            'subject' => 'Deadline Extension',
+            'content_en' => 'Extended.',
+            'extends_deadline' => true,
+            'new_deadline' => Carbon::now()->addDays(17)->format('Y-m-d H:i:s'),
+            'new_opening_date' => Carbon::now()->addDays(15)->format('Y-m-d H:i:s'),
+        ]
+    )->assertSessionHasErrors('new_opening_date');
+
+    expect($tender->fresh()->addenda()->count())->toBe(0);
+});
+
+// T-A-06 — Validation: buffer enforced (default 24h between deadline and opening).
+it('T-A-06: rejects deadline extension when buffer between deadline and opening is too small', function () {
+    $tender = Tender::factory()->published()->create([
+        'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
+    ]);
+    $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
+
+    $newDeadline = Carbon::now()->addDays(17);
+    $tooSoon = $newDeadline->copy()->addHour(); // 1h gap, default buffer is 24h
+
+    $this->actingAs($this->admin)->post(
+        route('tenders.addenda.store', $tender),
+        [
+            'subject' => 'Deadline Extension',
+            'content_en' => 'Extended.',
+            'extends_deadline' => true,
+            'new_deadline' => $newDeadline->format('Y-m-d H:i:s'),
+            'new_opening_date' => $tooSoon->format('Y-m-d H:i:s'),
+        ]
+    )->assertSessionHasErrors('new_opening_date');
+
+    expect($tender->fresh()->addenda()->count())->toBe(0);
+});
+
+// T-A-07 — Audit log: cascading addendum writes one audit row capturing
+// both old and new values for submission_deadline AND opening_date.
+it('T-A-07: writes audit log entries for both submission_deadline and opening_date when cascading', function () {
+    $tender = Tender::factory()->published()->create([
+        'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
+    ]);
+    $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
+
+    $newDeadline = Carbon::now()->addDays(17);
+    $newOpening = Carbon::now()->addDays(18);
+
+    $this->actingAs($this->admin)->post(
+        route('tenders.addenda.store', $tender),
+        [
+            'subject' => 'Deadline Extension',
+            'content_en' => 'Extended.',
+            'extends_deadline' => true,
+            'new_deadline' => $newDeadline->format('Y-m-d H:i:s'),
+            'new_opening_date' => $newOpening->format('Y-m-d H:i:s'),
+        ]
+    )->assertRedirect();
+
+    $entry = AuditLog::query()
+        ->where('auditable_type', Tender::class)
+        ->where('auditable_id', $tender->id)
+        ->where('action', 'addendum_extends_deadline')
+        ->latest('created_at')
+        ->first();
+
+    expect($entry)->not->toBeNull();
+    expect($entry->old_values)->toHaveKeys(['submission_deadline', 'opening_date']);
+    expect($entry->new_values)->toHaveKeys(['submission_deadline', 'opening_date']);
+});
+
+// T-A-08 — Transaction rollback: if the addendum insert blows up after the
+// tender update is staged, the tender's dates must NOT be persisted.
+// Forces failure via an oversize subject (rejected at validation, but the
+// real test is that an exception thrown mid-transaction unwinds the update).
+it('T-A-08: rolls back tender date changes if addendum creation fails', function () {
+    $tender = Tender::factory()->published()->create([
+        'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
+    ]);
+    $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
+    $originalDeadline = $tender->submission_deadline->toIso8601String();
+    $originalOpening = $tender->opening_date->toIso8601String();
+
+    // Simulate a DB write failure inside the transaction by using an
+    // addendum_number that conflicts with a manually-inserted duplicate.
+    // We can't easily force that here without race conditions, so instead
+    // we drop the addenda table column the controller writes to mid-test.
+    // Simpler: use a model event listener that throws on Addendum::creating.
+    Addendum::creating(function () {
+        throw new RuntimeException('Simulated addendum insert failure');
+    });
+
+    try {
+        $this->actingAs($this->admin)->post(
+            route('tenders.addenda.store', $tender),
+            [
+                'subject' => 'Deadline Extension',
+                'content_en' => 'Extended.',
+                'extends_deadline' => true,
+                'new_deadline' => Carbon::now()->addDays(17)->format('Y-m-d H:i:s'),
+                'new_opening_date' => Carbon::now()->addDays(18)->format('Y-m-d H:i:s'),
+            ]
+        );
+    } finally {
+        // Tear down the listener so subsequent tests aren't affected.
+        Addendum::flushEventListeners();
+    }
+
+    $tender->refresh();
+    expect($tender->submission_deadline->toIso8601String())->toBe($originalDeadline);
+    expect($tender->opening_date->toIso8601String())->toBe($originalOpening);
+    expect($tender->addenda()->count())->toBe(0);
+});
+
+// T-A-09 — No-cascade case: addendum without deadline extension leaves
+// both submission_deadline AND opening_date untouched.
+it('T-A-09: does not modify tender dates when extends_deadline is false', function () {
+    $tender = Tender::factory()->published()->create([
+        'submission_deadline' => Carbon::now()->addDays(10),
+        'opening_date' => Carbon::now()->addDays(11),
+    ]);
+    $this->admin->projects()->attach($tender->project_id, ['project_role' => 'admin']);
+    $originalDeadline = $tender->submission_deadline->toIso8601String();
+    $originalOpening = $tender->opening_date->toIso8601String();
+
+    $this->actingAs($this->admin)->post(
+        route('tenders.addenda.store', $tender),
+        [
+            'subject' => 'Clarification only',
+            'content_en' => 'See attached drawings.',
+            'extends_deadline' => false,
+        ]
+    )->assertRedirect();
+
+    $tender->refresh();
+    expect($tender->submission_deadline->toIso8601String())->toBe($originalDeadline);
+    expect($tender->opening_date->toIso8601String())->toBe($originalOpening);
+    expect($tender->addenda()->count())->toBe(1);
 });
 
 // T-Q-*: Vendor clarifications — separate guard + factory patterns; skipped here

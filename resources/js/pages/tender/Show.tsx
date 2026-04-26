@@ -1,4 +1,4 @@
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     Calendar,
@@ -161,13 +161,26 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
         file: null,
     });
 
-    // Addendum form
+    // Addendum form. BUG-26: when extends_deadline is true the form
+    // collects BOTH the new submission deadline AND a new opening date
+    // — without the second field, the cascade can't fire and we recreate
+    // the un-openable-tender state the fix is meant to prevent.
     const addendumForm = useForm({
         subject: '',
         content_en: '',
         extends_deadline: false,
         new_deadline: '',
+        new_opening_date: '',
     });
+
+    // BUG-26: deadline-to-opening buffer surfaced from server-side
+    // SystemSetting via HandleInertiaRequests shared props. Default
+    // 24h matches the seeder. Used to pre-fill the new_opening_date
+    // field reactively when the user picks a new_deadline.
+    const tenderConfig = (usePage().props.tenderConfig ?? {}) as {
+        min_hours_between_deadline_and_opening?: number;
+    };
+    const bufferHours = tenderConfig.min_hours_between_deadline_and_opening ?? 24;
 
     // Clarification answer form
     const [answeringId, setAnsweringId] = useState<string | null>(null);
@@ -895,18 +908,65 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                                 </Label>
                                             </div>
                                             {addendumForm.data.extends_deadline && (
-                                                <div className="space-y-1">
-                                                    <Label>{t('form.new_deadline')}</Label>
-                                                    <Input
-                                                        type="datetime-local"
-                                                        value={addendumForm.data.new_deadline}
-                                                        onChange={(e) =>
-                                                            addendumForm.setData(
-                                                                'new_deadline',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div className="space-y-1">
+                                                        <Label>{t('form.new_deadline')}</Label>
+                                                        <Input
+                                                            type="datetime-local"
+                                                            value={addendumForm.data.new_deadline}
+                                                            onChange={(e) => {
+                                                                const newDeadline = e.target.value;
+                                                                addendumForm.setData(
+                                                                    'new_deadline',
+                                                                    newDeadline,
+                                                                );
+                                                                // BUG-26: reactively pre-fill the
+                                                                // opening date as deadline + buffer
+                                                                // hours so the user sees a sensible
+                                                                // default they can override. Buffer
+                                                                // sourced from Inertia shared props
+                                                                // (HandleInertiaRequests middleware).
+                                                                if (newDeadline) {
+                                                                    const opening = new Date(newDeadline);
+                                                                    opening.setHours(
+                                                                        opening.getHours() + bufferHours,
+                                                                    );
+                                                                    const pad = (n: number) =>
+                                                                        String(n).padStart(2, '0');
+                                                                    const fmt = `${opening.getFullYear()}-${pad(opening.getMonth() + 1)}-${pad(opening.getDate())}T${pad(opening.getHours())}:${pad(opening.getMinutes())}`;
+                                                                    addendumForm.setData(
+                                                                        'new_opening_date',
+                                                                        fmt,
+                                                                    );
+                                                                }
+                                                            }}
+                                                        />
+                                                        {addendumForm.errors.new_deadline && (
+                                                            <p className="text-sm text-destructive">
+                                                                {addendumForm.errors.new_deadline}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label>
+                                                            {t('form.new_opening_date')}
+                                                        </Label>
+                                                        <Input
+                                                            type="datetime-local"
+                                                            value={addendumForm.data.new_opening_date}
+                                                            onChange={(e) =>
+                                                                addendumForm.setData(
+                                                                    'new_opening_date',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                        {addendumForm.errors.new_opening_date && (
+                                                            <p className="text-sm text-destructive">
+                                                                {addendumForm.errors.new_opening_date}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
