@@ -215,13 +215,16 @@ it('T-C-21: uploads and links a single document on draft create', function () {
 });
 
 // T-C-22
+// POLICY-01: all uploads are PDF only. Pre-policy version of this test
+// mixed in .docx and .jpg to prove varied doc_types could ride alongside
+// — that's still the intent here, but every file is now a PDF.
 it('T-C-22: uploads multiple documents with varied doc_types', function () {
     $payload = tenderPayload(['publish' => true]);
     $payload['documents'] = [
         ['file' => fakeDoc('spec.pdf', 500), 'title' => 'Spec', 'doc_type' => 'specification'],
         ['file' => fakeDoc('drawing.pdf', 800), 'title' => 'Drawing', 'doc_type' => 'drawing'],
-        ['file' => fakeDoc('terms.docx', 200), 'title' => 'Terms', 'doc_type' => 'contract_terms'],
-        ['file' => fakeDoc('photo.jpg', 1200, 'image/jpeg'), 'title' => 'Photo', 'doc_type' => 'site_photo'],
+        ['file' => fakeDoc('terms.pdf', 200), 'title' => 'Terms', 'doc_type' => 'contract_terms'],
+        ['file' => fakeDoc('photo.pdf', 1200), 'title' => 'Photo', 'doc_type' => 'site_photo'],
     ];
 
     $this->actingAs($this->admin)->post(route('tenders.store'), $payload)->assertRedirect();

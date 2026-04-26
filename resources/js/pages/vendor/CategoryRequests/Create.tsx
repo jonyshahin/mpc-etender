@@ -21,9 +21,9 @@ type Props = {
     currentlyApprovedIds: string[];
 };
 
-const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB — POLICY-01
 const MAX_FILES = 10;
-const ACCEPTED = '.pdf,.jpg,.jpeg,.png,.docx,.xlsx';
+const ACCEPTED = 'application/pdf';
 
 export default function Create({ availableCategories, currentlyApprovedIds }: Props) {
     const { t } = useTranslation();

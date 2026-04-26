@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Vendor;
 
+use App\Rules\PdfFile;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCategoryChangeRequest extends FormRequest
@@ -20,7 +21,7 @@ class StoreCategoryChangeRequest extends FormRequest
             'remove_categories' => ['array'],
             'remove_categories.*' => ['uuid', 'exists:categories,id'],
             'evidence' => ['required', 'array', 'min:1', 'max:10'],
-            'evidence.*' => ['file', 'mimes:pdf,jpg,jpeg,png,docx,xlsx', 'max:10240'],
+            'evidence.*' => [new PdfFile],
         ];
     }
 }

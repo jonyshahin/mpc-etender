@@ -30,9 +30,12 @@ class FileUploadService
             }
         }
 
-        $maxSize = 10 * 1024 * 1024; // 10MB
+        // 5MB hard ceiling — matches FormRequest layer per POLICY-01.
+        // TODO(TECH-DEBT-02): make parameter-driven and add mime-sniffing
+        // (currently extension-based, weaker than FormRequest's mimes:pdf).
+        $maxSize = 5 * 1024 * 1024;
         if ($file->getSize() > $maxSize) {
-            throw new \InvalidArgumentException('File size exceeds the maximum allowed size of 10MB.');
+            throw new \InvalidArgumentException('File size exceeds the maximum allowed size of 5MB.');
         }
 
         return $file->store($directory, 's3');

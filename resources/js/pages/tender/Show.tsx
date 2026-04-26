@@ -786,6 +786,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                             <Label>{t('form.file')}</Label>
                                             <Input
                                                 type="file"
+                                                accept="application/pdf"
                                                 onChange={(e) =>
                                                     docForm.setData(
                                                         'file',
@@ -793,6 +794,9 @@ export default function Show({ tender, canEdit, canPublish, canCancel }: Props) 
                                                     )
                                                 }
                                             />
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('bid.documents.pdf_only')}
+                                            </p>
                                         </div>
                                         <Button type="submit" disabled={docForm.processing}>
                                             {t('btn.upload')}

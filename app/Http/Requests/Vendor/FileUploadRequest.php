@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Vendor;
 
+use App\Rules\PdfFile;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FileUploadRequest extends FormRequest
@@ -14,7 +15,7 @@ class FileUploadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png,xlsx'],
+            'file' => ['required', new PdfFile],
             'document_type' => ['required', 'string', 'in:trade_license,insurance,financial_statement,reference,certificate,other'],
             'title' => ['required', 'string', 'max:255'],
             'issue_date' => ['nullable', 'date'],

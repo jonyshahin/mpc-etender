@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Tender;
 
+use App\Rules\PdfFile;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTenderRequest extends FormRequest
@@ -50,7 +51,7 @@ class StoreTenderRequest extends FormRequest
             'evaluation_criteria.*.sort_order' => ['nullable', 'integer'],
 
             'documents' => ['nullable', 'array'],
-            'documents.*.file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xlsx,jpg,jpeg,png,zip'],
+            'documents.*.file' => ['required', new PdfFile],
             'documents.*.title' => ['required', 'string', 'max:255'],
             'documents.*.doc_type' => ['required', 'in:specification,drawing,contract_terms,boq_template,site_photo,other'],
 

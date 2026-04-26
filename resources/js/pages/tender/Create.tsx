@@ -914,6 +914,7 @@ export default function Create({ projects, categories }: Props) {
                                                     <Label>{t('form.file')}</Label>
                                                     <Input
                                                         type="file"
+                                                        accept="application/pdf"
                                                         onChange={(e) =>
                                                             updateDocument(
                                                                 i,
@@ -922,6 +923,9 @@ export default function Create({ projects, categories }: Props) {
                                                             )
                                                         }
                                                     />
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {t('bid.documents.pdf_only')}
+                                                    </p>
                                                     <FieldError errors={errors} path={`documents.${i}.file`} />
                                                 </div>
                                                 <Button

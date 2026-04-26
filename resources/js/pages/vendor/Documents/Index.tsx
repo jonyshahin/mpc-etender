@@ -144,11 +144,15 @@ export default function Index({ documents }: Props) {
                                     <Input
                                         id="file"
                                         type="file"
+                                        accept="application/pdf"
                                         onChange={(e) => {
                                             const file = e.target.files?.[0] ?? null;
                                             uploadForm.setData('file', file);
                                         }}
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('bid.documents.pdf_only')}
+                                    </p>
                                     {uploadForm.errors.file && (
                                         <p className="text-sm text-destructive">{uploadForm.errors.file}</p>
                                     )}
