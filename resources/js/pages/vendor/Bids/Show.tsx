@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, Save, SendHorizonal } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import Heading from '@/components/heading';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { FileUpload, type ExistingDoc } from '@/components/FileUpload';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,16 +54,53 @@ type Props = {
         status: string;
         submission_deadline: string | null;
         opening_date: string | null;
+        is_two_envelope: boolean;
         boq_sections: BoqSection[];
     };
     boqPrices: Record<string, BoqPriceEntry>;
+    documents: {
+        single: ExistingDoc[];
+        technical: ExistingDoc[];
+        financial: ExistingDoc[];
+    };
     canEdit: boolean;
     canSubmit: boolean;
+    canManageDocuments: boolean;
     canWithdraw: boolean;
 };
 
-export default function Show({ bid, tender, boqPrices, canEdit, canSubmit, canWithdraw }: Props) {
+export default function Show({
+    bid,
+    tender,
+    boqPrices,
+    documents,
+    canEdit,
+    canSubmit,
+    canManageDocuments,
+    canWithdraw,
+}: Props) {
     const { t } = useTranslation();
+
+    // BidDocType options per envelope. Single-envelope tenders see all five
+    // so the vendor can pick the most accurate label. Two-envelope splits
+    // restrict each side to its semantic types.
+    const TECHNICAL_DOC_TYPES = useMemo(() => [
+        { value: 'technical_proposal', label: t('bid.doc_type.technical_proposal') },
+        { value: 'method_statement', label: t('bid.doc_type.method_statement') },
+        { value: 'certificate', label: t('bid.doc_type.certificate') },
+        { value: 'other', label: t('bid.doc_type.other') },
+    ], [t]);
+    const FINANCIAL_DOC_TYPES = useMemo(() => [
+        { value: 'financial_schedule', label: t('bid.doc_type.financial_schedule') },
+        { value: 'other', label: t('bid.doc_type.other') },
+    ], [t]);
+    const ALL_DOC_TYPES = useMemo(() => [
+        { value: 'technical_proposal', label: t('bid.doc_type.technical_proposal') },
+        { value: 'method_statement', label: t('bid.doc_type.method_statement') },
+        { value: 'certificate', label: t('bid.doc_type.certificate') },
+        { value: 'financial_schedule', label: t('bid.doc_type.financial_schedule') },
+        { value: 'other', label: t('bid.doc_type.other') },
+    ], [t]);
 
     // Editable price state — initialized from server-truth, then owned by the form.
     // Rendered as `<Input>` cells when canEdit, otherwise the boqPrices prop is
@@ -255,13 +293,13 @@ export default function Show({ bid, tender, boqPrices, canEdit, canSubmit, canWi
                     </CardContent>
                 </Card>
 
-                {/* BOQ pricing — editable cells when canEdit, read-only display otherwise */}
-                {tender.boq_sections.map((section) => (
-                    <Card key={section.id}>
-                        <CardHeader>
-                            <CardTitle>{section.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                {/* Render BOQ + Grand Total + Technical Notes either inside envelope
+                    cards (two-envelope) or as their own top-level cards (single).
+                    Helpers below avoid duplicating the per-section table markup. */}
+                {(() => {
+                    const renderBoqSectionTable = (section: BoqSection) => (
+                        <div key={section.id} className="space-y-2">
+                            <h3 className="text-base font-semibold">{section.title}</h3>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -299,7 +337,7 @@ export default function Show({ bid, tender, boqPrices, canEdit, canSubmit, canWi
                                                                 type="number"
                                                                 min="0"
                                                                 step="0.01"
-                                                                className="ml-auto w-32 text-right"
+                                                                className="ms-auto w-32 text-right"
                                                                 value={editEntry.unit_price || ''}
                                                                 onChange={(e) =>
                                                                     handlePriceChange(item.id, item.quantity, e.target.value)
@@ -330,46 +368,128 @@ export default function Show({ bid, tender, boqPrices, canEdit, canSubmit, canWi
                                     </tfoot>
                                 </table>
                             </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                        </div>
+                    );
 
-                {/* Grand Total */}
-                <Card>
-                    <CardContent className="flex items-center justify-between py-4">
-                        <span className="text-lg font-semibold">{t('tender.grand_total')}</span>
-                        <span className="text-lg font-bold">
-                            {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tender.currency}
-                        </span>
-                    </CardContent>
-                </Card>
+                    const grandTotalRow = (
+                        <div className="flex items-center justify-between rounded-md bg-muted/50 px-4 py-3">
+                            <span className="text-lg font-semibold">{t('tender.grand_total')}</span>
+                            <span className="text-lg font-bold">
+                                {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tender.currency}
+                            </span>
+                        </div>
+                    );
 
-                {/* Technical Notes */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{t('tender.technical_notes')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {canEdit ? (
-                            <>
-                                <Label htmlFor="technical_notes" className="sr-only">
-                                    {t('tender.technical_notes')}
-                                </Label>
-                                <textarea
-                                    id="technical_notes"
-                                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    placeholder={t('tender.technical_notes_placeholder')}
-                                    value={technicalNotes}
-                                    onChange={(e) => setTechnicalNotes(e.target.value)}
-                                />
-                            </>
-                        ) : bid.technical_notes ? (
+                    const technicalNotesField = canEdit ? (
+                        <div className="space-y-2">
+                            <Label htmlFor="technical_notes">{t('tender.technical_notes')}</Label>
+                            <textarea
+                                id="technical_notes"
+                                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                placeholder={t('tender.technical_notes_placeholder')}
+                                value={technicalNotes}
+                                onChange={(e) => setTechnicalNotes(e.target.value)}
+                            />
+                        </div>
+                    ) : bid.technical_notes ? (
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium">{t('tender.technical_notes')}</p>
                             <p className="text-sm whitespace-pre-line">{bid.technical_notes}</p>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">—</p>
-                        )}
-                    </CardContent>
-                </Card>
+                        </div>
+                    ) : null;
+
+                    if (tender.is_two_envelope) {
+                        return (
+                            <>
+                                {/* Technical Envelope. Border colors are hardcoded — project
+                                    has no semantic info/success tokens (--color-info etc.) yet.
+                                    TODO: migrate to semantic tokens when a design pass adds them. */}
+                                <Card className="border-s-4 border-s-blue-500">
+                                    <CardHeader>
+                                        <CardTitle>{t('bid.envelope.technical_title')}</CardTitle>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('bid.envelope.technical_description')}
+                                        </p>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <FileUpload
+                                            bidId={bid.id}
+                                            envelope="technical"
+                                            existingFiles={documents.technical}
+                                            allowedDocTypes={TECHNICAL_DOC_TYPES}
+                                            defaultDocType="technical_proposal"
+                                            canEdit={canManageDocuments}
+                                            emptyMessage={t('bid.documents.empty_technical')}
+                                        />
+                                        {technicalNotesField}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Financial Envelope */}
+                                <Card className="border-s-4 border-s-emerald-500">
+                                    <CardHeader>
+                                        <CardTitle>{t('bid.envelope.financial_title')}</CardTitle>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('bid.envelope.financial_description')}
+                                        </p>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        {tender.boq_sections.map(renderBoqSectionTable)}
+                                        {grandTotalRow}
+                                        <FileUpload
+                                            bidId={bid.id}
+                                            envelope="financial"
+                                            existingFiles={documents.financial}
+                                            allowedDocTypes={FINANCIAL_DOC_TYPES}
+                                            defaultDocType="financial_schedule"
+                                            canEdit={canManageDocuments}
+                                            emptyMessage={t('bid.documents.empty_financial')}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </>
+                        );
+                    }
+
+                    // Single-envelope path: BOQ cards (one per section) + Grand Total +
+                    // Technical Notes + Documents card. Documents always rendered so the
+                    // affordance is visible even when empty.
+                    return (
+                        <>
+                            {tender.boq_sections.map((section) => (
+                                <Card key={section.id}>
+                                    <CardHeader>
+                                        <CardTitle>{section.title}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>{renderBoqSectionTable(section)}</CardContent>
+                                </Card>
+                            ))}
+                            <Card>
+                                <CardContent className="py-4">{grandTotalRow}</CardContent>
+                            </Card>
+                            {technicalNotesField && (
+                                <Card>
+                                    <CardContent className="py-4">{technicalNotesField}</CardContent>
+                                </Card>
+                            )}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>{t('bid.documents.section_title')}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <FileUpload
+                                        bidId={bid.id}
+                                        envelope="single"
+                                        existingFiles={documents.single}
+                                        allowedDocTypes={ALL_DOC_TYPES}
+                                        canEdit={canManageDocuments}
+                                        emptyMessage={t('bid.documents.empty_single')}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </>
+                    );
+                })()}
 
                 {/* Editable actions */}
                 {canEdit && (

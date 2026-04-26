@@ -360,6 +360,9 @@ test('show payload includes tender.is_two_envelope and grouped documents (BUG-18
     $response->assertInertia(fn ($page) => $page
         ->where('tender.is_two_envelope', true)
         ->where('canManageDocuments', true)
+        // All three envelope buckets must be present so the React FileUpload
+        // can address them by key without optional-chaining defensive code
+        // (BUG-18 Sub-B contract). The count form proves existence.
         ->has('documents.technical', 1)
         ->has('documents.financial', 0)
         ->has('documents.single', 0)

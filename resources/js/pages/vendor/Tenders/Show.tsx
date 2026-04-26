@@ -95,7 +95,12 @@ export default function Show({ tender, canBid, existingBid }: Props) {
                     <div className="space-y-1">
                         <p className="font-mono text-sm text-muted-foreground">{tender.reference_number}</p>
                         <Heading title={tender.title_en} />
-                        <StatusBadge status={tender.status} />
+                        <div className="flex items-center gap-2">
+                            <StatusBadge status={tender.status} />
+                            {tender.is_two_envelope && (
+                                <Badge variant="secondary">{t('tender.two_envelope')}</Badge>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex gap-2">
