@@ -1,14 +1,24 @@
 <?php
 
 use App\Enums\TenderStatus;
+use App\Exceptions\TenderPublishException;
 use App\Models\Permission;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\Tender;
 use App\Models\User;
+use App\Services\TenderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    // BUG-22 fixture changes route document files through FileUploadService,
+    // which writes to the s3 disk — fake it so tests don't hit a live bucket.
+    Storage::fake('s3');
+});
 
 function createTenderCreator(array $permissionSlugs = ['tenders.create', 'tenders.publish']): array
 {
@@ -52,6 +62,15 @@ function validTenderPayload(string $projectId, array $overrides = []): array
         ]],
         'evaluation_criteria' => [
             ['name_en' => 'Price', 'weight_percentage' => 100, 'envelope' => 'financial', 'max_score' => 100, 'sort_order' => 0],
+        ],
+        // BUG-22: at least one document is now a publish prereq. Tests
+        // that need to assert "no document" behavior override this to [].
+        'documents' => [
+            [
+                'file' => UploadedFile::fake()->create('spec.pdf', 200, 'application/pdf'),
+                'title' => 'Default Specification',
+                'doc_type' => 'specification',
+            ],
         ],
     ], $overrides);
 }
@@ -161,6 +180,30 @@ test('missing evaluation_criteria.max_score returns the validation key in sessio
     // FieldError path string, BUG-11 is regressing.
     $response->assertSessionHasErrors('evaluation_criteria.0.max_score');
     expect(Tender::where('title_en', 'Post-Fix Publish Test')->exists())->toBeFalse();
+});
+
+test('rejects publish when tender has no documents (BUG-22)', function () {
+    // Build a draft tender that meets every OTHER publish prereq:
+    // BOQ + criteria + weights summing to 100 + future deadline.
+    // Then verify the service-level publish gate refuses to flip the
+    // status because zero documents are attached.
+    $tender = Tender::factory()
+        ->draft()
+        ->withBoq()
+        ->withCriteria()
+        // NOTE: deliberately no ->withDocument() — this is the gap.
+        ->create([
+            'submission_deadline' => now()->addDays(14),
+            'opening_date' => now()->addDays(15),
+        ]);
+
+    $service = app(TenderService::class);
+
+    expect(fn () => $service->publish($tender))
+        ->toThrow(TenderPublishException::class, __('messages.publish_reason_no_documents'));
+
+    // Status should remain Draft — the throw must happen before any update.
+    expect($tender->fresh()->status)->toBe(TenderStatus::Draft);
 });
 
 test('publish is downgraded to draft when user lacks tenders.publish permission', function () {

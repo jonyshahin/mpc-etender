@@ -57,6 +57,12 @@ function tenderPayload(array $overrides = []): array
         'evaluation_criteria' => [
             ['name_en' => 'Price', 'weight_percentage' => 100, 'envelope' => 'financial', 'max_score' => 100, 'sort_order' => 0],
         ],
+        // BUG-22: at least one document is now a publish prereq. Including
+        // a default doc here keeps publish-true tests green; tests that
+        // need to assert "no document" behavior override this to [].
+        'documents' => [
+            ['file' => fakeDoc(), 'title' => 'Default Specification', 'doc_type' => 'specification'],
+        ],
         'publish' => false,
     ], $overrides);
 }

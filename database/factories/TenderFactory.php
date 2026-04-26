@@ -141,7 +141,11 @@ class TenderFactory extends Factory
 
     public function withBoqAndCriteria(): static
     {
-        return $this->withBoq()->withCriteria();
+        // BUG-22: publish prereqs now include at least one document.
+        // Adding it to the canonical "ready to publish" factory state
+        // keeps existing publish tests green without each having to
+        // call ->withDocument() explicitly.
+        return $this->withBoq()->withCriteria()->withDocument();
     }
 
     public function withDocument(int $count = 1): static

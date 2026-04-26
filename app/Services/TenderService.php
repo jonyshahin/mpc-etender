@@ -199,6 +199,13 @@ class TenderService
         if ($tender->submission_deadline !== null && $tender->submission_deadline->isPast()) {
             throw new TenderPublishException(__('messages.publish_reason_deadline_past'));
         }
+
+        // 5. At least one current document must be attached. Documents are
+        // a first-class sub-resource (like BOQ) — vendors cannot bid on a
+        // tender with no specs/drawings/contract terms attached. BUG-22 fix.
+        if ($tender->documents()->where('is_current', true)->count() === 0) {
+            throw new TenderPublishException(__('messages.publish_reason_no_documents'));
+        }
     }
 
     /**

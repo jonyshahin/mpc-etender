@@ -1,8 +1,10 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState, ReactNode } from 'react';
-import { Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -198,6 +200,14 @@ export default function Create({ projects, categories }: Props) {
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
     const [criteria, setCriteria] = useState<Criterion[]>([]);
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+    // Client-side preflight errors keyed in the same shape as server errors
+    // (`documents.{i}.title`, `documents.{i}.file`). Merged into `errors`
+    // below so FieldError treats them identically. Cleared at the start of
+    // each handleSubmit so a successful retry doesn't leave stale messages
+    // behind. BUG-22 fix: catches missing-title rows that the existing
+    // `validDocs` filter would silently drop, plus mime/size issues that
+    // would otherwise only surface as a 422 the user can't see from step 5.
+    const [preflightErrors, setPreflightErrors] = useState<Record<string, string>>({});
 
     const form = useForm({
         project_id: '',
@@ -220,7 +230,13 @@ export default function Create({ projects, categories }: Props) {
     // never populates useForm.errors. Read errors directly from the page props
     // bag so the post-submit Inertia partial reload surfaces them. Long-term
     // cleanup is unifying onto useForm + form.post() (BUG-12).
-    const errors = (usePage().props.errors ?? {}) as Record<string, string>;
+    //
+    // preflightErrors are merged on top so client-side checks (BUG-22) display
+    // through the same FieldError components without a parallel rendering path.
+    const errors = {
+        ...((usePage().props.errors ?? {}) as Record<string, string>),
+        ...preflightErrors,
+    };
 
     function next() {
         if (currentStep < STEPS.length - 1) setCurrentStep(currentStep + 1);
@@ -332,7 +348,54 @@ export default function Create({ projects, categories }: Props) {
             .reduce((sum, c) => sum + (parseFloat(c.weight_percentage) || 0), 0);
     }
 
+    /**
+     * Run client-side document checks BEFORE building the payload.
+     * Returns true if all good, false if any errors were collected and
+     * staged onto preflightErrors. The early-return at the call site
+     * surfaces them through the existing FieldError + jumps the user
+     * back to step 2 (Documents). BUG-22 fix.
+     */
+    function runDocumentPreflight(): boolean {
+        const FIVE_MB = 5 * 1024 * 1024;
+        const errs: Record<string, string> = {};
+
+        documents.forEach((d, i) => {
+            // A row is "intent to upload" only if a file is set. Empty rows
+            // (no file, no title) are ignored — they'll be filtered out
+            // downstream just like before.
+            if (!d.file) return;
+
+            if (d.title.trim() === '') {
+                errs[`documents.${i}.title`] = t('messages.tender.document_title_required');
+            }
+            if (d.file.size > FIVE_MB) {
+                errs[`documents.${i}.file`] = t('bid.documents.file_too_large');
+            } else if (d.file.type !== 'application/pdf') {
+                // Some browsers report empty `type` for unknown extensions —
+                // also flag that case as non-PDF since the server's mimes:pdf
+                // would reject it too.
+                errs[`documents.${i}.file`] = t('bid.documents.pdf_only');
+            }
+        });
+
+        if (Object.keys(errs).length === 0) {
+            return true;
+        }
+
+        setPreflightErrors(errs);
+        toast.error(t('messages.tender.documents_invalid_preflight'));
+        setCurrentStep(2);
+        return false;
+    }
+
     function handleSubmit(action: 'draft' | 'published') {
+        // Reset any stale preflight errors from a previous attempt.
+        setPreflightErrors({});
+
+        if (!runDocumentPreflight()) {
+            return;
+        }
+
         const payload: Record<string, any> = {
             ...form.data,
             category_ids: categoryIds,
@@ -387,6 +450,14 @@ export default function Create({ projects, categories }: Props) {
                 // user-visible bottom-center toast as a backstop in case
                 // this callback isn't invoked for any reason.
                 console.log('[tender create] validation errors:', errs);
+
+                // BUG-22: if any error key is on a document, jump back to
+                // step 2 so the inline FieldError is visible. Without this
+                // the user stays on step 5 (Review) where the error markup
+                // isn't rendered, and the toast alone is too easy to miss.
+                if (Object.keys(errs).some((k) => k.startsWith('documents.'))) {
+                    setCurrentStep(2);
+                }
             },
         });
     }
@@ -1201,6 +1272,22 @@ export default function Create({ projects, categories }: Props) {
                                     </CardContent>
                                 </Card>
 
+                                {/* BUG-22: belt-and-suspenders gate. Backend
+                                    TenderService::assertPublishPrerequisites
+                                    is the source of truth — this banner just
+                                    gives faster feedback than waiting for the
+                                    422 round-trip. Counts only rows with a
+                                    File object, matching the same intent the
+                                    server gate enforces (no empty rows). */}
+                                {documents.filter((d) => d.file).length === 0 && (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertDescription>
+                                            {t('messages.tender.documents_required_to_publish')}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="text-base">{t('tender.categories')}</CardTitle>
@@ -1265,7 +1352,10 @@ export default function Create({ projects, categories }: Props) {
                                 <Button
                                     type="button"
                                     onClick={() => handleSubmit('published')}
-                                    disabled={form.processing}
+                                    disabled={
+                                        form.processing ||
+                                        documents.filter((d) => d.file).length === 0
+                                    }
                                 >
                                     {t('btn.save_and_publish')}
                                 </Button>
