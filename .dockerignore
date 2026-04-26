@@ -1,0 +1,54 @@
+# Build context excludes — keeps `docker compose build` fast.
+# These either belong to the host (vendor, node_modules — installed
+# fresh inside the container), are generated (public/build), or are
+# secrets/local state (.env).
+
+.git
+.github
+.idea
+.vscode
+.DS_Store
+
+# Composer + npm install run inside the container — host versions
+# would mismatch the container's PHP/Node and slow `up` to a crawl.
+vendor
+node_modules
+
+# Build output — Vite regenerates on `npm run build`.
+public/build
+public/hot
+
+# Local logs and caches — never want these baked into an image.
+storage/logs/*
+!storage/logs/.gitignore
+storage/framework/cache/data/*
+!storage/framework/cache/data/.gitignore
+storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+storage/framework/views/*
+!storage/framework/views/.gitignore
+storage/framework/testing/*
+storage/app/private
+storage/app/public
+
+# Secrets / per-developer state.
+.env
+.env.backup
+.env.local
+.env.production
+
+# Test artifacts.
+.phpunit.result.cache
+.phpunit.cache
+coverage
+
+# Docs + screenshots — not needed at runtime.
+docs/*.png
+docs/*.jpg
+docs/*.gif
+
+# This compose stack itself doesn't ship in the image.
+compose.yaml
+docker
+.dockerignore
+Makefile

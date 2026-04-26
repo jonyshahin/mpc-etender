@@ -1,0 +1,213 @@
+# MPC e-Tender — local dev stack.
+#
+# Mirrors prod (Laravel Cloud + MySQL Flex + Valkey + Cloudflare R2 +
+# Mailpit-equivalent) so wizard-flow bugs (BUG-15, BUG-22) can be
+# reproduced locally without deploy round-trips. See docs/DEVELOPMENT.md.
+#
+# Service map:
+#   app          → Laravel HTTP server (php artisan serve on :80 → host :8000)
+#   app-horizon  → Same image, runs `php artisan horizon` for queues
+#   mysql        → MySQL 8.4, host port 3306
+#   valkey       → Valkey 8 (Redis-protocol-compatible), host port 6379
+#   minio        → S3-compatible storage, API :9000, console :8900
+#   minio-init   → Sidecar that creates the mpc-etender bucket on first up
+#   mailpit      → Catch-all SMTP + web UI on :8025
+#   meilisearch  → Scout backend (profile: search; opt-in via --profile search)
+#
+# All containers share the `mpc` bridge network; persistent volumes for
+# mysql, valkey, minio, meilisearch.
+
+services:
+    app:
+        build:
+            context: './vendor/laravel/sail/runtimes/8.4'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP:-1000}'
+        image: 'mpc-etender/app:8.4'
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '${APP_PORT:-8000}:80'
+            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            # When true, entrypoint.sh runs `php artisan migrate --force` once
+            # mysql is healthy. Default false — `make migrate` flips it on demand.
+            RUN_MIGRATIONS: '${RUN_MIGRATIONS:-false}'
+        volumes:
+            - '.:/var/www/html'
+            - './docker/app/php.ini:/etc/php/8.4/cli/conf.d/99-mpc.ini:ro'
+            - './docker/app/entrypoint.sh:/usr/local/bin/mpc-entrypoint:ro'
+        entrypoint: ['/usr/local/bin/mpc-entrypoint']
+        # Sail's start.sh runs supervisord which exec's the SUPERVISOR_PHP_COMMAND
+        # (artisan serve). Our entrypoint waits for mysql, conditionally runs
+        # migrations, then forwards to start.sh — preserving Sail's init flow.
+        command: ['/usr/local/bin/start-container']
+        networks:
+            - mpc
+        depends_on:
+            mysql:
+                condition: service_healthy
+            valkey:
+                condition: service_healthy
+            minio:
+                condition: service_healthy
+            mailpit:
+                condition: service_started
+
+    app-horizon:
+        image: 'mpc-etender/app:8.4'
+        # Reuses the `app` build; depends_on ensures `app` finishes building
+        # first (otherwise both pull/build concurrently and waste CPU).
+        depends_on:
+            app:
+                condition: service_started
+            mysql:
+                condition: service_healthy
+            valkey:
+                condition: service_healthy
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+            # Horizon doesn't need to run migrations — `app` already did.
+            RUN_MIGRATIONS: 'false'
+        volumes:
+            - '.:/var/www/html'
+            - './docker/app/php.ini:/etc/php/8.4/cli/conf.d/99-mpc.ini:ro'
+            - './docker/app/entrypoint.sh:/usr/local/bin/mpc-entrypoint:ro'
+        entrypoint: ['/usr/local/bin/mpc-entrypoint']
+        command: ['php', 'artisan', 'horizon']
+        networks:
+            - mpc
+        restart: unless-stopped
+
+    mysql:
+        image: 'mysql:8.4'
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ROOT_HOST: '%'
+            MYSQL_DATABASE: '${DB_DATABASE:-mpc_etender}'
+            MYSQL_USER: '${DB_USERNAME:-sail}'
+            MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        volumes:
+            - 'mpc-mysql:/var/lib/mysql'
+            - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+        networks:
+            - mpc
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD:-password}']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 30s
+
+    valkey:
+        # Valkey is the OSS Redis fork that prod (Laravel Cloud Valkey 250MB)
+        # also runs. Wire-protocol identical to Redis — Predis client doesn't
+        # care which is on the other end.
+        image: 'valkey/valkey:8-alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'mpc-valkey:/data'
+        networks:
+            - mpc
+        healthcheck:
+            test: ['CMD', 'valkey-cli', 'ping']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    minio:
+        image: 'minio/minio:latest'
+        ports:
+            - '${FORWARD_MINIO_PORT:-9000}:9000'
+            - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
+        environment:
+            MINIO_ROOT_USER: '${MINIO_ROOT_USER:-sail}'
+            MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:-password}'
+        volumes:
+            - 'mpc-minio:/data'
+        networks:
+            - mpc
+        command: 'minio server /data --console-address ":8900"'
+        healthcheck:
+            test: ['CMD', 'mc', 'ready', 'local']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    minio-init:
+        # Sidecar: waits for MinIO to be ready, then ensures the
+        # mpc-etender bucket exists with public-read on the *download*
+        # prefix (signed URLs from FileUploadService::getTemporaryUrl
+        # still work without it, but the public read makes Storage::url()
+        # debugging easier). Idempotent — safe to re-run via `make mc-mb`.
+        image: 'minio/mc:latest'
+        depends_on:
+            minio:
+                condition: service_healthy
+        environment:
+            MINIO_ROOT_USER: '${MINIO_ROOT_USER:-sail}'
+            MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:-password}'
+            BUCKET_NAME: '${AWS_BUCKET:-mpc-etender}'
+        entrypoint: >
+            /bin/sh -c "
+              mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+              mc mb --ignore-existing local/$$BUCKET_NAME;
+              mc anonymous set download local/$$BUCKET_NAME;
+              echo 'bucket ready: '$$BUCKET_NAME;
+            "
+        networks:
+            - mpc
+        restart: 'no'
+
+    mailpit:
+        image: 'axllent/mailpit:latest'
+        ports:
+            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - mpc
+
+    meilisearch:
+        # Scout backend. Optional — only spins up when running
+        # `docker compose --profile search up`. Most dev work doesn't
+        # exercise Scout, so saving the ~150 MB image + RAM by default.
+        image: 'getmeili/meilisearch:latest'
+        profiles: ['search']
+        ports:
+            - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
+        environment:
+            MEILI_NO_ANALYTICS: '${MEILISEARCH_NO_ANALYTICS:-true}'
+        volumes:
+            - 'mpc-meilisearch:/meili_data'
+        networks:
+            - mpc
+        healthcheck:
+            test: ['CMD', 'wget', '--no-verbose', '--spider', 'http://127.0.0.1:7700/health']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+networks:
+    mpc:
+        driver: bridge
+
+volumes:
+    mpc-mysql:
+        driver: local
+    mpc-valkey:
+        driver: local
+    mpc-minio:
+        driver: local
+    mpc-meilisearch:
+        driver: local

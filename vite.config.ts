@@ -22,4 +22,14 @@ export default defineConfig({
             formVariants: true,
         }),
     ],
+    server: {
+        // Bind to 0.0.0.0 so the dev server is reachable from outside
+        // the container. usePolling is required for HMR to detect file
+        // changes through Docker bind mounts on Windows/macOS — without
+        // it, edits don't trigger reloads. ~3% CPU overhead, worth it.
+        host: '0.0.0.0',
+        watch: {
+            usePolling: true,
+        },
+    },
 });

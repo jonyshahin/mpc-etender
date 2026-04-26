@@ -1,11 +1,49 @@
+# MPC e-Tender — line ending + diff policy.
+#
+# Default: text auto-detect, normalize to LF on commit.
+
 * text=auto eol=lf
 
-*.blade.php diff=html
-*.css diff=css
-*.html diff=html
-*.md diff=markdown
-*.php diff=php
+# ── Linux container scripts — always LF ─────────────────────────
+# CRLF crashes bash inside containers; keep these LF regardless of
+# what editor the contributor uses on Windows.
+*.sh           text eol=lf
+*.bash         text eol=lf
+docker/**      text eol=lf
+Makefile       text eol=lf
 
-CHANGELOG.md export-ignore
-README.md export-ignore
-.github/workflows/browser-tests.yml export-ignore
+# ── YAML / JSON / config — always LF ────────────────────────────
+# Docker Compose reads these inside Linux containers; Windows-side
+# editors that write CRLF have caused silent parse failures before.
+*.yaml         text eol=lf
+*.yml          text eol=lf
+*.json         text eol=lf
+*.toml         text eol=lf
+
+# ── Windows-native scripts — keep CRLF ──────────────────────────
+*.ps1          text eol=crlf
+*.psm1         text eol=crlf
+*.cmd          text eol=crlf
+*.bat          text eol=crlf
+
+# ── Diff hints (existing) ───────────────────────────────────────
+*.blade.php    diff=html
+*.css          diff=css
+*.html         diff=html
+*.md           diff=markdown
+*.php          diff=php
+
+# ── Export-ignore (existing) ────────────────────────────────────
+CHANGELOG.md                          export-ignore
+README.md                             export-ignore
+.github/workflows/browser-tests.yml   export-ignore
+
+# ── Binary files — never normalize ──────────────────────────────
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.pdf          binary
+*.zip          binary
+*.gz           binary
+*.ico          binary
