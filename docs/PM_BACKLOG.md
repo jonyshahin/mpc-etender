@@ -38,6 +38,7 @@
 
 ## Recently shipped (rolling log, last ~10)
 
+- **2026-04-27** — `7ce6a5c` `fix(BUG-30)`: correct `ProfileValidationRules` type signatures for UUID PKs. Two-char fix (`?int` → `?string`) on `profileRules()` and `emailRules()` in `app/Concerns/ProfileValidationRules.php` plus a UUID-keyed regression test. Suite went 240/3-failing/10-skipped → 243/1-failing/10-skipped. Surfaced by audit 2026-04-27; would have produced 500s on every internal-user `/settings/profile` PATCH in production. Side finding: the audit conflated `RegistrationTest::test_new_users_can_register` with this bug — that's a separate `users.role_id` NOT NULL issue, now filed as BUG-31 awaiting scope decision.
 - **2026-04-27** — `9fb1f18` `fix(BUG-26)`: cascade `opening_date` when addendum extends submission deadline. New `MinHoursAfter` validation rule + 24h buffer setting + DB::transaction wrap + AuditLog capture for both fields. 8 Pest tests, browser-verified en + ar. Backfill identified 1 existing bad-state tender (MBP-T008) flagged for procurement-officer-issued corrective addendum.
 - **2026-04-27** — `8eef587` `fix(BUG-23)`: split addendum-form gate from canEdit. New `canIssueAddendum` prop allows the form on Published tenders while keeping canEdit (Draft-only) correct for tender-content edits. Prerequisite for BUG-26 browser verification.
 - **2026-04-27** — `be3631e` `fix(BUG-28)`: hide 2FA mandatory toggle behind "Coming soon" badge (interim mitigation, Pattern A inline early-return). Local + post-deploy smoke verified. Full enforcement build deferred behind BUG-26.
