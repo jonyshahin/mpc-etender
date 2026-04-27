@@ -18,11 +18,10 @@
 
 ## Priority queue (top = next)
 
-1. **BUG-26 — Addendum deadline cascade fix.** High severity. Prompt ready: `docs/prompts/PROMPT_BUG_26_ADDENDUM_DEADLINE_CASCADE.md`. Blocks Step 7 of test plan (vendor bid submission against `MBP-T008`). Run when Johnny gives the go-ahead.
-2. **BUG-03 + BUG-29 — i18n Strategy A cleanup batch.** Mechanical. Apply Strategy A pattern to settings page raw config keys (BUG-03) and vendor document type labels (BUG-29). Likely batch with role names, category names, status labels. Prompt not yet drafted — Claude (PM) to write when BUG-26 lands.
-3. **BUG-28 full enforcement build (~5–7 days).** Build `EnsureTwoFactorAuthenticated` middleware, wire to `auth('web')` route group, gate on the setting key, expand Pest coverage. Includes TECH-DEBT-09 (drop `users.is_2fa_enabled` column). Blocked behind BUG-26 verification on prod. Prompt not yet drafted.
-4. **Step 7 of automated test plan — vendor bid submission.** Unblocked the moment BUG-26 ships and is verified. Resume from `ETENDER_TEST_PLAN.md`. Steps 8–12 follow.
-5. **Other open BUGS** (BUG-01 RTL sidebar, BUG-02 sidebar padding, BUG-05 MultiSelect a11y, BUG-06 ku language pref, BUG-07 transaction wrap, BUG-08 audit log fields). Tracked in `BUGS.md`. Schedule individually or batch by file/area as opportunities arise.
+1. **BUG-03 + BUG-29 — i18n Strategy A cleanup batch.** Mechanical. Apply Strategy A pattern to settings page raw config keys (BUG-03) and vendor document type labels (BUG-29). Likely batch with role names, category names, status labels. Prompt not yet drafted — BUG-26 has landed (commit `9fb1f18`, 2026-04-27); Claude (PM) to draft the i18n batch prompt next cycle.
+2. **BUG-28 full enforcement build (~5–7 days).** Build `EnsureTwoFactorAuthenticated` middleware, wire to `auth('web')` route group, gate on the setting key, expand Pest coverage. Includes TECH-DEBT-09 (drop `users.is_2fa_enabled` column). Blocked behind BUG-26 verification on prod. Prompt not yet drafted.
+3. **Step 7 of automated test plan — vendor bid submission.** Unblocked the moment BUG-26 ships and is verified. Resume from `ETENDER_TEST_PLAN.md`. Steps 8–12 follow.
+4. **Other open BUGS** (BUG-01 RTL sidebar, BUG-02 sidebar padding, BUG-05 MultiSelect a11y, BUG-06 ku language pref, BUG-07 transaction wrap, BUG-08 audit log fields). Tracked in `BUGS.md`. Schedule individually or batch by file/area as opportunities arise.
 
 ---
 
@@ -39,6 +38,8 @@
 
 ## Recently shipped (rolling log, last ~10)
 
+- **2026-04-27** — `9fb1f18` `fix(BUG-26)`: cascade `opening_date` when addendum extends submission deadline. New `MinHoursAfter` validation rule + 24h buffer setting + DB::transaction wrap + AuditLog capture for both fields. 8 Pest tests, browser-verified en + ar. Backfill identified 1 existing bad-state tender (MBP-T008) flagged for procurement-officer-issued corrective addendum.
+- **2026-04-27** — `8eef587` `fix(BUG-23)`: split addendum-form gate from canEdit. New `canIssueAddendum` prop allows the form on Published tenders while keeping canEdit (Draft-only) correct for tender-content edits. Prerequisite for BUG-26 browser verification.
 - **2026-04-27** — `be3631e` `fix(BUG-28)`: hide 2FA mandatory toggle behind "Coming soon" badge (interim mitigation, Pattern A inline early-return). Local + post-deploy smoke verified. Full enforcement build deferred behind BUG-26.
 - **2026-04-27** — `218f6ac` `docs(bugs)`: BUG-28 investigation verdict — COSMETIC. Toggle persists `security.2fa_mandatory_internal` but no enforcement code reads it.
 - **2026-04-27** — `eac694c` `docs(bugs)`: log 5 new items from prod verification (BUG-26, BUG-27, BUG-28, BUG-29, TECH-DEBT-08).
@@ -51,6 +52,7 @@
 - **Bug numbering:** `BUG-NN` for user-visible breakage, `TECH-DEBT-NN` for non-bug forward work or refactors. Both number monotonically — closed items keep their number, gaps in `BUGS.md` reflect closed/historical entries (look up via `git log --grep="BUG-NN"`).
 - **Strategy A i18n:** DB stores slugs, React renders via ``t(`scope.${slug}.label`)``, dev-mode `console.warn` on missing keys. Applies to settings, doc types, role names, category names, status labels — any DB-seeded enum-like values.
 - **Audit log:** capture old values **before** save (Laravel's `getOriginal()` post-save returns the new value — known gotcha).
+- **Gate-split for amends-published-tender actions:** the `update` policy / `canEdit` correctly restricts to Draft (you can't edit a published tender's content). Actions that *amend* a published tender (addenda, clarifications, withdrawals) need their own permission + status check, gated separately in the controller and exposed as a distinct prop (e.g., `canIssueAddendum`). Don't bundle them under `canEdit`. Pattern established in BUG-23 (`8eef587`); apply when adding similar amends-published-tender features.
 - **Toasts:** `Inertia::flash('toast', ['type' => '...', 'message' => __('...')])`. All messages translated en + ar (ku gets `[en]` placeholder until full translation pass).
 - **Build environment:** Docker for backend/Pint/Pest/tinker. Host for `npm run build` and `npx tsc --noEmit` (TECH-DEBT-07 workaround).
 - **PR/commit hygiene:** every commit references `BUG-NN` or `TECH-DEBT-NN` in the message so `git log --grep` works.
