@@ -9,6 +9,39 @@ For per-bug detail see commit history (search `BUG-NN` in messages).
 
 ## Open bugs
 
+- **BUG-06 — `UpdateUserRequest` rejects `language_pref=ku`.**
+  Severity: low (single missing enum value). The validation rule for `language_pref` in `app/Http/Requests/UpdateUserRequest.php` allows only `en` and `ar`. The application supports a third locale (`ku`, Kurdish) — it's already in the `lang/ku.json` file, the locale resolves correctly via Inertia, and the user's `language_pref` column accepts it at the DB level. The form request is the only chokepoint blocking admins from saving `ku` as a user's preferred language. Fix: add `'ku'` to the `Rule::in([...])` constraint on the `language_pref` field in `UpdateUserRequest::rules()`. Likely also exists on `StoreUserRequest` — audit both. Add a Pest test asserting `ku` is accepted. Side finding from BUGS.md drift triage 2026-04-27.
+
+- **BUG-07 — `UserController::update` not transaction-wrapped — partial save risk on project-role sync failure.**
+  Severity: medium (low frequency, real consequence). When an admin updates a user via `UserController::update`, the controller saves the user model and then syncs the user's project assignments (`projects()->sync(...)` or equivalent) as separate operations. If the sync fails (FK violation, network blip on the DB connection, validation throw mid-pivot-write), the user model is already saved with the new attributes but the project-role state is partially or fully wrong. Result: user looks updated in the admin list, but their access permissions don't match what was set. Fix: wrap the user save + project sync in `DB::transaction(...)` so a failure in either rolls both back. Mirror the pattern used in `AddendumController::store` post-BUG-26 (commit `9fb1f18`). Add a Pest test that forces the sync step to throw and asserts the user's pre-update attributes survive. Surfaced multiple times across sessions before being filed; not yet hit in production but the failure mode is concrete.
+
+- **BUG-08 — Audit log writes don't capture all changed fields (system-wide).**
+  Severity: medium (historical audit data is incomplete; new code uses the correct pattern post-BUG-26). The Laravel `getOriginal()` method called *after* `$model->save()` or `$model->update()` returns the **new** value, not the original — Eloquent overwrites the original attributes once the save lands. Several controllers in this codebase capture audit log values *after* the update call, which means their audit_log rows have identical `old_values` and `new_values` columns. The 7-year-immutable-audit-log promise from the project plan depends on this being correct system-wide.
+
+  Action items:
+
+  1. Grep all `AuditLog::create(...)` call sites: `grep -rn "AuditLog::create" app/`
+  2. For each call site, verify the `old_values` array is built from a snapshot taken **before** the corresponding `update()` / `save()`, not after.
+  3. Sites that capture post-save need refactoring to take a pre-save snapshot (pattern: `$old = $model->only([...])` before update, pass into `AuditLog::create` after).
+  4. Add a system-wide convention test (or static analysis check) that catches the bad pattern automatically. One option: a Pest convention test that scans for `AuditLog::create` calls and asserts the surrounding code captured originals before the save.
+  5. New code already uses the correct pattern (BUG-26 / `AddendumController::store` is the reference). Use that as the canonical example.
+
+  Per-controller audit; estimated 2–3 days. The Tender model does NOT use the `owen-it/laravel-auditing` trait — this codebase is fully manual `AuditLog::create()`, no automatic capture, so every site needs verification.
+
+- **BUG-12 — Wizard form architecture refactor (`useState` arrays + `useForm` scalars + `router.post`).**
+  Severity: [JOHNNY: confirm — likely medium given it's "architecture refactor" not breakage]. [JOHNNY: please fill in the body. The original conversation context referenced "wizard form architecture" and a tension between three React patterns: `useState` for array fields, Inertia's `useForm` for scalar fields, and direct `router.post` calls. The refactor's goal and current pain point need your description.] Action items: [JOHNNY: list].
+
+- **BUG-13 — Vendor portal ignores `language_pref` on initial render; hide `ku` from picker.**
+  Severity: [JOHNNY: confirm — medium, likely]. Two related symptoms:
+
+  1. When a vendor with `language_pref=ar` (or `ku`) logs in, the first render of the vendor portal lands in English regardless. The locale gets corrected on the next navigation, but the initial dashboard view is wrong. Compare against the MPC internal portal which doesn't have this issue.
+  2. The locale picker in the vendor portal still exposes Kurdish (`ku`) even though `lang/ku.json` is full of `[en]` placeholder strings — vendors who pick it would see English labels with the layout direction NOT flipped. Either: (a) hide `ku` from the picker until full Kurdish translation lands (recommended interim), or (b) translate `ku` properly in the same i18n pass that closes BUG-25.
+
+  Partial overlap with BUG-25 (vendor portal i18n coverage gap) noted during triage. [JOHNNY: confirm whether to merge BUG-13 into BUG-25 or keep separate — BUG-25 is broader (translation key coverage) while BUG-13 is more specific (initial-render bug + picker UX). My read: keep separate; they're two different fixes.]
+
+- **BUG-17 — `POST /tenders` takes ~9 seconds when validation fails.**
+  Severity: [JOHNNY: medium — perf bug, user-facing]. Symptom: when the tender create form posts and the server-side validation rejects (e.g., missing required field, invalid date format), the response takes ~9 seconds to return. A successful save is fast (<1s). The lag is on the failure path specifically, which is the more common path during real-world wizard use (admins iterate). [JOHNNY: please confirm whether this is still reproducible after recent wizard changes (BUG-22, BUG-15-related work). The symptom may have been incidentally fixed; if so, this should go straight to "investigate-then-close" rather than open the entry.] Possible causes to check: (a) Telescope or Pulse hooked into the request lifecycle in the validation-fail path even though they're disabled in prod, (b) translation file load on every request, (c) FormRequest's `authorize()` doing slow DB lookups before validation, (d) Inertia's error response payload generating slowly. Profile with Clockwork or `microtime(true)` markers at request start, FormRequest hit, validation reject, response render.
+
 - **BUG-22 — Tender wizard silently drops invalid documents on publish.**
   Repro: as admin, run the tender create wizard. In the documents step, attach a non-PDF file (e.g. .jpg). Click Save & Publish. The tender publishes successfully, but the document does NOT upload — silently dropped, no validation error toast, no warning. POLICY-01 enforces PDF-only at the FormRequest layer, so the upload validation IS firing — but the wizard's submit handler treats partial-success as full-success and proceeds. Same class as BUG-15 (wizard publish silent failure on aggregate validation). Likely the wizard POSTs documents in a separate sub-request after tender creation, and that sub-request's validation rejection isn't caught by the wizard's promise chain or useForm error handler. High priority — the whole POLICY-01 enforcement story is undermined if the wizard silently bypasses it.
 
@@ -82,6 +115,9 @@ For per-bug detail see commit history (search `BUG-NN` in messages).
 - **BUG-29 — Vendor document type labels showing raw i18n keys.**
   Severity: low. Same class as BUG-03. On `/vendor/documents`, the Document Type dropdown renders raw keys (`vendor.doc_type_trade_license`, `vendor.doc_type_tax_certificate`, `vendor.doc_type_insurance`, `vendor.doc_type_financial_statement`, `vendor.doc_type_bank_reference`, `vendor.doc_type_experience_certificate`, `vendor.doc_type_iso_certificate`, `vendor.doc_type_other`) instead of resolved labels. Apply Strategy A: confirm DB stores slugs (`trade_license`, `tax_certificate`, …), render via ``t(`vendor.doc_type.${slug}.label`)`` in React, add 8 keys to each of `lang/en.json` and `lang/ar.json`, dev-mode `console.warn` on missing keys per existing convention. Worth batching with BUG-03 and any other DB-seeded enum-like values (category names, role names, status labels) into one Strategy A cleanup commit.
 
+- **BUG-05 — MultiSelect renders nested `<button>` HTML (a11y / keyboard nav).**
+  Severity: low (cosmetic — not visually broken, but reads as a violation when assistive tech walks the DOM). The shadcn `<MultiSelect>` primitive currently renders a `<button>` element inside another `<button>` (likely the chip-with-X-to-remove pattern inside the trigger button). Browsers tolerate it; screen readers and keyboard navigation get confused. Fix: refactor the inner element from `<button>` to `<span role="button" tabIndex={0}>` with explicit `onKeyDown` for Enter/Space, OR restructure so the chip's remove control sits outside the trigger button entirely. Verify with axe-core or browser devtools accessibility tree. Surfaces wherever MultiSelect is used (categories, vendor categories, role permissions). Carried as a known issue across multiple sessions before being filed in this housekeeping pass.
+
 ## Tech debt
 
 - **TECH-DEBT-01 — Unify file upload patterns across vendor pages.**
@@ -107,6 +143,9 @@ For per-bug detail see commit history (search `BUG-NN` in messages).
 
 - **TECH-DEBT-09 — Redundant `users.is_2fa_enabled` column.**
   Surfaced during BUG-28 investigation (commit `218f6ac`). The `users` table has both `is_2fa_enabled` (custom column) and Fortify's `two_factor_confirmed_at` (set when a user confirms enrollment with a valid TOTP code). They encode overlapping state. When the full BUG-28 enforcement build is scheduled, drop `is_2fa_enabled` and use `two_factor_confirmed_at IS NOT NULL` as the canonical "is this user 2FA-enrolled" predicate everywhere. Migration + grep sweep for any code reading `is_2fa_enabled`. Severity: low. Blocked on BUG-28 full build (don't drop the column until enforcement is wired and we've confirmed nothing else depends on it).
+
+- **TECH-DEBT-10 — Per-envelope opening dates + two-stage seal/open for two-envelope tenders.**
+  Two-envelope tenders today use the same `opening_date` for both technical and financial envelopes. Procurement procedure says technical envelope opens first, evaluation runs, then financial envelope opens for technically-passing bids only — so they need two separate dates, persisted independently, and the bid-opening flow has to gate financial-envelope decryption on technical-envelope evaluation completion. [JOHNNY: confirm scope — is this Phase 1 procurement-process essential, or Phase 2 enhancement? My read: it's procurement-essential for any genuine two-envelope tender, which means it's technically blocking proper M-04 evaluation. But "technically blocking" may not match real procurement behavior at MPC — if you've been running two-envelope tenders with the same opening date in production successfully, the priority is lower than I'd guess. Estimated 1 sprint once scope is locked.] Surfaced in BUG-18 Sub-A's commit message as future scope.
 
 - **TECH-DEBT-08 — Tender Shortlist tab and workflow.**
   New feature in M-04 Evaluation Engine domain. Add a "Shortlist" tab to the tender detail page (alongside Overview, BOQ, Documents, Addenda, Clarifications, Evaluation) for managing post-evaluation shortlists before final award. Scope definition required before implementation. Open design questions:
