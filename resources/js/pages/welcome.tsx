@@ -19,11 +19,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { LOCALES, LOCALE_BY_CODE, type LocaleCode } from '@/lib/locales';
 import { dashboard, login } from '@/routes';
 
-export default function Welcome({
-    canRegister = true,
-}: {
-    canRegister?: boolean;
-}) {
+export default function Welcome() {
     const { t } = useTranslation();
     const page = usePage();
     const user = (page.props.auth as { user?: { name?: string } | null }).user;
@@ -156,15 +152,13 @@ export default function Welcome({
                                             <Lock className="size-4" />
                                             {t('welcome.staff_login')}
                                         </Link>
-                                        {canRegister && (
-                                            <a
-                                                href="/vendor/register"
-                                                className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
-                                            >
-                                                <Building2 className="size-4" />
-                                                {t('welcome.cta_register_vendor')}
-                                            </a>
-                                        )}
+                                        <a
+                                            href="/vendor/register"
+                                            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
+                                        >
+                                            <Building2 className="size-4" />
+                                            {t('welcome.cta_register_vendor')}
+                                        </a>
                                     </>
                                 )}
                             </div>
