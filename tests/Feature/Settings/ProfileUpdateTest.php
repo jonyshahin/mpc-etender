@@ -96,4 +96,31 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertNotNull($user->fresh());
     }
+
+    public function test_profile_update_succeeds_for_a_uuid_keyed_user()
+    {
+        $user = User::factory()->create();
+
+        // Confirm the regression precondition: the User PK is a UUID string,
+        // not an int. The previous ?int $userId signature on
+        // ProfileValidationRules threw a TypeError before validation ran.
+        $this->assertIsString($user->id);
+        $this->assertNotEmpty($user->id);
+        $this->assertFalse(ctype_digit($user->id));
+
+        $response = $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => 'UUID Keyed User',
+                'email' => 'uuid-keyed@example.com',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+        $this->assertSame('UUID Keyed User', $user->name);
+        $this->assertSame('uuid-keyed@example.com', $user->email);
+    }
 }
