@@ -185,7 +185,7 @@ Route::middleware(['auth', 'verified'])->prefix('approvals')->name('approvals.')
 Route::middleware(['auth', 'verified'])->post('tenders/{tender}/request-approval', [Approval\ApprovalController::class, 'requestApproval'])->name('tenders.request-approval');
 
 // ── Admin routes ──
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
     // Users

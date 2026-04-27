@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 /** Mirrors createAuthorizedUser() pattern used elsewhere in the test suite. */
 function adminWithVendorUpdatePermission(): User
 {
-    $role = Role::factory()->create();
+    $role = Role::factory()->create(['slug' => 'admin', 'name' => 'Admin']);
     $perm = Permission::firstOrCreate(
         ['slug' => 'vendors.update'],
         ['name' => 'Vendors Update', 'module' => 'vendors']

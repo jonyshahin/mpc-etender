@@ -11,7 +11,7 @@ uses(RefreshDatabase::class);
 
 function createAdminWithPermission(string $slug): User
 {
-    $role = Role::factory()->create();
+    $role = Role::factory()->create(['slug' => 'admin', 'name' => 'Admin']);
     $permission = Permission::create([
         'name' => ucwords(str_replace('.', ' ', $slug)),
         'slug' => $slug,
@@ -55,7 +55,10 @@ test('suspend requires a reason', function () {
 });
 
 test('user without permission cannot suspend a vendor', function () {
-    $role = Role::factory()->create();
+    // Use 'super_admin' slug so the user passes the role-gate middleware
+    // (BUG-32). The 403 we assert here is the controller-level permission
+    // check — not the role middleware short-circuiting it.
+    $role = Role::factory()->create(['slug' => 'super_admin', 'name' => 'Super Admin']);
     $user = User::factory()->create(['role_id' => $role->id]);
     $vendor = Vendor::factory()->qualified()->create();
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureProjectAccess;
+use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ForceVendorPasswordChange;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'project.access' => EnsureProjectAccess::class,
+            'role' => EnsureUserHasRole::class,
             'vendor.password.required' => ForceVendorPasswordChange::class,
         ]);
     })

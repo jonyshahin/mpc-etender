@@ -9,6 +9,13 @@ For per-bug detail see commit history (search `BUG-NN` in messages).
 
 ## Open bugs
 
+- **BUG-32 — Admin authorization gaps: route group lacks role middleware; Horizon and Pulse gates hardcoded to single email.**
+  Severity: HIGH (latent privilege escalation). Surfaced by BUG-27 Phase 1 audit, 2026-04-27. Three closely-related symptoms with one root cause — there was no centralized admin role check anywhere in the project:
+  1. `routes/web.php:188` declared the entire `/admin/*` route group with only `['auth', 'verified']` middleware. Any authenticated, email-verified user — including `procurement_officer`, `project_manager`, or `evaluator` — could reach `/admin/dashboard`, `/admin/users`, `/admin/audit-logs`, etc. The admin sidebar was conditionally hidden for non-admin roles, but the controller still served the data on direct URL access.
+  2. `App\Providers\AppServiceProvider::boot()` set `Horizon::auth(fn ($r) => $r->user()?->email === 'admin@mpc-group.com')` — a single-email allowlist that locked Horizon to one specific account. Other admins clicking the "Horizon" health card on the (forthcoming) admin dashboard would 403.
+  3. `Gate::define('viewPulse', fn ($u) => in_array($u->email, ['admin@mpc-group.com']))` had the same single-email pattern.
+  Fix: a new `App\Http\Middleware\EnsureUserHasRole` middleware (alias `'role'`) that compares `$user->role->slug` against a comma-separated whitelist passed as middleware parameters (`'role:admin,super_admin'`). Applied at the `/admin/*` route group declaration in `routes/web.php`. `Horizon::auth` and `viewPulse` Gate updated to use the same `role IN (admin, super_admin)` check. Five Pest tests cover positive (`admin`, `super_admin` → 200) and negative (`procurement_officer`, `project_manager`, `evaluator` → 403) paths against representative admin endpoints.
+
 - **BUG-30 — `ProfileValidationRules` type signatures use `?int $userId` against UUID PKs.**
   Severity: HIGH. Surfaced by codebase audit 2026-04-27. The `app/Concerns/ProfileValidationRules.php` trait declared `profileRules(?int $userId = null)` and `emailRules(?int $userId = null)`, but the project uses UUID string primary keys on the `users` table (model has `HasUuids` + `$incrementing = false`). When `ProfileUpdateRequest::rules()` calls `$this->profileRules($this->user()->id)`, PHP threw `TypeError` before any validation ran. Locally this manifested as a Pest failure; in production every internal-user `/settings/profile` PATCH would 500. Two-character fix: `?int` → `?string` on both signatures. Test surface: `Tests\Feature\Settings\ProfileUpdateTest` × 2 (`profile information can be updated`, `email verification status is unchanged when the email address is unchanged`).
 

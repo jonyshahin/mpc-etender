@@ -19,7 +19,7 @@ uses(RefreshDatabase::class);
 /** Admin with the review permission. */
 function reviewerUser(): User
 {
-    $role = Role::factory()->create();
+    $role = Role::factory()->create(['slug' => 'admin', 'name' => 'Admin']);
     $perm = Permission::firstOrCreate(
         ['slug' => 'vendors.review_category_requests'],
         ['name' => 'Review Vendor Category Requests', 'module' => 'vendors']
@@ -58,7 +58,10 @@ test('ADMIN-01: admin with permission sees the queue', function () {
 });
 
 test('ADMIN-02: admin without permission is forbidden', function () {
-    $noPermRole = Role::factory()->create();
+    // Use 'super_admin' slug so the user passes the role-gate middleware
+    // (BUG-32) and the 403 we assert is the *permission* check on the
+    // controller — not the role middleware short-circuiting it.
+    $noPermRole = Role::factory()->create(['slug' => 'super_admin', 'name' => 'Super Admin']);
     $noPermUser = User::factory()->create(['role_id' => $noPermRole->id]);
 
     $this->actingAs($noPermUser, 'web')

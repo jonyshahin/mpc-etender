@@ -43,7 +43,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Horizon::auth(function ($request) {
-            return optional($request->user())->email === 'admin@mpc-group.com';
+            $user = $request->user();
+
+            return $user && $user->role && in_array($user->role->slug, ['admin', 'super_admin'], true);
         });
 
         $this->configureDefaults();
@@ -54,9 +56,7 @@ class AppServiceProvider extends ServiceProvider
     protected function registerDashboardGates(): void
     {
         Gate::define('viewPulse', function ($user) {
-            return in_array($user->email, [
-                'admin@mpc-group.com',
-            ]);
+            return $user->role && in_array($user->role->slug, ['admin', 'super_admin'], true);
         });
     }
 
