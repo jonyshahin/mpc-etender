@@ -59,12 +59,47 @@
 
 ---
 
-## Session-start ritual (Claude Code)
+## Session rituals (Claude Code)
 
-When opening a fresh `claude --resume "mpc-etender-web"` session, before doing anything else:
+### Session start
+
+Before doing anything else in a fresh `claude --resume "mpc-etender-web"` session:
 
 ```bash
 cat BUGS.md docs/PM_BACKLOG.md | head -200
 ```
 
-Or read both files via the `view` tool. This loads the current queue state, blocking decisions, and recent context so the session begins informed instead of asking Johnny "what should I work on?" — the answer is already in this file.
+Or read both files via the `view` tool. This loads current queue state, blocking decisions, and recent context so the session begins informed instead of asking Johnny "what should I work on?" — the answer is already in this file.
+
+### Session end
+
+Before ending a session, run this drift check to prevent the substrate leak diagnosed in commit `a55672c` (housekeeping 2026-04-27) from re-forming. This takes ~30 seconds.
+
+**Step 1 — Extract filed bug numbers from `BUGS.md`:**
+
+```bash
+grep -E "^- \*\*BUG-[0-9]+|^- \*\*TECH-DEBT-[0-9]+" BUGS.md | grep -oE "BUG-[0-9]+|TECH-DEBT-[0-9]+" | sort -u
+```
+
+**Step 2 — Extract bug numbers referenced in your local todo list this session.** This includes anything in active todos OR mentioned in conversation as a "BUG-NN" reference (whether written or said). If your todos don't have explicit `BUG-NN` prefixes, scan their text for any matches.
+
+**Step 3 — Diff:** for every `BUG-NN` / `TECH-DEBT-NN` in your todos that does NOT appear in Step 1's output, classify it as one of:
+
+- **(a) Shipped this session** — verify with `git log --grep="BUG-NN" -n 1 --since="<session start time>"`. Mark the todo done; no BUGS.md change needed if the bug was never filed in the first place.
+- **(b) Belongs in BUGS.md** — file the entry now, before ending the session, with whatever context is in working memory. Mark the entry with a `[NEEDS_PM_REVIEW]` tag at the end of the prose so PM (Johnny / Claude in PM mode) sees it next session-start and can refine severity / repro / scope.
+- **(c) Ambiguous** — flag in your final session report so PM can decide. Don't file speculatively.
+
+**Step 4 — Update PM_BACKLOG's "Recently shipped" rolling log** if any commits this session closed a bug. Most fix prompts include this update implicitly; this step is the safety net for sessions where it didn't (housekeeping, triage, small docs fixes).
+
+**Step 5 — Final session report** lists, in addition to the per-task results:
+
+- Drift check verdict: `clean` / `closed N items in-flight` / `flagged N items for PM review`
+- Any `[NEEDS_PM_REVIEW]` entries newly filed in this session
+
+If drift check returns `clean`, write `clean` and move on. The ritual exists to surface drift, not generate paperwork when there isn't any.
+
+### Why both rituals exist
+
+The session-start ritual loads the substrate. The session-end ritual *protects* the substrate from divergence. Together they make `BUGS.md` + `docs/PM_BACKLOG.md` the single source of truth in fact, not just in policy. Without the end ritual, every session leaks a little context into Claude Code's local todo list that nobody else can read; with it, that drift is detected within the same session, while context is still fresh.
+
+The 73% leak rate caught in housekeeping commit `a55672c` is the empirical case for this ritual. If future drift checks return `clean` repeatedly across many sessions, the ritual has done its job and we can revisit whether it's still earning its keep. Until then, run it.
