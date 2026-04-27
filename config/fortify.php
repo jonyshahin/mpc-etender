@@ -144,7 +144,11 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration() intentionally omitted — this is an internal
+        // closed procurement system. Internal users are created by admins via
+        // /admin/users; vendors register via /vendor/register through the
+        // separate Vendor\RegisterController. There is no business case for
+        // unauthenticated stranger account creation. See BUG-31.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

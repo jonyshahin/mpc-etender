@@ -3,37 +3,32 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Fortify\Features;
 use Tests\TestCase;
 
+/**
+ * Internal-user self-registration was intentionally disabled in BUG-31.
+ * This is a closed procurement system: internal users are created by admins
+ * via /admin/users, vendors via /vendor/register through the separate
+ * Vendor\RegisterController. The /register route Fortify ships by default
+ * has no business case here, so Features::registration() is omitted from
+ * config/fortify.php. The two tests below pin that behaviour.
+ */
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
+    public function test_register_get_route_does_not_exist()
     {
-        parent::setUp();
-
-        $this->skipUnlessFortifyHas(Features::registration());
+        $this->get('/register')->assertNotFound();
     }
 
-    public function test_registration_screen_can_be_rendered()
+    public function test_register_post_route_does_not_exist()
     {
-        $response = $this->get(route('register'));
-
-        $response->assertOk();
-    }
-
-    public function test_new_users_can_register()
-    {
-        $response = $this->post(route('register.store'), [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->post('/register', [
+            'name' => 'Stranger',
+            'email' => 'stranger@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ]);
-
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        ])->assertNotFound();
     }
 }
