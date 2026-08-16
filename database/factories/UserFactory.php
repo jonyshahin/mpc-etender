@@ -25,7 +25,11 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'phone' => fake()->phoneNumber(),
             'role_id' => Role::factory(),
-            'language_pref' => fake()->randomElement(['en', 'ar']),
+            // Deterministic on purpose (TECH-DEBT-03). SetLocale honours this, so
+            // randomising it made every assertion on English copy fail ~50% of the
+            // time. Use the ->arabic() / ->kurdish() states when a test wants a
+            // non-English locale.
+            'language_pref' => 'en',
             'is_2fa_enabled' => false,
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
@@ -55,6 +59,18 @@ class UserFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn () => ['is_active' => false]);
+    }
+
+    /** For tests that specifically exercise the Arabic locale / RTL rendering. */
+    public function arabic(): static
+    {
+        return $this->state(fn () => ['language_pref' => 'ar']);
+    }
+
+    /** For tests that specifically exercise the Kurdish (Sorani) locale. */
+    public function kurdish(): static
+    {
+        return $this->state(fn () => ['language_pref' => 'ku']);
     }
 
     /**

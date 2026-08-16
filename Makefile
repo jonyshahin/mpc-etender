@@ -69,6 +69,14 @@ seed:  ## Run DatabaseSeeder (roles, permissions, categories, admin).
 seed-dev:  ## Run DevDataSeeder (Ahmed, Fatima, 7 test tenders, sample PDF).
 	$(DC) exec app php artisan db:seed --class=DevDataSeeder --force
 
+.PHONY: reset-data-preview
+reset-data-preview:  ## Show what mpc:reset-data would delete. Changes nothing.
+	$(DC) exec app php artisan mpc:reset-data --dry-run
+
+.PHONY: reset-data
+reset-data:  ## Delete demo/transactional data + their S3 files. Keeps roles, categories, settings, users.
+	$(DC) exec app php artisan mpc:reset-data --with-files
+
 .PHONY: test
 test:  ## Run Pest in the container (sqlite :memory: — fast).
 	$(DC) exec -e DB_CONNECTION=sqlite -e DB_DATABASE=:memory: app ./vendor/bin/pest

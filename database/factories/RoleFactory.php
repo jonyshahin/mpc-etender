@@ -17,7 +17,13 @@ class RoleFactory extends Factory
 
         return [
             'name' => $name,
-            'slug' => Str::slug($name),
+            // Suffixed so the slug is unique against *seeded* roles too, not just
+            // within this Faker instance. jobTitle() can return "Admin", whose
+            // slug collides with RoleSeeder's `admin` — which either violated the
+            // unique index or, worse, silently handed admin rights to a role a
+            // test expected to be unprivileged. Tests that need a real role slug
+            // pass it explicitly.
+            'slug' => Str::slug($name).'-'.Str::lower(Str::random(6)),
             'description' => fake()->sentence(),
             'is_system' => false,
         ];

@@ -14,6 +14,10 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             CategorySeeder::class,
             SystemSettingSeeder::class,
+            // Without these, NotificationService resolves an empty channel list
+            // and silently sends no email/WhatsApp/SMS at all — see the
+            // `$sendChannels` fallback in NotificationService::dispatch().
+            NotificationTemplateSeeder::class,
             AdminUserSeeder::class,
         ]);
     }
