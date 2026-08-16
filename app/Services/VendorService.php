@@ -11,31 +11,63 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Handle vendor registration and prequalification workflow.
+ * Handle vendor onboarding and prequalification workflow.
  */
 class VendorService
 {
     /**
-     * Register a new vendor from the public registration form.
+     * Onboard a new vendor on behalf of an MPC admin.
      *
-     * @param  array  $data  Validated registration data
-     * @return Vendor The created vendor with pending status
+     * This is the only path that creates a vendor record — public
+     * self-registration was removed, so every vendor is traceable to the admin
+     * who created it (unlike the old register(), which wrote no audit row).
+     *
+     * The vendor is created in Pending status: creating the account and
+     * vouching for it are separate steps, so the existing prequalification
+     * review still applies. The caller supplies a temporary password and is
+     * responsible for surfacing it to the admin exactly once.
+     *
+     * @param  array  $data  Validated data from Admin\StoreVendorRequest
+     * @param  User  $creator  The admin performing the onboarding
+     * @param  string  $temporaryPassword  Plain-text temp password to hash and store
+     * @return Vendor The created vendor, pending prequalification
      */
-    public function register(array $data): Vendor
+    public function createByAdmin(array $data, User $creator, string $temporaryPassword): Vendor
     {
-        return DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data, $creator, $temporaryPassword) {
             $categoryIds = $data['category_ids'] ?? [];
-            unset($data['category_ids'], $data['password_confirmation']);
+            unset($data['category_ids']);
 
-            $data['password'] = Hash::make($data['password']);
+            $data['password'] = Hash::make($temporaryPassword);
             $data['prequalification_status'] = VendorStatus::Pending;
             $data['is_active'] = true;
+            // Admin-chosen credentials are transitional by definition — the
+            // vendor.password.required middleware traps the vendor on the
+            // change-password screen until they pick their own.
+            $data['must_change_password'] = true;
 
             $vendor = Vendor::create($data);
 
             if ($categoryIds) {
                 $vendor->categories()->attach($categoryIds);
             }
+
+            AuditLog::create([
+                'user_id' => $creator->id,
+                'vendor_id' => $vendor->id,
+                'auditable_type' => Vendor::class,
+                'auditable_id' => $vendor->id,
+                'action' => 'vendor_created_by_admin',
+                'old_values' => null,
+                'new_values' => [
+                    'company_name' => $vendor->company_name,
+                    'email' => $vendor->email,
+                    'prequalification_status' => VendorStatus::Pending->value,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'created_at' => now(),
+            ]);
 
             return $vendor;
         });

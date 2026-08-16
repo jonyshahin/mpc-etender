@@ -28,7 +28,10 @@ class VendorProfileUpdateRequest extends FormRequest
             'city' => ['required', 'string', 'max:100'],
             'country' => ['required', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:255'],
-            'language_pref' => ['nullable', 'in:en,ar'],
+            // Includes 'ku': admins can onboard a vendor as Kurdish, so the
+            // vendor must be able to keep that preference when editing their
+            // own profile. Not `nullable` — the column is NOT NULL DEFAULT 'ar'.
+            'language_pref' => ['sometimes', 'required', 'in:en,ar,ku'],
         ];
     }
 }

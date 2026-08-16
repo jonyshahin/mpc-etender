@@ -33,11 +33,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/project/{project}', [Dashboard\DashboardController::class, 'project'])->name('dashboard.project');
 });
 
-// ── Vendor public routes (registration & login & password reset) ──
+// ── Vendor public routes (login & password reset) ──
+// Vendor self-registration was removed: this is a closed procurement system and
+// vendors are onboarded by admins via /admin/vendors. There is deliberately no
+// public `vendor.register` route — see Admin\VendorController::store.
 Route::prefix('vendor')->name('vendor.')->group(function () {
     Route::middleware('guest:vendor')->group(function () {
-        Route::get('register', [Vendor\RegisterController::class, 'create'])->name('register');
-        Route::post('register', [Vendor\RegisterController::class, 'store'])->name('register.store');
         Route::get('login', [Vendor\LoginController::class, 'create'])->name('login');
         Route::post('login', [Vendor\LoginController::class, 'store'])->name('login.store');
 
@@ -220,6 +221,7 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin
 
     // Vendors
     Route::get('vendors', [Admin\VendorController::class, 'index'])->name('vendors.index');
+    Route::post('vendors', [Admin\VendorController::class, 'store'])->name('vendors.store');
     Route::get('vendors/{vendor}', [Admin\VendorController::class, 'show'])->name('vendors.show');
     Route::put('vendors/{vendor}/prequalify', [Admin\VendorController::class, 'prequalify'])->name('vendors.prequalify');
     Route::put('vendors/{vendor}/reject', [Admin\VendorController::class, 'reject'])->name('vendors.reject');

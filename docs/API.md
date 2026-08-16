@@ -9,8 +9,6 @@
 | GET | `/login` | `login` | Login page |
 | POST | `/login` | `login.store` | Authenticate user |
 | POST | `/logout` | `logout` | Logout |
-| GET | `/register` | `register` | Registration page |
-| POST | `/register` | `register.store` | Create account |
 | GET | `/forgot-password` | `password.request` | Forgot password page |
 | POST | `/forgot-password` | `password.email` | Send reset link |
 | GET | `/reset-password/{token}` | `password.reset` | Reset password page |
@@ -126,10 +124,11 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 
 ### Public (guest:vendor middleware)
 
+There is no vendor self-registration. Vendors are onboarded by admins via
+`POST /admin/vendors`; see [Vendor Management](#vendor-management-admin-prefix-adminvendors).
+
 | Method | URI | Name | Description |
 |--------|-----|------|-------------|
-| GET | `/vendor/register` | `vendor.register` | Vendor registration form |
-| POST | `/vendor/register` | `vendor.register.store` | Submit registration |
 | GET | `/vendor/login` | `vendor.login` | Vendor login form |
 | POST | `/vendor/login` | `vendor.login.store` | Authenticate vendor |
 
@@ -163,10 +162,18 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | Method | URI | Name | Description |
 |--------|-----|------|-------------|
 | GET | `/admin/vendors` | `admin.vendors.index` | List all vendors |
+| POST | `/admin/vendors` | `admin.vendors.store` | Onboard a new vendor (requires `vendors.create`) |
 | GET | `/admin/vendors/{vendor}` | `admin.vendors.show` | Vendor detail view |
 | PUT | `/admin/vendors/{vendor}/prequalify` | `admin.vendors.prequalify` | Approve vendor |
 | PUT | `/admin/vendors/{vendor}/reject` | `admin.vendors.reject` | Reject vendor |
 | PUT | `/admin/vendors/{vendor}/suspend` | `admin.vendors.suspend` | Suspend vendor |
+| POST | `/admin/vendors/{vendor}/send-password-reset` | `admin.vendors.send-password-reset` | Email a reset link to the vendor |
+| POST | `/admin/vendors/{vendor}/force-temporary-password` | `admin.vendors.force-temporary-password` | Set a temporary password, shown once |
+
+`store` creates the vendor in `pending` status with a generated temporary
+password and `must_change_password = true`. The plain-text password is flashed
+once to the detail page — the admin must relay it, or issue a new one via
+`force-temporary-password`. Prequalification remains a separate step.
 
 ## Administration (prefix: `/admin`)
 

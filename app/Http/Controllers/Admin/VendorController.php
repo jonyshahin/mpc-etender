@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreVendorRequest;
 use App\Http\Requests\Admin\VendorPrequalificationRequest;
 use App\Models\AuditLog;
+use App\Models\Category;
 use App\Models\Vendor;
 use App\Services\FileUploadService;
 use App\Services\VendorService;
@@ -48,7 +50,41 @@ class VendorController extends Controller
         return Inertia::render('admin/Vendors/Index', [
             'vendors' => $query->paginate(15)->withQueryString(),
             'filters' => $request->only('search', 'status', 'category_id', 'sort', 'direction'),
+            // Feeds the "Add Vendor" dialog's category tree.
+            'categories' => Category::active()
+                ->roots()
+                ->with('children:id,name_en,name_ar,parent_id')
+                ->orderBy('sort_order')
+                ->get(['id', 'name_en', 'name_ar', 'parent_id']),
+            'canCreate' => $request->user()->can('create', Vendor::class),
         ]);
+    }
+
+    /**
+     * Onboard a vendor. This replaced public self-registration — admins are now
+     * the only way a vendor account comes into existence.
+     */
+    public function store(StoreVendorRequest $request): RedirectResponse
+    {
+        $temp = Str::password(12);
+
+        $vendor = $this->vendorService->createByAdmin(
+            $request->validated(),
+            $request->user(),
+            $temp,
+        );
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('messages.vendor_created', ['company' => $vendor->company_name]),
+        ]);
+
+        // Land on the detail page so the one-shot temporary password renders
+        // there — same flash contract as forceTemporaryPassword(). The admin
+        // must hand it to the vendor now or reset it later.
+        return redirect()
+            ->route('admin.vendors.show', $vendor)
+            ->with('temporary_password', $temp);
     }
 
     public function show(Vendor $vendor): Response

@@ -1,6 +1,6 @@
 # MPC e-Tender
 
-Digital procurement platform for construction projects. Internal MPC users manage tenders, vendors register and bid, evaluation committees score submissions, and approval workflows enforce spend authority.
+Digital procurement platform for construction projects. Internal MPC users manage tenders and onboard vendors, vendors browse and bid, evaluation committees score submissions, and approval workflows enforce spend authority.
 
 ## Tech stack
 

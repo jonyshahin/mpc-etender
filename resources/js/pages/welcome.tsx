@@ -152,12 +152,14 @@ export default function Welcome() {
                                             <Lock className="size-4" />
                                             {t('welcome.staff_login')}
                                         </Link>
+                                        {/* Vendors are onboarded by MPC admins, so this
+                                            points at sign-in, not registration. */}
                                         <a
-                                            href="/vendor/register"
+                                            href="/vendor/login"
                                             className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
                                         >
                                             <Building2 className="size-4" />
-                                            {t('welcome.cta_register_vendor')}
+                                            {t('welcome.vendor_login')}
                                         </a>
                                     </>
                                 )}

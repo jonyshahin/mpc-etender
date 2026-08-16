@@ -92,11 +92,10 @@ export default function Login() {
                     </Button>
                 </form>
 
+                {/* Vendors cannot self-register — accounts are created by MPC
+                    admins, who send out the initial credentials. */}
                 <p className="text-center text-sm text-muted-foreground">
-                    {t('auth.no_account')}{' '}
-                    <Link href="/vendor/register" className="text-primary underline">
-                        {t('auth.register_here')}
-                    </Link>
+                    {t('auth.no_account_contact_mpc')}
                 </p>
             </div>
         </>

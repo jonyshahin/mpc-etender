@@ -221,6 +221,7 @@ export default function Profile({ vendor }: Props) {
                                         <SelectContent>
                                             <SelectItem value="en">{t('form.english')}</SelectItem>
                                             <SelectItem value="ar">{t('form.arabic')}</SelectItem>
+                                            <SelectItem value="ku">{t('form.kurdish')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

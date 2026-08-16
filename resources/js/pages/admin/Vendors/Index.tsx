@@ -1,13 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useState } from 'react';
-import Heading from '@/components/heading';
-import { useTranslation } from '@/hooks/use-translation';
 import { DataTable } from '@/components/DataTable';
+import Heading from '@/components/heading';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
     Select,
     SelectTrigger,
@@ -15,6 +14,9 @@ import {
     SelectItem,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
+import { VendorFormDialog } from './Form';
+import type { Category } from './Form';
 
 type PaginatedData<T> = {
     data: T[];
@@ -46,12 +48,15 @@ type Props = {
         sort?: string;
         direction?: string;
     };
+    categories: Category[];
+    canCreate: boolean;
 };
 
-export default function Index({ vendors, filters }: Props) {
+export default function Index({ vendors, filters, categories, canCreate }: Props) {
     const { t } = useTranslation();
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status || 'all');
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
 
     function handleFilter() {
         router.get('/admin/vendors', {
@@ -141,10 +146,18 @@ export default function Index({ vendors, filters }: Props) {
             <Head title="Vendors" />
 
             <div className="space-y-6">
-                <Heading
-                    title={t('pages.admin.vendors')}
-                    description={t('pages.admin.vendors_description')}
-                />
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <Heading
+                        title={t('pages.admin.vendors')}
+                        description={t('pages.admin.vendors_description')}
+                    />
+                    {canCreate && (
+                        <Button onClick={() => setShowCreateDialog(true)}>
+                            <Plus className="me-2 h-4 w-4" />
+                            {t('btn.add_vendor')}
+                        </Button>
+                    )}
+                </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                     <div className="flex-1">
@@ -178,6 +191,14 @@ export default function Index({ vendors, filters }: Props) {
 
                 <DataTable columns={columns} data={vendors} />
             </div>
+
+            {showCreateDialog && (
+                <VendorFormDialog
+                    categories={categories}
+                    open={showCreateDialog}
+                    onClose={() => setShowCreateDialog(false)}
+                />
+            )}
         </>
     );
 }
