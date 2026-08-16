@@ -21,7 +21,8 @@ class UpdateUserRequest extends FormRequest
             'password' => ['nullable', Password::defaults()],
             'phone' => ['nullable', 'string', 'max:20'],
             'role_id' => ['required', 'uuid', 'exists:roles,id'],
-            'language_pref' => ['nullable', 'in:en,ar'],
+            // See StoreUserRequest — same rule, same reasoning. (BUG-06)
+            'language_pref' => ['sometimes', 'required', 'in:en,ar,ku'],
             'is_active' => ['required', 'boolean'],
             'project_ids' => ['nullable', 'array'],
             'project_ids.*' => ['uuid', 'exists:projects,id'],

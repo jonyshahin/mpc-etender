@@ -7,8 +7,10 @@ use App\Http\Requests\Admin\StoreVendorRequest;
 use App\Http\Requests\Admin\VendorPrequalificationRequest;
 use App\Models\AuditLog;
 use App\Models\Category;
+use App\Models\SystemSetting;
 use App\Models\Vendor;
 use App\Services\FileUploadService;
+use App\Services\QrCodeService;
 use App\Services\VendorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +25,7 @@ class VendorController extends Controller
     public function __construct(
         private VendorService $vendorService,
         private FileUploadService $fileUploadService,
+        private QrCodeService $qrCodeService,
     ) {}
 
     public function index(Request $request): Response
@@ -103,6 +106,37 @@ class VendorController extends Controller
         return Inertia::render('admin/Vendors/Show', [
             'vendor' => $vendor,
             'documentUrls' => $documentUrls,
+        ]);
+    }
+
+    /**
+     * Printable application-confirmation sheet for a vendor.
+     *
+     * Handed to the vendor as proof their application is on file. The QR code
+     * points at the public site rather than anything vendor-specific, so the
+     * sheet carries no credential and is safe to print, email or hand over.
+     */
+    public function confirmation(Vendor $vendor): Response
+    {
+        $this->authorize('view', $vendor);
+
+        $vendor->load('categories:id,name_en,name_ar');
+
+        // Configurable so the QR can point at the corporate site instead of the
+        // portal without a redeploy; APP_URL is the sensible default.
+        // Three-stage fallback: a bare `APP_URL=` in .env makes config('app.url')
+        // an empty string rather than its default, and an empty QR payload throws.
+        $websiteUrl = SystemSetting::where('key', 'general.website_url')->value('value')
+            ?: config('app.url')
+            ?: url('/');
+
+        return Inertia::render('admin/Vendors/Confirmation', [
+            'vendor' => $vendor,
+            'companyName' => SystemSetting::where('key', 'general.company_name')->value('value')
+                ?: config('app.name'),
+            'websiteUrl' => $websiteUrl,
+            'qrCode' => $this->qrCodeService->svgDataUri($websiteUrl),
+            'generatedAt' => now()->toIso8601String(),
         ]);
     }
 

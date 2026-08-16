@@ -20,6 +20,10 @@ createInertiaApp({
         switch (true) {
             case name === 'welcome':
                 return null;
+            // Printable document — rendered bare so the admin shell doesn't
+            // end up on the page the vendor receives.
+            case name === 'admin/Vendors/Confirmation':
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name === 'vendor/Login' ||

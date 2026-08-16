@@ -161,6 +161,7 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
                     <SelectContent>
                         <SelectItem value="en">{t('form.english')}</SelectItem>
                         <SelectItem value="ar">{t('form.arabic')}</SelectItem>
+                        <SelectItem value="ku">{t('form.kurdish')}</SelectItem>
                     </SelectContent>
                 </Select>
                 {form.errors.language_pref && (

@@ -218,4 +218,24 @@
     .dark body::after {
         display: none;
     }
+
+    /*
+     * Documents handed to people on paper (e.g. the vendor application
+     * confirmation sheet). Browsers drop background colours when printing but
+     * keep text colour, so an admin working in dark mode would otherwise print
+     * near-white text onto white paper and get a blank page. Force a light
+     * palette for the whole subtree regardless of the active theme.
+     */
+    .print-document,
+    .print-document * {
+        background: #fff !important;
+        color: #111827 !important;
+        border-color: #d1d5db !important;
+        box-shadow: none !important;
+    }
+
+    .print-document .text-muted-foreground,
+    .print-document .text-muted-foreground * {
+        color: #4b5563 !important;
+    }
 }

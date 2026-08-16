@@ -20,7 +20,11 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', Password::defaults()],
             'phone' => ['nullable', 'string', 'max:20'],
             'role_id' => ['required', 'uuid', 'exists:roles,id'],
-            'language_pref' => ['nullable', 'in:en,ar'],
+            // 'ku' included: SetLocale accepts en/ar/ku and lang/ku.json ships.
+            // Not `nullable` — the column is NOT NULL DEFAULT 'en', so an explicit
+            // null would 500 on MySQL while passing on SQLite. Omitting the field
+            // is still fine; the column default applies. (BUG-06)
+            'language_pref' => ['sometimes', 'required', 'in:en,ar,ku'],
             'project_ids' => ['nullable', 'array'],
             'project_ids.*' => ['uuid', 'exists:projects,id'],
         ];

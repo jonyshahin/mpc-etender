@@ -131,12 +131,20 @@ export default function Index({ vendors, filters, categories, canCreate }: Props
             key: 'actions',
             label: '',
             render: (_value: unknown, row: Vendor) => (
-                <Link
-                    href={`/admin/vendors/${row.id}`}
-                    className="text-sm font-medium text-primary hover:underline"
-                >
-                    {t('btn.view')}
-                </Link>
+                <div className="flex items-center justify-end gap-3 whitespace-nowrap">
+                    <Link
+                        href={`/admin/vendors/${row.id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                    >
+                        {t('btn.view')}
+                    </Link>
+                    <Link
+                        href={`/admin/vendors/${row.id}/confirmation`}
+                        className="text-sm font-medium text-primary hover:underline"
+                    >
+                        {t('btn.confirmation')}
+                    </Link>
+                </div>
             ),
         },
     ];
