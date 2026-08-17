@@ -230,6 +230,7 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin
     Route::put('vendors/{vendor}/suspend', [Admin\VendorController::class, 'suspend'])->name('vendors.suspend');
     Route::post('vendors/{vendor}/send-password-reset', [Admin\VendorController::class, 'sendPasswordReset'])->name('vendors.send-password-reset');
     Route::post('vendors/{vendor}/force-temporary-password', [Admin\VendorController::class, 'forceTemporaryPassword'])->name('vendors.force-temporary-password');
+    Route::post('vendors/{vendor}/reissue-password', [Admin\VendorController::class, 'reissuePassword'])->name('vendors.reissue-password');
 
     // Vendor category change requests — admin review queue
     Route::get('vendor-category-requests', [Admin\VendorCategoryRequestController::class, 'index'])->name('vendor-category-requests.index');

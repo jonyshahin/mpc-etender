@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Permission;
 use App\Models\Role;
@@ -8,6 +9,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Services\QrCodeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
@@ -18,11 +20,12 @@ function adminForConfirmation(string ...$slugs): User
     $role = Role::factory()->create(['slug' => 'admin', 'name' => 'Admin']);
 
     foreach ($slugs as $slug) {
-        $permission = Permission::create([
-            'name' => ucwords(str_replace('.', ' ', $slug)),
-            'slug' => $slug,
-            'module' => explode('.', $slug)[0],
-        ]);
+        // firstOrCreate, not create: a test that builds two admins would otherwise
+        // violate the unique index on permissions.slug.
+        $permission = Permission::firstOrCreate(
+            ['slug' => $slug],
+            ['name' => ucwords(str_replace('.', ' ', $slug)), 'module' => explode('.', $slug)[0]],
+        );
         $role->permissions()->attach($permission->id);
     }
 
@@ -169,6 +172,87 @@ test('the temporary password survives a reload of the letter', function () {
     $this->actingAs($admin)
         ->get(route('admin.vendors.confirmation', $vendor))
         ->assertInertia(fn (Assert $page) => $page->where('temporaryPassword', 'Tmp7x9Kd2Qa4'));
+});
+
+test('reissuing puts a working password back on the letter', function () {
+    $admin = adminForConfirmation('vendors.view', 'vendors.update');
+    $vendor = Vendor::factory()->create();
+    $originalHash = $vendor->password;
+
+    $this->actingAs($admin)
+        ->post(route('admin.vendors.reissue-password', $vendor))
+        ->assertRedirect(route('admin.vendors.confirmation', $vendor));
+
+    // The letter now shows a password again, and it is the one that actually works.
+    $response = $this->actingAs($admin)->get(route('admin.vendors.confirmation', $vendor));
+    $shown = $response->viewData('page')['props']['temporaryPassword'];
+
+    expect($shown)->toBeString()->not->toBeEmpty();
+    expect(Hash::check($shown, $vendor->fresh()->password))->toBeTrue();
+    expect($vendor->fresh()->password)->not->toBe($originalHash);
+    expect($vendor->fresh()->must_change_password)->toBeTrue();
+});
+
+test('reissuing writes an audit row', function () {
+    $admin = adminForConfirmation('vendors.view', 'vendors.update');
+    $vendor = Vendor::factory()->create();
+
+    $this->actingAs($admin)->post(route('admin.vendors.reissue-password', $vendor));
+
+    expect(AuditLog::where('auditable_id', $vendor->id)
+        ->where('action', 'password_reset_admin_temp')
+        ->where('user_id', $admin->id)
+        ->exists())->toBeTrue();
+});
+
+test('reissuing refuses when the admin could not open the resulting letter', function () {
+    // vendors.update without vendors.view is an assignable combination. Without
+    // the second check this rotated the password and then 403'd on the redirect,
+    // losing the new credential while the old one was already dead.
+    $admin = adminForConfirmation('vendors.update');
+    $vendor = Vendor::factory()->create();
+    $originalHash = $vendor->password;
+
+    $this->actingAs($admin)
+        ->post(route('admin.vendors.reissue-password', $vendor))
+        ->assertForbidden();
+
+    expect($vendor->fresh()->password)->toBe($originalHash);
+});
+
+test('reissuing needs update permission, not just view', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+    $originalHash = $vendor->password;
+
+    $this->actingAs($admin)
+        ->post(route('admin.vendors.reissue-password', $vendor))
+        ->assertForbidden();
+
+    expect($vendor->fresh()->password)->toBe($originalHash);
+});
+
+// Split across two tests rather than building both admins in one: roles.slug is
+// unique, and sharing a role would leak the first admin's permissions to the
+// second, quietly invalidating the negative case.
+test('the letter offers reissue on a reprint when the admin can update', function () {
+    $vendor = Vendor::factory()->create();
+
+    $this->actingAs(adminForConfirmation('vendors.view', 'vendors.update'))
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('temporaryPassword', null)
+            ->where('canReissuePassword', true)
+        );
+});
+
+test('a view-only admin is not offered reissue', function () {
+    $vendor = Vendor::factory()->create();
+
+    // The button must not appear for someone whose POST would only 403.
+    $this->actingAs(adminForConfirmation('vendors.view'))
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertInertia(fn (Assert $page) => $page->where('canReissuePassword', false));
 });
 
 test('a second PDF download still carries the password', function () {

@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, Download, KeyRound, Printer } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
@@ -36,8 +38,9 @@ type Props = {
     websiteUrl: string;
     qrCode: string;
     generatedAt: string;
-    /** Only set immediately after onboarding — see the controller. */
+    /** Only set immediately after onboarding or a reissue — see the controller. */
     temporaryPassword: string | null;
+    canReissuePassword: boolean;
 };
 
 /** One label/value row. Values fall back to an em dash so the sheet never shows a blank. */
@@ -86,8 +89,24 @@ export default function Confirmation({
     qrCode,
     generatedAt,
     temporaryPassword,
+    canReissuePassword,
 }: Props) {
     const { t, locale } = useTranslation();
+    const [confirmReissue, setConfirmReissue] = useState(false);
+    const [reissuing, setReissuing] = useState(false);
+
+    // A reprint cannot recover the original password — it is stored bcrypt-hashed.
+    // Minting a fresh one is the only way to put credentials back on the letter,
+    // and it invalidates the previous password, hence the confirmation step.
+    const reissue = () => {
+        setReissuing(true);
+        const done = () => {
+            setReissuing(false);
+            setConfirmReissue(false);
+        };
+
+        router.post(`/admin/vendors/${vendor.id}/reissue-password`, {}, { onFinish: done });
+    };
 
     // Short, human-quotable handle. The UUID is unwieldy on a printed page.
     const reference = vendor.id.split('-')[0].toUpperCase();
@@ -106,6 +125,14 @@ export default function Confirmation({
                         {t('btn.back_to_vendors')}
                     </Link>
                     <div className="flex items-center gap-2">
+                        {/* Offered only on a reprint — when a password is already
+                            in flight there is nothing to recover. */}
+                        {!temporaryPassword && canReissuePassword && (
+                            <Button variant="outline" onClick={() => setConfirmReissue(true)}>
+                                <KeyRound className="me-2 size-4" />
+                                {t('btn.reissue_password')}
+                            </Button>
+                        )}
                         {/* Plain anchor, not an Inertia Link: this is a file
                             download, not a page visit. */}
                         <Button asChild variant="outline">
@@ -230,6 +257,15 @@ export default function Confirmation({
                         </section>
                     )}
 
+                    {/* Explains the absence on a reprint, so a blank space is not
+                        mistaken for a system fault. Hidden from print — it is a
+                        note to the admin, not part of the vendor's document. */}
+                    {!temporaryPassword && canReissuePassword && (
+                        <p className="mt-8 rounded-md border border-dashed p-3 text-xs text-muted-foreground print:hidden">
+                            {t('confirmation.password_unavailable')}
+                        </p>
+                    )}
+
                     <section className="mt-8 flex items-end justify-between gap-8 border-t pt-6">
                         <div>
                             <h2 className="mb-3 text-sm font-semibold">
@@ -257,6 +293,16 @@ export default function Confirmation({
                     </section>
                 </article>
             </div>
+
+            <ConfirmDialog
+                open={confirmReissue}
+                onOpenChange={setConfirmReissue}
+                title={t('confirmation.reissue_title')}
+                description={t('confirmation.reissue_description')}
+                confirmLabel={t('btn.reissue_password')}
+                loading={reissuing}
+                onConfirm={reissue}
+            />
         </>
     );
 }

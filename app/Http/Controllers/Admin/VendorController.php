@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\SystemSetting;
 use App\Models\Vendor;
 use App\Services\FileUploadService;
+use App\Services\PrintAssetService;
 use App\Services\QrCodeService;
 use App\Services\VendorService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -28,6 +29,7 @@ class VendorController extends Controller
         private VendorService $vendorService,
         private FileUploadService $fileUploadService,
         private QrCodeService $qrCodeService,
+        private PrintAssetService $printAssetService,
     ) {}
 
     public function index(Request $request): Response
@@ -125,7 +127,7 @@ class VendorController extends Controller
      * credential of its own — the temporary password below is the exception, and it
      * only appears immediately after onboarding.
      */
-    public function confirmation(Vendor $vendor): Response
+    public function confirmation(Request $request, Vendor $vendor): Response
     {
         $this->authorize('view', $vendor);
 
@@ -145,6 +147,9 @@ class VendorController extends Controller
                 // recover one for a later reprint — and storing the plain text to
                 // make that possible would be worse than the inconvenience.
                 'temporaryPassword' => $this->temporaryPasswordFor($vendor),
+                // Reissuing replaces the vendor's credential, so it needs `update`
+                // rather than the `view` that opening the letter requires.
+                'canReissuePassword' => $request->user()->can('update', $vendor),
             ],
         ));
     }
@@ -170,13 +175,17 @@ class VendorController extends Controller
         session()->keep('vendor_temp_password');
 
         $websiteUrl = $this->confirmationWebsiteUrl();
+        $data = $this->confirmationData($vendor, $websiteUrl);
 
         $pdf = Pdf::loadView('pdf.vendor-confirmation', array_merge(
-            $this->confirmationData($vendor, $websiteUrl),
+            $data,
             [
                 // Raster rather than the page's vector QR: dompdf expands an SVG
                 // QR into thousands of path operations and exhausts memory.
                 'qrCode' => $this->qrCodeService->pngDataUri($websiteUrl),
+                // Downscaled: dompdf embeds a raster at native resolution however
+                // small it is drawn, and the full logo alone is ~518 KB.
+                'logoSrc' => $this->printAssetService->logoForPdf($data['logoUrl']),
                 // Read from the kept flash, never from the query string.
                 'temporaryPassword' => $this->temporaryPasswordFor($vendor),
             ],
@@ -308,6 +317,59 @@ class VendorController extends Controller
     {
         $this->authorize('update', $vendor);
 
+        $temp = $this->mintTemporaryPassword($request, $vendor);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('messages.vendor_temp_password_set'),
+        ]);
+
+        // Surfaced ONCE on the next request via flash bag — admin must copy
+        // it on the detail page or it's gone.
+        return back()->with('temporary_password', $temp);
+    }
+
+    /**
+     * Mint a fresh temporary password and return to the confirmation letter with
+     * it, so the whole document can be reprinted.
+     *
+     * A reprint is the only way to put a password back on the letter: what is
+     * stored is a bcrypt hash, so the original is gone for good. Rotating is also
+     * the right response on its own terms — an admin asking to reprint has
+     * usually lost or mishandled the first copy, and that credential should stop
+     * working. It does invalidate the previous password, so this is aimed at
+     * vendors who have not signed in yet.
+     */
+    public function reissuePassword(Request $request, Vendor $vendor): RedirectResponse
+    {
+        $this->authorize('update', $vendor);
+
+        // Also require `view`, the permission the letter itself needs. Permissions
+        // are synced freely on /admin/roles, so a role can hold update without
+        // view — and this action would then rotate the credential and redirect
+        // into a 403, discarding the new password with the old one already dead
+        // and the vendor locked out.
+        $this->authorize('view', $vendor);
+
+        $temp = $this->mintTemporaryPassword($request, $vendor);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('messages.vendor_password_reissued'),
+        ]);
+
+        return redirect()
+            ->route('admin.vendors.confirmation', $vendor)
+            ->with('vendor_temp_password', ['vendor_id' => $vendor->id, 'value' => $temp]);
+    }
+
+    /**
+     * Replace the vendor's password with a new temporary one and record it.
+     *
+     * @return string The plain-text password — the only moment it exists
+     */
+    private function mintTemporaryPassword(Request $request, Vendor $vendor): string
+    {
         $temp = Str::password(12);
 
         $vendor->update([
@@ -328,13 +390,6 @@ class VendorController extends Controller
             'created_at' => now(),
         ]);
 
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => __('messages.vendor_temp_password_set'),
-        ]);
-
-        // Surfaced ONCE on the next request via flash bag — admin must copy
-        // it on the detail page or it's gone.
-        return back()->with('temporary_password', $temp);
+        return $temp;
     }
 }

@@ -10,7 +10,9 @@
     HTTP, and in tests there is no server to fetch from.
 --}}
 @php
-    $logoPath = public_path(ltrim($logoUrl, '/'));
+    // Prepared by PrintAssetService: an absolute path for vectors, a downscaled
+    // data URI for rasters, or null when the file is missing.
+    $logoPath = $logoSrc ?? null;
     $reference = strtoupper(explode('-', $vendor->id)[0]);
     $location = collect([$vendor->city, $vendor->country])->filter()->implode(', ');
 @endphp
@@ -58,7 +60,7 @@
             <td width="60%">
                 <table>
                     <tr>
-                        @if (is_file($logoPath))
+                        @if ($logoPath)
                             <td class="logo"><img src="{{ $logoPath }}" width="80"></td>
                         @endif
                         <td style="padding-left: 12px;">

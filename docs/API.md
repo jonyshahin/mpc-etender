@@ -171,6 +171,7 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | PUT | `/admin/vendors/{vendor}/suspend` | `admin.vendors.suspend` | Suspend vendor |
 | POST | `/admin/vendors/{vendor}/send-password-reset` | `admin.vendors.send-password-reset` | Email a reset link to the vendor |
 | POST | `/admin/vendors/{vendor}/force-temporary-password` | `admin.vendors.force-temporary-password` | Set a temporary password, shown once |
+| POST | `/admin/vendors/{vendor}/reissue-password` | `admin.vendors.reissue-password` | Mint a new temporary password and return to the letter with it (requires `vendors.update`) |
 
 `confirmation` renders `admin/Vendors/Confirmation` — a layout-less printable
 sheet listing the vendor's company details, contact person, categories and
@@ -197,8 +198,16 @@ password and `must_change_password = true`, then redirects to the confirmation
 letter so the credentials can be printed and handed over in one step. The
 password is stored bcrypt-hashed, so it appears on the letter only while it is
 in flight — it survives a reload of that page but is gone once the admin
-navigates elsewhere, and a later reprint omits it. Issue a fresh one via
-`force-temporary-password`. Prequalification remains a separate step.
+navigates elsewhere, and a later reprint omits it. Prequalification remains a
+separate step.
+
+To reprint a letter *with* credentials, use `reissue-password`. It mints a fresh
+temporary password, sets `must_change_password`, writes the same
+`password_reset_admin_temp` audit row as `force-temporary-password`, and returns
+to the letter with the new password on it. The previous password stops working —
+which is the intended behaviour, since a reprint usually means the first copy was
+lost. The letter surfaces the action only on a reprint and only to admins holding
+`vendors.update`, and explains on screen why the password is absent.
 
 ## Administration (prefix: `/admin`)
 
