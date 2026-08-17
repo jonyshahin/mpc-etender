@@ -30,9 +30,11 @@
         .project { font-size: 17px; font-weight: bold; color: #111827; }
         .company { font-size: 12px; color: #4b5563; margin-top: 2px; }
         .doctitle { font-size: 11px; color: #6b7280; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
-        .meta { text-align: right; font-size: 10px; color: #4b5563; }
-        .meta .label { text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; }
-        .meta .value { font-size: 12px; font-weight: bold; color: #111827; }
+        .company-mark { text-align: right; vertical-align: middle; }
+        .meta-row { margin-top: 8px; font-size: 10px; color: #4b5563; }
+        .meta-row .label { text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; }
+        .meta-row .value { font-family: DejaVu Sans Mono, monospace; font-weight: bold; color: #111827; }
+        .text-right { text-align: right; }
         h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280;
              margin: 22px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
         table.fields { width: 100%; border-collapse: collapse; }
@@ -55,9 +57,12 @@
     </style>
 </head>
 <body>
+    {{-- Two marks: the project (Boulevard) on the left, the construction company
+         (MPC) on the right. The reference row sits below the rule so neither is
+         crowded. --}}
     <table class="header" width="100%">
         <tr>
-            <td width="60%">
+            <td width="62%">
                 <table>
                     <tr>
                         @if ($logoPath)
@@ -67,17 +72,30 @@
                             @if ($projectName)
                                 <div class="project">{{ $projectName }}</div>
                             @endif
-                            <div class="company">{{ $companyName }}</div>
                             <div class="doctitle">Vendor Application Confirmation</div>
                         </td>
                     </tr>
                 </table>
             </td>
-            <td class="meta">
-                <div class="label">Reference</div>
-                <div class="value">{{ $reference }}</div>
-                <div class="label" style="margin-top: 6px;">Issued on</div>
-                <div>{{ \Illuminate\Support\Carbon::parse($generatedAt)->format('j F Y') }}</div>
+            <td class="company-mark">
+                <table align="right">
+                    <tr>
+                        <td class="company" style="padding-right: 10px;">{{ $companyName }}</td>
+                        @if ($companyLogoSrc)
+                            <td><img src="{{ $companyLogoSrc }}" width="58"></td>
+                        @endif
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table class="meta-row" width="100%">
+        <tr>
+            <td><span class="label">Reference</span> <span class="value">{{ $reference }}</span></td>
+            <td class="text-right">
+                <span class="label">Issued on</span>
+                <span>{{ \Illuminate\Support\Carbon::parse($generatedAt)->format('j F Y') }}</span>
             </td>
         </tr>
     </table>

@@ -186,6 +186,9 @@ class VendorController extends Controller
                 // Downscaled: dompdf embeds a raster at native resolution however
                 // small it is drawn, and the full logo alone is ~518 KB.
                 'logoSrc' => $this->printAssetService->logoForPdf($data['logoUrl']),
+                'companyLogoSrc' => $data['companyLogoUrl']
+                    ? $this->printAssetService->logoForPdf($data['companyLogoUrl'])
+                    : null,
                 // Read from the kept flash, never from the query string.
                 'temporaryPassword' => $this->temporaryPasswordFor($vendor),
             ],
@@ -222,11 +225,15 @@ class VendorController extends Controller
             'companyName' => SystemSetting::where('key', 'general.company_name')->value('value')
                 ?: config('app.name'),
             'projectName' => SystemSetting::where('key', 'general.project_name')->value('value') ?: '',
-            // Prefer an official raster logo when one has been dropped in; the
-            // committed SVG is a vector stand-in.
+            // Two marks, two meanings: Boulevard is the project, MPC is the
+            // construction company delivering it. Prefer the official raster when
+            // one has been dropped in; the committed SVG is a vector stand-in.
             'logoUrl' => file_exists(public_path('boulevard-logo.png'))
                 ? '/boulevard-logo.png'
                 : '/boulevard-logo.svg',
+            'companyLogoUrl' => file_exists(public_path('mpc-logo.png'))
+                ? '/mpc-logo.png'
+                : null,
             'websiteUrl' => $websiteUrl,
             'qrCode' => $this->qrCodeService->svgDataUri($websiteUrl),
             'generatedAt' => now()->toIso8601String(),

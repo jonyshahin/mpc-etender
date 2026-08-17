@@ -229,6 +229,7 @@
     "confirmation.password_note": "This is a one-time password shown only now — it cannot be retrieved later. The vendor must change it on first sign-in. Hand this letter over directly rather than emailing the password.",
     "confirmation.password_unavailable": "The temporary password is not shown on a reprint. It is stored encrypted and cannot be recovered — issue a new one to print the letter with credentials again.",
     "confirmation.portal_sign_in": "Portal sign-in",
+    "confirmation.project_logo_alt": "Project logo",
     "confirmation.reference": "Reference",
     "confirmation.reissue_description": "This replaces the vendor's current password and prints the new one on the letter. Any password issued earlier will stop working, so only do this if the vendor has not signed in yet or has lost their letter.",
     "confirmation.reissue_title": "Issue a new temporary password?",

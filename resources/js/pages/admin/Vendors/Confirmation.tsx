@@ -34,7 +34,10 @@ type Props = {
     vendor: Vendor;
     companyName: string;
     projectName: string;
+    /** Project mark (Boulevard). */
     logoUrl: string;
+    /** Construction company mark (MPC); null if the asset is missing. */
+    companyLogoUrl: string | null;
     websiteUrl: string;
     qrCode: string;
     generatedAt: string;
@@ -85,6 +88,7 @@ export default function Confirmation({
     companyName,
     projectName,
     logoUrl,
+    companyLogoUrl,
     websiteUrl,
     qrCode,
     generatedAt,
@@ -152,32 +156,54 @@ export default function Confirmation({
                     @media print block in resources/css/app.css. Without it an
                     admin in dark mode prints white text onto white paper. */}
                 <article className="print-document mx-auto max-w-3xl bg-background p-10 shadow-sm print:max-w-none print:p-0 print:shadow-none">
-                    <header className="flex items-start justify-between gap-6 border-b pb-6">
-                        <div className="flex items-center gap-4">
-                            <img
-                                src={logoUrl}
-                                alt={projectName || companyName}
-                                className="size-16 object-contain"
-                            />
-                            <div>
-                                {projectName && (
-                                    <p className="text-xl font-bold leading-tight">{projectName}</p>
-                                )}
-                                <p className="text-sm text-muted-foreground">{companyName}</p>
-                                <h1 className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                                    {t('pages.admin.vendor_confirmation')}
-                                </h1>
+                    {/* Two marks: the project on the left, the construction company
+                        delivering it on the right. The reference block moves below
+                        the rule so neither logo is crowded. */}
+                    <header className="border-b pb-5">
+                        <div className="flex items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <img
+                                    src={logoUrl}
+                                    alt={projectName || t('confirmation.project_logo_alt')}
+                                    className="h-16 w-auto max-w-[7rem] object-contain"
+                                />
+                                <div>
+                                    {projectName && (
+                                        <p className="text-xl font-bold leading-tight">{projectName}</p>
+                                    )}
+                                    <h1 className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
+                                        {t('pages.admin.vendor_confirmation')}
+                                    </h1>
+                                </div>
                             </div>
+
+                            {companyLogoUrl && (
+                                <div className="flex shrink-0 items-center gap-3">
+                                    <p className="text-end text-sm font-medium text-muted-foreground">
+                                        {companyName}
+                                    </p>
+                                    <img
+                                        src={companyLogoUrl}
+                                        alt={companyName}
+                                        className="h-14 w-auto max-w-[5rem] object-contain"
+                                    />
+                                </div>
+                            )}
                         </div>
-                        <dl className="text-end">
-                            <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-                                {t('confirmation.reference')}
-                            </dt>
-                            <dd className="font-mono text-sm font-semibold">{reference}</dd>
-                            <dt className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
-                                {t('confirmation.issued_on')}
-                            </dt>
-                            <dd className="text-sm">{formatDate(generatedAt, locale)}</dd>
+
+                        <dl className="mt-5 flex flex-wrap items-baseline gap-x-10 gap-y-1 text-xs">
+                            <div className="flex items-baseline gap-2">
+                                <dt className="uppercase tracking-wide text-muted-foreground">
+                                    {t('confirmation.reference')}
+                                </dt>
+                                <dd className="font-mono text-sm font-semibold">{reference}</dd>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <dt className="uppercase tracking-wide text-muted-foreground">
+                                    {t('confirmation.issued_on')}
+                                </dt>
+                                <dd className="text-sm">{formatDate(generatedAt, locale)}</dd>
+                            </div>
                         </dl>
                     </header>
 

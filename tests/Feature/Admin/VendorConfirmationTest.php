@@ -154,8 +154,26 @@ test('the letterhead carries the project name and a logo', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('projectName', 'Boulevard Mosul Project')
+            // Two distinct marks: Boulevard is the project, MPC the company.
             ->where('logoUrl', fn ($url) => str_contains($url, 'boulevard-logo'))
+            ->where('companyLogoUrl', '/mpc-logo.png')
         );
+});
+
+test('the PDF embeds both marks downscaled', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+
+    $response = $this->actingAs($admin)->get(route('admin.vendors.confirmation.pdf', $vendor));
+    $response->assertOk();
+
+    $bytes = strlen($response->getContent());
+
+    // Both source logos are ~518 KB and ~207 KB; dompdf embeds a raster at its
+    // native resolution, so without downscaling the letter alone exceeded 500 KB
+    // and peaked at 124 MB — over PHP's 128 MB default.
+    expect(substr($response->getContent(), 0, 4))->toBe('%PDF');
+    expect($bytes)->toBeLessThan(250_000);
 });
 
 test('the temporary password survives a reload of the letter', function () {
