@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Printer } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
@@ -32,9 +31,13 @@ type Vendor = {
 type Props = {
     vendor: Vendor;
     companyName: string;
+    projectName: string;
+    logoUrl: string;
     websiteUrl: string;
     qrCode: string;
     generatedAt: string;
+    /** Only set immediately after onboarding — see the controller. */
+    temporaryPassword: string | null;
 };
 
 /** One label/value row. Values fall back to an em dash so the sheet never shows a blank. */
@@ -74,7 +77,16 @@ function formatDate(value: string, locale: string): string {
  * Rendered without the admin shell (see the layout resolver in app.tsx) so it
  * prints as a clean document; the on-screen controls carry `print:hidden`.
  */
-export default function Confirmation({ vendor, companyName, websiteUrl, qrCode, generatedAt }: Props) {
+export default function Confirmation({
+    vendor,
+    companyName,
+    projectName,
+    logoUrl,
+    websiteUrl,
+    qrCode,
+    generatedAt,
+    temporaryPassword,
+}: Props) {
     const { t, locale } = useTranslation();
 
     // Short, human-quotable handle. The UUID is unwieldy on a printed page.
@@ -93,10 +105,20 @@ export default function Confirmation({ vendor, companyName, websiteUrl, qrCode, 
                         <ArrowLeft className="size-4 rtl:rotate-180" />
                         {t('btn.back_to_vendors')}
                     </Link>
-                    <Button onClick={() => window.print()}>
-                        <Printer className="me-2 size-4" />
-                        {t('btn.print')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {/* Plain anchor, not an Inertia Link: this is a file
+                            download, not a page visit. */}
+                        <Button asChild variant="outline">
+                            <a href={`/admin/vendors/${vendor.id}/confirmation.pdf`}>
+                                <Download className="me-2 size-4" />
+                                {t('btn.download_pdf')}
+                            </a>
+                        </Button>
+                        <Button onClick={() => window.print()}>
+                            <Printer className="me-2 size-4" />
+                            {t('btn.print')}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* print-document forces a light palette when printing — see the
@@ -105,10 +127,17 @@ export default function Confirmation({ vendor, companyName, websiteUrl, qrCode, 
                 <article className="print-document mx-auto max-w-3xl bg-background p-10 shadow-sm print:max-w-none print:p-0 print:shadow-none">
                     <header className="flex items-start justify-between gap-6 border-b pb-6">
                         <div className="flex items-center gap-4">
-                            <AppLogoIcon className="size-14 object-contain" />
+                            <img
+                                src={logoUrl}
+                                alt={projectName || companyName}
+                                className="size-16 object-contain"
+                            />
                             <div>
-                                <p className="text-lg font-semibold">{companyName}</p>
-                                <h1 className="text-sm text-muted-foreground">
+                                {projectName && (
+                                    <p className="text-xl font-bold leading-tight">{projectName}</p>
+                                )}
+                                <p className="text-sm text-muted-foreground">{companyName}</p>
+                                <h1 className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
                                     {t('pages.admin.vendor_confirmation')}
                                 </h1>
                             </div>
@@ -169,6 +198,37 @@ export default function Confirmation({ vendor, companyName, websiteUrl, qrCode, 
                             <p className="text-sm text-muted-foreground">—</p>
                         )}
                     </section>
+
+                    {/* Shown only right after onboarding. The password is stored
+                        bcrypt-hashed, so it cannot be recovered for a later
+                        reprint — the admin reissues one from the vendor detail
+                        page instead. */}
+                    {temporaryPassword && (
+                        <section className="mt-8 rounded-md border border-primary/40 bg-primary/5 p-4">
+                            <h2 className="text-xs uppercase tracking-wide text-muted-foreground">
+                                {t('confirmation.portal_sign_in')}
+                            </h2>
+                            <dl className="mt-2 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        {t('form.email')}
+                                    </dt>
+                                    <dd className="font-mono text-sm font-medium">{vendor.email}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        {t('confirmation.temporary_password')}
+                                    </dt>
+                                    <dd className="font-mono text-lg font-bold tracking-wider">
+                                        {temporaryPassword}
+                                    </dd>
+                                </div>
+                            </dl>
+                            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                                {t('confirmation.password_note')}
+                            </p>
+                        </section>
+                    )}
 
                     <section className="mt-8 flex items-end justify-between gap-8 border-t pt-6">
                         <div>

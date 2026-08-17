@@ -12,8 +12,10 @@ use App\Models\Vendor;
 use App\Services\FileUploadService;
 use App\Services\QrCodeService;
 use App\Services\VendorService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -82,12 +84,18 @@ class VendorController extends Controller
             'message' => __('messages.vendor_created', ['company' => $vendor->company_name]),
         ]);
 
-        // Land on the detail page so the one-shot temporary password renders
-        // there — same flash contract as forceTemporaryPassword(). The admin
-        // must hand it to the vendor now or reset it later.
+        // Land on the confirmation letter, which is the thing the admin actually
+        // hands over: it renders the vendor's details and the one-shot temporary
+        // password together, ready to print. The password cannot be recovered
+        // afterwards (it is stored bcrypt-hashed), so this is the only moment it
+        // can appear on the letter; later reprints omit it and the admin reissues
+        // one from the detail page instead.
+        // Bound to this vendor's id. A bare 'temporary_password' flash is global to
+        // the session, so opening a *different* vendor's letter before navigating
+        // away would print this vendor's password on it.
         return redirect()
-            ->route('admin.vendors.show', $vendor)
-            ->with('temporary_password', $temp);
+            ->route('admin.vendors.confirmation', $vendor)
+            ->with('vendor_temp_password', ['vendor_id' => $vendor->id, 'value' => $temp]);
     }
 
     public function show(Vendor $vendor): Response
@@ -112,9 +120,10 @@ class VendorController extends Controller
     /**
      * Printable application-confirmation sheet for a vendor.
      *
-     * Handed to the vendor as proof their application is on file. The QR code
-     * points at the public site rather than anything vendor-specific, so the
-     * sheet carries no credential and is safe to print, email or hand over.
+     * Handed to the vendor as proof their application is on file. The QR points at
+     * the public site rather than anything vendor-specific, so the sheet carries no
+     * credential of its own — the temporary password below is the exception, and it
+     * only appears immediately after onboarding.
      */
     public function confirmation(Vendor $vendor): Response
     {
@@ -122,22 +131,105 @@ class VendorController extends Controller
 
         $vendor->load('categories:id,name_en,name_ar');
 
-        // Configurable so the QR can point at the corporate site instead of the
-        // portal without a redeploy; APP_URL is the sensible default.
-        // Three-stage fallback: a bare `APP_URL=` in .env makes config('app.url')
-        // an empty string rather than its default, and an empty QR payload throws.
-        $websiteUrl = SystemSetting::where('key', 'general.website_url')->value('value')
-            ?: config('app.url')
-            ?: url('/');
+        // Survive one more request so the PDF download from this page can include
+        // the password too. Deliberately not passed through the URL — a query
+        // string would put the credential in server logs, browser history and any
+        // outbound referrer header.
+        session()->keep('vendor_temp_password');
 
-        return Inertia::render('admin/Vendors/Confirmation', [
+        return Inertia::render('admin/Vendors/Confirmation', array_merge(
+            $this->confirmationData($vendor, $this->confirmationWebsiteUrl()),
+            [
+                // Present only when the caller arrived straight from onboarding this
+                // exact vendor. Passwords are bcrypt-hashed, so there is no way to
+                // recover one for a later reprint — and storing the plain text to
+                // make that possible would be worse than the inconvenience.
+                'temporaryPassword' => $this->temporaryPasswordFor($vendor),
+            ],
+        ));
+    }
+
+    /**
+     * Downloadable PDF of the same sheet.
+     *
+     * Rendered from a Blade view rather than the React page because dompdf cannot
+     * execute JavaScript. Note dompdf performs no Arabic shaping or bidi, so the
+     * Arabic company name is deliberately omitted here — use the browser Print
+     * button for an Arabic-faithful copy.
+     */
+    public function confirmationPdf(Vendor $vendor): HttpResponse
+    {
+        $this->authorize('view', $vendor);
+
+        $vendor->load('categories:id,name_en,name_ar');
+
+        // Re-arm the flash, exactly as confirmation() does. Without this the very
+        // first download consumes it, and a second download — an admin wanting a
+        // spare copy — silently produces a letter with the whole credentials block
+        // missing and no indication anything was dropped.
+        session()->keep('vendor_temp_password');
+
+        $websiteUrl = $this->confirmationWebsiteUrl();
+
+        $pdf = Pdf::loadView('pdf.vendor-confirmation', array_merge(
+            $this->confirmationData($vendor, $websiteUrl),
+            [
+                // Raster rather than the page's vector QR: dompdf expands an SVG
+                // QR into thousands of path operations and exhausts memory.
+                'qrCode' => $this->qrCodeService->pngDataUri($websiteUrl),
+                // Read from the kept flash, never from the query string.
+                'temporaryPassword' => $this->temporaryPasswordFor($vendor),
+            ],
+        ))->setPaper('a4');
+
+        return $pdf->download(
+            'vendor-confirmation-'.Str::slug($vendor->company_name).'.pdf'
+        );
+    }
+
+    /**
+     * The in-flight temporary password, but only if it was minted for THIS vendor.
+     *
+     * The flash lives in the admin's session, which is shared across every vendor
+     * they look at — without the id check, onboarding vendor A and then opening
+     * vendor B's letter would print A's password on B's document.
+     */
+    private function temporaryPasswordFor(Vendor $vendor): ?string
+    {
+        $flash = session('vendor_temp_password');
+
+        if (! is_array($flash) || ($flash['vendor_id'] ?? null) !== $vendor->id) {
+            return null;
+        }
+
+        return $flash['value'] ?? null;
+    }
+
+    /** Shared payload for the on-screen sheet and the PDF. */
+    private function confirmationData(Vendor $vendor, string $websiteUrl): array
+    {
+        return [
             'vendor' => $vendor,
             'companyName' => SystemSetting::where('key', 'general.company_name')->value('value')
                 ?: config('app.name'),
+            'projectName' => SystemSetting::where('key', 'general.project_name')->value('value') ?: '',
+            // Prefer an official raster logo when one has been dropped in; the
+            // committed SVG is a vector stand-in.
+            'logoUrl' => file_exists(public_path('boulevard-logo.png'))
+                ? '/boulevard-logo.png'
+                : '/boulevard-logo.svg',
             'websiteUrl' => $websiteUrl,
             'qrCode' => $this->qrCodeService->svgDataUri($websiteUrl),
             'generatedAt' => now()->toIso8601String(),
-        ]);
+        ];
+    }
+
+    /** Configured public site, falling back to the app URL. */
+    private function confirmationWebsiteUrl(): string
+    {
+        return SystemSetting::where('key', 'general.website_url')->value('value')
+            ?: config('app.url')
+            ?: url('/');
     }
 
     public function prequalify(VendorPrequalificationRequest $request, Vendor $vendor): RedirectResponse

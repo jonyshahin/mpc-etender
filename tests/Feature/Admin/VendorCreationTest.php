@@ -76,7 +76,9 @@ test('admin with vendors.create can onboard a vendor', function () {
     $vendor = Vendor::where('email', 'contracts@zagros-construction.example')->first();
 
     expect($vendor)->not->toBeNull();
-    $response->assertRedirect(route('admin.vendors.show', $vendor));
+    // Lands on the confirmation letter, which is what the admin hands over — it
+    // is the only moment the one-time password can appear on it.
+    $response->assertRedirect(route('admin.vendors.confirmation', $vendor));
 
     expect($vendor->company_name)->toBe('Zagros Construction LLC');
     expect($vendor->prequalification_status)->toBe(VendorStatus::Pending);
@@ -117,8 +119,12 @@ test('onboarded vendor must change the generated password on first login', funct
 
     expect($vendor->must_change_password)->toBeTrue();
 
-    // The plain-text password is surfaced to the admin exactly once, via flash.
-    $temporaryPassword = session('temporary_password');
+    // Surfaced to the admin exactly once, via a flash scoped to this vendor so it
+    // cannot be printed on a different vendor's letter.
+    $flash = session('vendor_temp_password');
+    expect($flash['vendor_id'])->toBe($vendor->id);
+
+    $temporaryPassword = $flash['value'];
     expect($temporaryPassword)->toBeString()->not->toBeEmpty();
     expect(Hash::check($temporaryPassword, $vendor->password))->toBeTrue();
 });

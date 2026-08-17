@@ -224,6 +224,7 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin
     Route::post('vendors', [Admin\VendorController::class, 'store'])->name('vendors.store');
     Route::get('vendors/{vendor}', [Admin\VendorController::class, 'show'])->name('vendors.show');
     Route::get('vendors/{vendor}/confirmation', [Admin\VendorController::class, 'confirmation'])->name('vendors.confirmation');
+    Route::get('vendors/{vendor}/confirmation.pdf', [Admin\VendorController::class, 'confirmationPdf'])->name('vendors.confirmation.pdf');
     Route::put('vendors/{vendor}/prequalify', [Admin\VendorController::class, 'prequalify'])->name('vendors.prequalify');
     Route::put('vendors/{vendor}/reject', [Admin\VendorController::class, 'reject'])->name('vendors.reject');
     Route::put('vendors/{vendor}/suspend', [Admin\VendorController::class, 'suspend'])->name('vendors.suspend');

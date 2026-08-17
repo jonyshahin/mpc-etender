@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
 use BaconQrCode\Renderer\Color\Rgb;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -9,6 +11,7 @@ use BaconQrCode\Renderer\RendererStyle\Fill;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Renders QR codes as inline SVG.
@@ -68,5 +71,72 @@ class QrCodeService
     public function svgDataUri(string $data, int $size = 220): string
     {
         return 'data:image/svg+xml;base64,'.base64_encode($this->svg($data, $size));
+    }
+
+    /**
+     * Render $data as a base64 PNG data URI.
+     *
+     * For dompdf specifically. The SVG renderer emits one path per module, and
+     * dompdf's SVG layer expands those into thousands of vector operations — a
+     * one-page letter ballooned to 1.1 MB and exhausted a 128 MB process. A flat
+     * raster costs a few KB and dompdf draws it in one operation.
+     *
+     * Drawn straight from the QR matrix with GD, because BaconQrCode's only
+     * bundled raster backend needs the imagick extension, which is not installed.
+     *
+     * @param  int  $moduleSize  Pixels per QR module
+     * @param  int  $margin  Quiet zone in modules — 4 per ISO/IEC 18004
+     */
+    public function pngDataUri(string $data, int $moduleSize = 6, int $margin = 4): string
+    {
+        if (trim($data) === '') {
+            throw new InvalidArgumentException('Cannot render a QR code for an empty payload.');
+        }
+
+        // ext-gd is not declared in composer.json (adding it would invalidate the
+        // lock file's content hash), so fail with something actionable rather than
+        // a bare "call to undefined function imagecreatetruecolor".
+        if (! extension_loaded('gd')) {
+            throw new RuntimeException(
+                'The GD extension is required to render the PDF QR code. Enable ext-gd, '.
+                'or use the browser Print button instead of the PDF download.'
+            );
+        }
+
+        // Level M (~15% recovery) rather than the library default of L (~7%):
+        // this ends up on paper that gets folded, stamped and handled.
+        $matrix = Encoder::encode($data, ErrorCorrectionLevel::M(), 'UTF-8')->getMatrix();
+
+        $modules = $matrix->getWidth();
+        $edge = ($modules + 2 * $margin) * $moduleSize;
+
+        $image = imagecreatetruecolor($edge, $edge);
+        $light = imagecolorallocate($image, 255, 255, 255);
+        $dark = imagecolorallocate($image, 17, 24, 39);
+        imagefilledrectangle($image, 0, 0, $edge, $edge, $light);
+
+        for ($y = 0; $y < $matrix->getHeight(); $y++) {
+            for ($x = 0; $x < $modules; $x++) {
+                if ($matrix->get($x, $y) === 1) {
+                    $left = ($x + $margin) * $moduleSize;
+                    $top = ($y + $margin) * $moduleSize;
+                    imagefilledrectangle(
+                        $image,
+                        $left,
+                        $top,
+                        $left + $moduleSize - 1,
+                        $top + $moduleSize - 1,
+                        $dark,
+                    );
+                }
+            }
+        }
+
+        ob_start();
+        imagepng($image);
+        $png = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return 'data:image/png;base64,'.base64_encode($png);
     }
 }

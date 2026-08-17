@@ -31,6 +31,7 @@ class SystemSettingSeeder extends Seeder
             ['key' => 'general.default_language', 'value' => 'en', 'group' => 'general', 'type' => 'string', 'description' => 'Default application language'],
             ['key' => 'general.company_name', 'value' => 'MPC Group', 'group' => 'general', 'type' => 'string', 'description' => 'Company name displayed in documents and notifications'],
             ['key' => 'general.website_url', 'value' => '', 'group' => 'general', 'type' => 'string', 'description' => 'Public website the vendor confirmation QR code points to. Falls back to APP_URL when left blank'],
+            ['key' => 'general.project_name', 'value' => 'Boulevard Mosul Project', 'group' => 'general', 'type' => 'string', 'description' => 'Project name printed on the vendor confirmation letterhead'],
 
             // Display
             ['key' => 'display.items_per_page', 'value' => '25', 'group' => 'display', 'type' => 'integer', 'description' => 'Default pagination size'],

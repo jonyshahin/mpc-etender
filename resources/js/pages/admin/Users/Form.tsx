@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MultiSelect } from '@/components/MultiSelect';
+import { PhoneField } from '@/components/PhoneField';
 import {
     Dialog,
     DialogContent,
@@ -117,10 +118,10 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
 
             <div className="space-y-2">
                 <Label htmlFor="phone">{t('form.phone')}</Label>
-                <Input
+                <PhoneField
                     id="phone"
                     value={form.data.phone}
-                    onChange={(e) => form.setData('phone', e.target.value)}
+                    onChange={(value) => form.setData('phone', value)}
                 />
                 {form.errors.phone && (
                     <p className="text-sm text-destructive">{form.errors.phone}</p>

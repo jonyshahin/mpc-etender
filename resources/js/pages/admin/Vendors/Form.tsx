@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEventHandler } from 'react';
 import { MultiSelect } from '@/components/MultiSelect';
+import { PhoneField } from '@/components/PhoneField';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -185,21 +186,19 @@ function VendorForm({ categories, onClose }: Omit<Props, 'open'>) {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="phone">{t('form.phone')} *</Label>
-                    <Input
+                    <PhoneField
                         id="phone"
-                        type="tel"
                         value={form.data.phone}
-                        onChange={(e) => form.setData('phone', e.target.value)}
+                        onChange={(value) => form.setData('phone', value)}
                     />
                     {error('phone')}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="whatsapp_number">{t('form.whatsapp_number')}</Label>
-                    <Input
+                    <PhoneField
                         id="whatsapp_number"
-                        type="tel"
                         value={form.data.whatsapp_number}
-                        onChange={(e) => form.setData('whatsapp_number', e.target.value)}
+                        onChange={(value) => form.setData('whatsapp_number', value)}
                     />
                     {error('whatsapp_number')}
                 </div>

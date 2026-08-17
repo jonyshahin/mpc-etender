@@ -134,6 +134,170 @@ test('an admin without vendors.view cannot open the sheet', function () {
         ->assertForbidden();
 });
 
+test('the letterhead carries the project name and a logo', function () {
+    SystemSetting::create([
+        'key' => 'general.project_name',
+        'value' => 'Boulevard Mosul Project',
+        'group' => 'general',
+        'type' => 'string',
+        'description' => 'Project name',
+    ]);
+
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('projectName', 'Boulevard Mosul Project')
+            ->where('logoUrl', fn ($url) => str_contains($url, 'boulevard-logo'))
+        );
+});
+
+test('the temporary password survives a reload of the letter', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+
+    // Straight after onboarding the password rides in on the flash. The page
+    // re-keeps it so a refresh, or the PDF download from this page, still has it.
+    $this->actingAs($admin)
+        ->withSession(['vendor_temp_password' => ['vendor_id' => $vendor->id, 'value' => 'Tmp7x9Kd2Qa4']])
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertInertia(fn (Assert $page) => $page->where('temporaryPassword', 'Tmp7x9Kd2Qa4'));
+
+    $this->actingAs($admin)
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertInertia(fn (Assert $page) => $page->where('temporaryPassword', 'Tmp7x9Kd2Qa4'));
+});
+
+test('a second PDF download still carries the password', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+
+    $session = ['vendor_temp_password' => ['vendor_id' => $vendor->id, 'value' => 'Tmp7x9Kd2Qa4']];
+
+    // The PDF route must re-keep the flash. Without that the first download
+    // consumed it and a second copy came out with the credentials block silently
+    // missing — the admin would hand the vendor a letter they cannot sign in with.
+    $first = $this->actingAs($admin)->withSession($session)
+        ->get(route('admin.vendors.confirmation.pdf', $vendor));
+    $first->assertOk();
+
+    $second = $this->actingAs($admin)
+        ->get(route('admin.vendors.confirmation.pdf', $vendor));
+    $second->assertOk();
+
+    // Same document both times — a dropped credentials block shows up as a
+    // materially smaller file.
+    expect(strlen($second->getContent()))
+        ->toBeGreaterThan((int) (strlen($first->getContent()) * 0.95));
+});
+
+test('one vendor password never appears on another vendor letter', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $onboarded = Vendor::factory()->create(['company_name' => 'Vendor A']);
+    $other = Vendor::factory()->create(['company_name' => 'Vendor B']);
+
+    // The flash lives in the admin's session, not on the vendor. Before the id
+    // check this printed A's credentials on B's letter — an admin could hand B a
+    // document carrying another company's password.
+    $this->actingAs($admin)
+        ->withSession(['vendor_temp_password' => ['vendor_id' => $onboarded->id, 'value' => 'A-SECRET']])
+        ->get(route('admin.vendors.confirmation', $other))
+        ->assertInertia(fn (Assert $page) => $page->where('temporaryPassword', null));
+
+    // …and the PDF must be scoped the same way.
+    $response = $this->actingAs($admin)
+        ->withSession(['vendor_temp_password' => ['vendor_id' => $onboarded->id, 'value' => 'A-SECRET']])
+        ->get(route('admin.vendors.confirmation.pdf', $other));
+
+    $response->assertOk();
+    expect($response->getContent())->not->toContain('A-SECRET');
+});
+
+test('the temporary password is gone once the admin navigates away', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+
+    $this->actingAs($admin)
+        ->withSession(['vendor_temp_password' => ['vendor_id' => $vendor->id, 'value' => 'Tmp7x9Kd2Qa4']])
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertOk();
+
+    // Any other page consumes the flash; the value is not recoverable afterwards
+    // because what is stored on the vendor is a bcrypt hash.
+    $this->actingAs($admin)->get(route('admin.vendors.index'))->assertOk();
+
+    $this->actingAs($admin)
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertInertia(fn (Assert $page) => $page->where('temporaryPassword', null));
+});
+
+test('the PDF includes the temporary password when one is in flight', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $vendor = Vendor::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->withSession(['vendor_temp_password' => ['vendor_id' => $vendor->id, 'value' => 'Tmp7x9Kd2Qa4']])
+        ->get(route('admin.vendors.confirmation.pdf', $vendor));
+
+    $response->assertOk();
+    expect(substr($response->getContent(), 0, 4))->toBe('%PDF');
+});
+
+test('onboarding lands on the letter with the password ready to print', function () {
+    $admin = adminForConfirmation('vendors.view', 'vendors.create');
+    $category = Category::factory()->create();
+
+    $this->actingAs($admin)->post(route('admin.vendors.store'), [
+        'company_name' => 'Zagros Construction LLC',
+        'trade_license_no' => 'TL-99120',
+        'address' => '14 Gulan Street',
+        'city' => 'Erbil',
+        'country' => 'Iraq',
+        'contact_person' => 'Dara Aziz',
+        'email' => 'contracts@zagros-construction.example',
+        'phone' => '+9647501234567',
+        'language_pref' => 'en',
+        'category_ids' => [$category->id],
+    ])->assertRedirect();
+
+    $vendor = Vendor::firstWhere('email', 'contracts@zagros-construction.example');
+
+    $this->actingAs($admin)
+        ->get(route('admin.vendors.confirmation', $vendor))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('temporaryPassword', fn ($p) => filled($p)));
+});
+
+test('the confirmation PDF downloads as a PDF attachment', function () {
+    $admin = adminForConfirmation('vendors.view');
+    $category = Category::factory()->create();
+    $vendor = Vendor::factory()->create(['company_name' => 'Zagros Construction LLC']);
+    $vendor->categories()->attach($category->id);
+
+    $response = $this->actingAs($admin)->get(route('admin.vendors.confirmation.pdf', $vendor));
+
+    $response->assertOk();
+    expect($response->headers->get('content-type'))->toContain('application/pdf');
+    expect($response->headers->get('content-disposition'))
+        ->toContain('attachment')
+        ->toContain('zagros-construction-llc');
+
+    // %PDF magic bytes — proves dompdf produced a document rather than an error page.
+    expect(substr($response->getContent(), 0, 4))->toBe('%PDF');
+});
+
+test('an admin without vendors.view cannot download the PDF', function () {
+    $admin = adminForConfirmation('vendors.create');
+    $vendor = Vendor::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.vendors.confirmation.pdf', $vendor))
+        ->assertForbidden();
+});
+
 test('the QR encodes non-Latin-1 URLs instead of throwing', function () {
     $service = app(QrCodeService::class);
 

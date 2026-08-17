@@ -13,6 +13,7 @@ use App\Models\EvaluationReport;
 use App\Models\SystemSetting;
 use App\Models\Tender;
 use App\Models\User;
+use Carbon\CarbonInterface;
 
 class ApprovalService
 {
@@ -33,7 +34,7 @@ class ApprovalService
             'approval_level' => $level,
             'status' => ApprovalStatus::Pending,
             'requested_at' => now(),
-            'deadline' => now()->addDays(7),
+            'deadline' => $this->approvalDeadline(),
         ]);
     }
 
@@ -66,7 +67,7 @@ class ApprovalService
                 'approval_level' => $request->approval_level + 1,
                 'status' => ApprovalStatus::Pending,
                 'requested_at' => now(),
-                'deadline' => now()->addDays(7),
+                'deadline' => $this->approvalDeadline(),
             ]);
         } else {
             // Final level — create award
@@ -119,7 +120,7 @@ class ApprovalService
         foreach ($expired as $request) {
             $request->update([
                 'status' => ApprovalStatus::Escalated,
-                'deadline' => now()->addDays(7),
+                'deadline' => $this->approvalDeadline(),
             ]);
 
             // Create escalated request at next level (capped at max 3)
@@ -133,7 +134,7 @@ class ApprovalService
                     'approval_level' => $request->approval_level + 1,
                     'status' => ApprovalStatus::Pending,
                     'requested_at' => now(),
-                    'deadline' => now()->addDays(7),
+                    'deadline' => $this->approvalDeadline(),
                 ]);
             }
         }
@@ -165,6 +166,19 @@ class ApprovalService
     }
 
     /**
+     * Deadline for a newly raised or escalated approval.
+     *
+     * Was hardcoded to 7 days in four places while `approval.expiry_days` sat
+     * seeded and editable but read by nothing. (BUG-33)
+     */
+    private function approvalDeadline(): CarbonInterface
+    {
+        $days = (int) (SystemSetting::where('key', 'approval.expiry_days')->value('value') ?: 7);
+
+        return now()->addDays(max($days, 1));
+    }
+
+    /**
      * Determine required approval level based on tender value.
      * Level 1 (< $50K), Level 2 ($50K-$500K), Level 3 (> $500K).
      * Thresholds from system_settings.
@@ -173,8 +187,12 @@ class ApprovalService
     {
         $value = (float) $tender->estimated_value;
 
-        $threshold1 = (float) (SystemSetting::where('key', 'approval_threshold_level1')->value('value') ?? 50000);
-        $threshold2 = (float) (SystemSetting::where('key', 'approval_threshold_level2')->value('value') ?? 500000);
+        // Keys must match SystemSettingSeeder exactly. These previously read
+        // `approval_threshold_level1/2`, which are seeded nowhere — so the
+        // lookups always returned null and the defaults below silently won,
+        // making the thresholds on /admin/settings inert. (BUG-33)
+        $threshold1 = (float) (SystemSetting::where('key', 'approval.level1_threshold')->value('value') ?? 50000);
+        $threshold2 = (float) (SystemSetting::where('key', 'approval.level2_threshold')->value('value') ?? 500000);
 
         if ($value <= $threshold1) {
             return 1;
