@@ -131,9 +131,9 @@ class ResetDataCommand extends Command
     ];
 
     /**
-     * Reference seeders re-run by --reseed. AdminUserSeeder is deliberately
-     * excluded: it does updateOrCreate with a hardcoded 'password', so running
-     * it would silently reset a live admin's credentials.
+     * Reference seeders re-run by --reseed. AdminUserSeeder is excluded: it
+     * seeds an account rather than reference data, and `users` is a KEEP_TABLE,
+     * so the admin it would create is never purged in the first place.
      */
     private const RESEED_CLASSES = [
         RoleSeeder::class,
@@ -168,6 +168,20 @@ class ResetDataCommand extends Command
             $this->components->warn('Dry run — nothing was changed. Re-run without --dry-run to apply.');
 
             return self::SUCCESS;
+        }
+
+        // Laravel Cloud's command runner, CI and cron all run without a TTY, so
+        // neither prompt below can be answered there: Symfony returns the
+        // default and the run reports a bare "Command cancelled". Say what to
+        // do instead of leaving the operator to guess which flag is missing.
+        if (! $this->option('force') && ! $this->input->isInteractive()) {
+            $this->newLine();
+            $this->components->error(
+                'This deletes data and there is no interactive terminal to confirm from. '
+                .'Re-run with --force.'
+            );
+
+            return self::FAILURE;
         }
 
         // Blocks in production unless --force. Layered under our own prompt so
@@ -367,7 +381,7 @@ class ResetDataCommand extends Command
             $this->line('    <fg=green>✓</> '.class_basename($class));
         }
 
-        $this->line('    <fg=gray>AdminUserSeeder skipped — it would reset the admin password.</>');
+        $this->line('    <fg=gray>AdminUserSeeder skipped — users are never purged, so there is nothing to restore.</>');
 
         return true;
     }

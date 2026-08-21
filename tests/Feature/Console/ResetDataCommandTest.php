@@ -25,7 +25,9 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SystemSettingSeeder;
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -348,4 +350,31 @@ test('a declined --reseed prompt still leaves the purge applied', function () {
     // Purge still happened; only the overwrite was declined.
     expect(Vendor::count())->toBe(0);
     expect(DB::table('notification_templates')->count())->toBe(0);
+});
+
+/**
+ * Laravel Cloud's command runner, CI and cron all pass --no-interaction, so the
+ * production guard and the row-count prompt both fall through to their default
+ * of "no". Without this check the operator sees only Symfony's bare "Command
+ * cancelled" and no indication that --force is what's missing.
+ */
+test('it explains that --force is required when there is no terminal to confirm from', function () {
+    buildTransactionalGraph();
+
+    $exit = Artisan::call('mpc:reset-data', ['--no-interaction' => true]);
+
+    expect($exit)->toBe(Command::FAILURE)
+        ->and(Artisan::output())->toContain('Re-run with --force');
+
+    // Nothing was touched.
+    expect(Vendor::count())->toBeGreaterThan(0);
+});
+
+test('--force needs no terminal', function () {
+    buildTransactionalGraph();
+
+    expect(Artisan::call('mpc:reset-data', ['--force' => true, '--no-interaction' => true]))
+        ->toBe(Command::SUCCESS);
+
+    expect(Vendor::count())->toBe(0);
 });
