@@ -19,7 +19,7 @@
 <body>
     <h1>Evaluation Report</h1>
     <p><strong>Tender:</strong> {{ $tender->reference_number }} — {{ $tender->title_en }}</p>
-    <p class="meta">Generated: {{ now()->format('Y-m-d H:i') }}</p>
+    <p class="meta">Generated: {{ now()->timezone(config('mpc.timezone'))->format('Y-m-d H:i') }}</p>
 
     <h2>Final Ranking</h2>
     <table>

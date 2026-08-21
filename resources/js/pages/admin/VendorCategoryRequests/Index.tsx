@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type CategoryRequestRow = {
     id: string;
@@ -54,11 +55,7 @@ type Props = {
 
 function formatDate(value: string | null): string {
     if (!value) return '—';
-    return new Date(value).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    return formatDateInZone(value);
 }
 
 function ChangesSummary({ adds, removes }: { adds: number; removes: number }) {

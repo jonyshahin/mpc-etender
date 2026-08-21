@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { fromDateTimeLocalInput } from '@/lib/datetime';
 
 type Category = {
     id: string;
@@ -398,6 +399,10 @@ export default function Create({ projects, categories }: Props) {
 
         const payload: Record<string, any> = {
             ...form.data,
+            // The datetime controls hold project-zone wall clocks; the server
+            // parses in app.timezone (UTC), so convert on the way out.
+            submission_deadline: fromDateTimeLocalInput(form.data.submission_deadline),
+            opening_date: fromDateTimeLocalInput(form.data.opening_date),
             category_ids: categoryIds,
             boq_sections: boqSections
                 .filter((s) => s.title.trim() !== '')

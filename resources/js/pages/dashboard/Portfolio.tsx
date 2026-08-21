@@ -15,6 +15,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type Props = {
     overview: {
@@ -60,11 +61,7 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    });
+    return formatDateInZone(dateStr, 'en-US');
 }
 
 const statusColors: Record<string, string> = {

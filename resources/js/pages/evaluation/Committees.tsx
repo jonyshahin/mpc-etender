@@ -17,6 +17,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { formatDate } from '@/lib/datetime';
 import { Plus, X, Check, Clock, Users } from 'lucide-react';
 
 type Member = {
@@ -127,7 +128,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                     <Badge variant="outline">{committee.status}</Badge>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    {t('eval.formed')}: {new Date(committee.formed_at).toLocaleDateString()}
+                                    {t('eval.formed')}: {formatDate(committee.formed_at)}
                                 </p>
                             </CardHeader>
                             <CardContent className="space-y-4">

@@ -49,6 +49,9 @@
     <body class="font-sans antialiased">
         <script>
             window.__translations__ = @json(json_decode(file_get_contents(lang_path(app()->getLocale() . '.json')), true) ?? []);
+            {{-- Display/input zone for every date the frontend renders. Storage
+                 stays UTC; see config/mpc.php for why the two differ. --}}
+            window.__timezone__ = @json(config('mpc.timezone'));
         </script>
         <x-inertia::app />
     </body>

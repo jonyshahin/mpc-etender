@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type VendorDocument = {
     id: string;
@@ -32,11 +33,7 @@ type Props = {
 
 function formatDate(date: string | null): string {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    return formatDateInZone(date, 'en-US');
 }
 
 function formatFileSize(bytes: number): string {

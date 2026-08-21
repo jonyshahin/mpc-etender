@@ -5,6 +5,7 @@ import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate } from '@/lib/datetime';
 
 type BidRow = {
     id: string;
@@ -66,7 +67,7 @@ export default function Index({ bids }: Props) {
             sortable: true,
             render: (value: string | null) =>
                 value ? (
-                    <span className="text-sm">{new Date(value).toLocaleDateString()}</span>
+                    <span className="text-sm">{formatDate(value)}</span>
                 ) : (
                     <span className="text-muted-foreground">&mdash;</span>
                 ),

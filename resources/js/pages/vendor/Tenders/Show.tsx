@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate, formatDeadline } from '@/lib/datetime';
 
 type Props = {
     tender: {
@@ -158,14 +159,14 @@ export default function Show({ tender, canBid, existingBid }: Props) {
                                 <dt className="text-sm font-medium text-muted-foreground">{t('tender.submission_deadline')}</dt>
                                 <dd className="mt-1 flex items-center gap-1 text-sm">
                                     <Calendar className="h-3.5 w-3.5" />
-                                    {new Date(tender.submission_deadline).toLocaleString()}
+                                    {formatDeadline(tender.submission_deadline)}
                                 </dd>
                             </div>
                             <div>
                                 <dt className="text-sm font-medium text-muted-foreground">{t('tender.opening_date')}</dt>
                                 <dd className="mt-1 flex items-center gap-1 text-sm">
                                     <Clock className="h-3.5 w-3.5" />
-                                    {new Date(tender.opening_date).toLocaleString()}
+                                    {formatDeadline(tender.opening_date)}
                                 </dd>
                             </div>
                             <div>
@@ -283,7 +284,7 @@ export default function Show({ tender, canBid, existingBid }: Props) {
                                             Addendum #{addendum.addendum_number}: {addendum.subject}
                                         </h4>
                                         <span className="text-xs text-muted-foreground">
-                                            {new Date(addendum.published_at).toLocaleDateString()}
+                                            {formatDate(addendum.published_at)}
                                         </span>
                                     </div>
                                     <p className="mt-2 text-sm whitespace-pre-line">{addendum.content_en}</p>
@@ -309,7 +310,7 @@ export default function Show({ tender, canBid, existingBid }: Props) {
                                     <div key={c.id} className="rounded-md border p-4">
                                         <p className="text-sm font-medium">Q: {c.question}</p>
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                            Asked {new Date(c.asked_at).toLocaleDateString()}
+                                            Asked {formatDate(c.asked_at)}
                                         </p>
                                         {c.answer ? (
                                             <p className="mt-2 text-sm text-green-700">A: {c.answer}</p>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, AlertCircle, Clock, FileText, Send } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type Props = {
     vendor: {
@@ -41,11 +42,7 @@ function formatDeadline(deadline: string): string {
 
 function formatDate(date: string | null): string {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    return formatDateInZone(date, 'en-US');
 }
 
 export default function Dashboard({ vendor, documentWarnings, expiredDocuments, openTenders, submittedBids }: Props) {

@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type Category = {
     id: string;
@@ -70,7 +71,7 @@ const DATE_LOCALES: Record<string, string> = {
 };
 
 function formatDate(value: string, locale: string): string {
-    return new Date(value).toLocaleDateString(DATE_LOCALES[locale] ?? locale, {
+    return formatDateInZone(value, DATE_LOCALES[locale] ?? locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Bell, Clock, MailOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/datetime';
 
 type RecentNotif = {
     id: string;
@@ -26,7 +27,7 @@ function relativeTime(dateStr: string): string {
     if (diffHr < 24) return `${diffHr}h ago`;
     const diffDays = Math.floor(diffHr / 24);
     if (diffDays < 30) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return formatDate(date);
 }
 
 export function NotificationBell({ unreadCount: initialCount }: { unreadCount: number }) {

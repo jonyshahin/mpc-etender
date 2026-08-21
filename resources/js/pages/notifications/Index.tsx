@@ -5,6 +5,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/datetime';
 
 type Notif = {
     id: string;
@@ -43,7 +44,7 @@ function makeRelativeTime(t: (key: string) => string) {
         if (diffHr < 24) return `${diffHr}${t('notifications.hours_ago')}`;
         const diffDays = Math.floor(diffHr / 24);
         if (diffDays < 30) return `${diffDays}${t('notifications.days_ago')}`;
-        return date.toLocaleDateString();
+        return formatDate(date);
     };
 }
 

@@ -10,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatDate } from '@/lib/datetime';
 import { Clock, AlertTriangle, ChevronRight, User, DollarSign } from 'lucide-react';
 
 type ApprovalItem = {
@@ -157,9 +158,7 @@ export default function Index({ approvals }: Props) {
                                                 <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
                                                 <span className="text-muted-foreground">
                                                     {t('approval.requested')}:{' '}
-                                                    {new Date(
-                                                        approval.requested_at,
-                                                    ).toLocaleDateString()}
+                                                    {formatDate(approval.requested_at)}
                                                 </span>
                                             </div>
 
@@ -177,9 +176,7 @@ export default function Index({ approvals }: Props) {
                                                     }
                                                 >
                                                     {t('approval.deadline')}:{' '}
-                                                    {new Date(
-                                                        approval.deadline,
-                                                    ).toLocaleDateString()}
+                                                    {formatDate(approval.deadline)}
                                                     {isUrgent && daysLeft <= 0
                                                         ? ` (${t('approval.overdue')})`
                                                         : isUrgent

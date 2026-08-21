@@ -9,6 +9,7 @@
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
+        "test:js": "node --test scripts/datetime.test.mjs",
         "lint:check": "eslint .",
         "types:check": "tsc --noEmit"
     },

@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { toDateTimeLocalInput } from '@/lib/utils';
+import { fromDateTimeLocalInput, toDateTimeLocalInput } from '@/lib/datetime';
 
 type Category = {
     id: string;
@@ -103,6 +103,15 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+        // The controls hold project-zone wall clocks (see lib/datetime).
+        // The server parses what it receives in app.timezone, which is UTC,
+        // so they have to be converted back to instants on the way out.
+        form.transform((data) => ({
+            ...data,
+            submission_deadline: fromDateTimeLocalInput(data.submission_deadline),
+            opening_date: fromDateTimeLocalInput(data.opening_date),
+            site_visit_date: fromDateTimeLocalInput(data.site_visit_date),
+        }));
         form.put(`/tenders/${tender.id}`);
     }
 

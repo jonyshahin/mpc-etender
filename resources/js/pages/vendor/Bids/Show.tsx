@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDateTime } from '@/lib/datetime';
 
 type BoqItem = {
     id: string;
@@ -275,7 +276,7 @@ export default function Show({
                                 <dt className="text-sm font-medium text-muted-foreground">{t('table.submitted')}</dt>
                                 <dd className="mt-1 text-sm">
                                     {bid.submitted_at
-                                        ? new Date(bid.submitted_at).toLocaleString()
+                                        ? formatDateTime(bid.submitted_at)
                                         : t('status.not_submitted')}
                                 </dd>
                             </div>

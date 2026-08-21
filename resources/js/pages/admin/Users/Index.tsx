@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { formatDate } from '@/lib/datetime';
 import UserFormDialog from './Form';
 
 type PaginatedData<T> = {
@@ -98,7 +99,7 @@ export default function Index({ users, roles, filters }: Props) {
             key: 'last_login_at',
             label: t('table.last_login'),
             sortable: true,
-            render: (value: string | null) => value ? new Date(value).toLocaleDateString() : t('table.never'),
+            render: (value: string | null) => value ? formatDate(value) : t('table.never'),
         },
     ];
 

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { toDateInput } from '@/lib/utils';
+import { toDateInput } from '@/lib/datetime';
 
 type AssignedUser = {
     user_id: string;

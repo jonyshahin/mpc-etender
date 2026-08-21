@@ -6,6 +6,7 @@ import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatDate } from '@/lib/datetime';
 import { useState, FormEvent } from 'react';
 
 type PaginatedData<T> = {
@@ -80,7 +81,7 @@ export default function Index({ tenders, filters }: Props) {
             label: t('table.deadline'),
             sortable: true,
             render: (value: string) => (
-                <span className="text-sm">{new Date(value).toLocaleDateString()}</span>
+                <span className="text-sm">{formatDate(value)}</span>
             ),
         },
         {

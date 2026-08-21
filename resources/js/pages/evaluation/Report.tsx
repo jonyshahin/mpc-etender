@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { formatDateTime } from '@/lib/datetime';
 import { Trophy, FileText, Download, Send, BarChart3 } from 'lucide-react';
 
 type RankingRow = {
@@ -204,7 +205,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                 <Badge variant="outline">{report.status}</Badge>
                             </div>
                             <CardDescription>
-                                Generated on {new Date(report.generated_at).toLocaleString()}
+                                Generated on {formatDateTime(report.generated_at)}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">

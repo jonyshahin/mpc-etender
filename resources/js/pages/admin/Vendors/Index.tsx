@@ -15,6 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate } from '@/lib/datetime';
 import { VendorFormDialog } from './Form';
 import type { Category } from './Form';
 
@@ -121,11 +122,7 @@ export default function Index({ vendors, filters, categories, canCreate }: Props
             label: t('table.registered'),
             sortable: true,
             render: (value: string) =>
-                new Date(value).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                }),
+                formatDate(value, 'en-US'),
         },
         {
             key: 'actions',

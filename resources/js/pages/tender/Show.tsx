@@ -36,6 +36,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { formatDateTime, formatDeadline, fromDateTimeLocalInput } from '@/lib/datetime';
 
 type BoqItem = {
     id: string;
@@ -132,9 +133,6 @@ type Props = {
 
 const TABS = ['Overview', 'BOQ', 'Documents', 'Addenda', 'Clarifications', 'Evaluation'] as const;
 
-function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleString();
-}
 
 function formatFileSize(bytes: number) {
     if (bytes < 1024) return `${bytes} B`;
@@ -238,6 +236,12 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
 
     function handleAddAddendum(e: React.FormEvent) {
         e.preventDefault();
+        // Both controls hold project-zone wall clocks (see lib/datetime).
+        addendumForm.transform((data) => ({
+            ...data,
+            new_deadline: fromDateTimeLocalInput(data.new_deadline),
+            new_opening_date: fromDateTimeLocalInput(data.new_opening_date),
+        }));
         addendumForm.post(`/tenders/${tender.id}/addenda`, {
             preserveScroll: true,
             onSuccess: () => addendumForm.reset(),
@@ -346,25 +350,25 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                 <div className="flex items-center gap-4 text-sm">
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                        <span>{t('tender.created')}: {formatDate(tender.created_at)}</span>
+                                        <span>{t('tender.created')}: {formatDateTime(tender.created_at)}</span>
                                     </div>
                                     {tender.publish_date && (
                                         <div className="flex items-center gap-2">
                                             <Send className="h-4 w-4 text-blue-500" />
                                             <span>
-                                                {t('tender.published_on')}: {formatDate(tender.publish_date)}
+                                                {t('tender.published_on')}: {formatDateTime(tender.publish_date)}
                                             </span>
                                         </div>
                                     )}
                                     <div className="flex items-center gap-2">
                                         <Clock className="h-4 w-4 text-orange-500" />
                                         <span>
-                                            {t('tender.deadline')}: {formatDate(tender.submission_deadline)}
+                                            {t('tender.deadline')}: {formatDeadline(tender.submission_deadline)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-purple-500" />
-                                        <span>{t('tender.opening')}: {formatDate(tender.opening_date)}</span>
+                                        <span>{t('tender.opening')}: {formatDeadline(tender.opening_date)}</span>
                                     </div>
                                 </div>
                             </CardContent>
@@ -747,7 +751,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                                     {formatFileSize(doc.file_size)}
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    {formatDate(doc.created_at)}
+                                                    {formatDateTime(doc.created_at)}
                                                 </td>
                                             </tr>
                                         ))}
@@ -839,7 +843,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                                 {addendum.subject}
                                             </CardTitle>
                                             <span className="text-sm text-muted-foreground">
-                                                {formatDate(addendum.published_at)}
+                                                {formatDateTime(addendum.published_at)}
                                             </span>
                                         </div>
                                     </CardHeader>
@@ -1003,7 +1007,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                                             </span>
                                                         )}
                                                         <span className="text-xs text-muted-foreground">
-                                                            {formatDate(c.asked_at)}
+                                                            {formatDateTime(c.asked_at)}
                                                         </span>
                                                         {c.is_published ? (
                                                             <Badge
@@ -1032,7 +1036,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                                     </span>
                                                     {c.answered_at && (
                                                         <span className="text-xs text-muted-foreground ml-2">
-                                                            {formatDate(c.answered_at)}
+                                                            {formatDateTime(c.answered_at)}
                                                         </span>
                                                     )}
                                                     <p className="text-sm mt-1">{c.answer}</p>

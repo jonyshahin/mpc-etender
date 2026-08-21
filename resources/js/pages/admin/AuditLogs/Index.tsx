@@ -19,6 +19,7 @@ import {
     CollapsibleTrigger,
     CollapsibleContent,
 } from '@/components/ui/collapsible';
+import { formatDateTime } from '@/lib/datetime';
 import { ChevronRight, ChevronDown, Filter, Search } from 'lucide-react';
 
 type AuditLog = {
@@ -138,7 +139,7 @@ export default function Index({ logs, filters }: Props) {
             label: t('table.timestamp'),
             render: (value: string) => (
                 <span className="text-sm text-muted-foreground">
-                    {new Date(value).toLocaleString()}
+                    {formatDateTime(value)}
                 </span>
             ),
         },

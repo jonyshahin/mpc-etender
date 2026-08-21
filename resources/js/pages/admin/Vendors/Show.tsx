@@ -47,6 +47,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type VendorDocument = {
     id: string;
@@ -98,11 +99,7 @@ function formatFileSize(bytes: number): string {
 
 function formatDate(value: string | null): string {
     if (!value) return '--';
-    return new Date(value).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    return formatDateInZone(value, 'en-US');
 }
 
 export default function Show({ vendor, documentUrls }: Props) {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/datetime';
 import { Lock, Unlock, Clock } from 'lucide-react';
 
 type Bid = {
@@ -100,7 +101,7 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
             key: 'submitted_at',
             label: t('table.submitted'),
             sortable: true,
-            render: (value: string) => new Date(value).toLocaleDateString(),
+            render: (value: string) => formatDate(value),
         },
     ];
 

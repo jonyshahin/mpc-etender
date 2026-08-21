@@ -95,7 +95,7 @@
             <td><span class="label">Reference</span> <span class="value">{{ $reference }}</span></td>
             <td class="text-right">
                 <span class="label">Issued on</span>
-                <span>{{ \Illuminate\Support\Carbon::parse($generatedAt)->format('j F Y') }}</span>
+                <span>{{ \Illuminate\Support\Carbon::parse($generatedAt)->timezone(config('mpc.timezone'))->format('j F Y') }}</span>
             </td>
         </tr>
     </table>

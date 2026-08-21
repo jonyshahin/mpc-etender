@@ -21,6 +21,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { formatDateTime } from '@/lib/datetime';
 import {
     ArrowLeft,
     CheckCircle,
@@ -366,7 +367,7 @@ export default function Show({ approval, projectUsers }: Props) {
                                                 </p>
                                             )}
                                             <p className="text-muted-foreground mt-1 text-xs">
-                                                {new Date(decision.decided_at).toLocaleString()}
+                                                {formatDateTime(decision.decided_at)}
                                             </p>
                                         </div>
                                     </div>

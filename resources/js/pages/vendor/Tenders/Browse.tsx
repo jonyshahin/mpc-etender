@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate } from '@/lib/datetime';
 
 type PaginatedData<T> = {
     data: T[];
@@ -111,7 +112,7 @@ export default function Browse({ tenders, filters }: Props) {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Calendar className="h-4 w-4 text-muted-foreground" />
                                                 <span>
-                                                    {new Date(tender.submission_deadline).toLocaleDateString()}
+                                                    {formatDate(tender.submission_deadline)}
                                                 </span>
                                                 <span className={deadline.className}>
                                                     ({deadline.text})

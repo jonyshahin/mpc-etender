@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type CategoryItem = {
     category_id: string;
@@ -58,11 +59,7 @@ type Props = {
 
 function formatDate(value: string | null): string {
     if (!value) return '—';
-    return new Date(value).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    return formatDateInZone(value);
 }
 
 function formatFileSize(bytes: number): string {
