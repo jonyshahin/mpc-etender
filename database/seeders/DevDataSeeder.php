@@ -47,7 +47,7 @@ class DevDataSeeder extends Seeder
         [$ahmed, $fatima, $vendor3] = $this->seedVendors();
 
         $this->command->info('→ DevDataSeeder: project + tenders');
-        $admin = User::where('email', 'admin@mpc-group.com')->firstOrFail();
+        $admin = User::where('email', AdminUserSeeder::EMAIL)->firstOrFail();
         $project = $this->seedProject($admin);
 
         $civilWorks = Category::where('name_en', 'Civil Works')->firstOrFail();
