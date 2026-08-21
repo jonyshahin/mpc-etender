@@ -29,7 +29,12 @@
             }
         </style>
 
-        <link rel="icon" href="/mpc-logo.png" type="image/png">
+        {{-- Both generated from public/mpc-logo.png: the .ico carries 16/32/48px
+             rasters for the tab strip and bookmarks, the .svg the same mark at
+             any size for browsers that prefer it. Serving the 2000x2000 source
+             as the favicon cost 207KB on every page load. --}}
+        <link rel="icon" href="/favicon.ico" sizes="32x32">
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/mpc-logo.png">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
