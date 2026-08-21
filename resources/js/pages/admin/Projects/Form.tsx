@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { toDateInput } from '@/lib/utils';
 
 type AssignedUser = {
     user_id: string;
@@ -57,8 +58,8 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
         location: project.location ?? '',
         client_name: project.client_name ?? '',
         status: project.status,
-        start_date: project.start_date ?? '',
-        end_date: project.end_date ?? '',
+        start_date: toDateInput(project.start_date),
+        end_date: toDateInput(project.end_date),
     });
 
     const [newUserId, setNewUserId] = useState('');

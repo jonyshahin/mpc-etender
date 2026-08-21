@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { toDateTimeLocalInput } from '@/lib/utils';
 
 type Category = {
     id: string;
@@ -89,12 +90,12 @@ export default function Edit({ tender, projects, categories, tenderCategoryIds }
         tender_type: tender.tender_type,
         estimated_value: tender.estimated_value ?? '',
         currency: tender.currency,
-        submission_deadline: tender.submission_deadline,
-        opening_date: tender.opening_date,
+        submission_deadline: toDateTimeLocalInput(tender.submission_deadline),
+        opening_date: toDateTimeLocalInput(tender.opening_date),
         is_two_envelope: tender.is_two_envelope,
         technical_pass_score: tender.technical_pass_score ?? '',
         requires_site_visit: tender.requires_site_visit,
-        site_visit_date: tender.site_visit_date ?? '',
+        site_visit_date: toDateTimeLocalInput(tender.site_visit_date),
         category_ids: tenderCategoryIds,
     });
 
