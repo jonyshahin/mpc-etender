@@ -17,6 +17,10 @@ class CategorySeeder extends Seeder
             'HVAC' => ['تكييف وتبريد', ['Ductwork' => 'مجاري هواء', 'Chillers' => 'مبردات']],
             'Roads & Infrastructure' => ['طرق وبنية تحتية', ['Asphalt' => 'أسفلت', 'Drainage' => 'تصريف', 'Utilities' => 'مرافق']],
             'Landscaping' => ['تنسيق حدائق', ['Irrigation' => 'ري', 'Hardscape' => 'أعمال صلبة', 'Softscape' => 'أعمال خضراء']],
+            // No children yet: a parent is selectable on its own (see
+            // flattenCategories in the tender and vendor pickers), so a flat
+            // entry is enough until the trade needs subdividing.
+            'Cleaning Services' => ['خدمات التنظيف', []],
         ];
 
         $sortOrder = 0;
