@@ -1,7 +1,4 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { useTranslation } from '@/hooks/use-translation';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -13,6 +10,9 @@ import {
     ExternalLink,
     FileText,
     Globe,
+    MoreHorizontal,
+    Trash2,
+    Upload,
     KeyRound,
     Phone,
     Mail,
@@ -20,11 +20,14 @@ import {
     User,
     Building2,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import Heading from '@/components/heading';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardHeader,
@@ -32,7 +35,6 @@ import {
     CardContent,
     CardDescription,
 } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogContent,
@@ -47,6 +49,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDate as formatDateInZone } from '@/lib/datetime';
 
 type VendorDocument = {
@@ -61,6 +73,8 @@ type VendorDocument = {
     status: string;
     review_notes: string | null;
     created_at: string;
+    /** Null when the vendor uploaded it themselves through the portal. */
+    uploader?: { id: string; name: string } | null;
 };
 
 type Vendor = {
@@ -88,6 +102,9 @@ type Vendor = {
 type Props = {
     vendor: Vendor;
     documentUrls: Record<string, string>;
+    /** Backed by the vendors.review_docs permission. */
+    canReviewDocuments: boolean;
+    documentTypes: Array<{ value: string; labelKey: string }>;
 };
 
 function formatFileSize(bytes: number): string {
@@ -102,7 +119,7 @@ function formatDate(value: string | null): string {
     return formatDateInZone(value, 'en-US');
 }
 
-export default function Show({ vendor, documentUrls }: Props) {
+export default function Show({ vendor, documentUrls, canReviewDocuments, documentTypes }: Props) {
     const { t } = useTranslation();
     const page = usePage();
     const temporaryPassword = (page.props as { flash?: { temporary_password?: string } }).flash?.temporary_password;
@@ -120,6 +137,56 @@ export default function Show({ vendor, documentUrls }: Props) {
     }, [temporaryPassword]);
 
     const rejectForm = useForm({ reason: '' });
+
+    const [uploadOpen, setUploadOpen] = useState(false);
+    const [rejectDocId, setRejectDocId] = useState<string | null>(null);
+    const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+
+    const uploadForm = useForm({
+        file: null as File | null,
+        document_type: '',
+        title: '',
+        issue_date: '',
+        expiry_date: '',
+    });
+    const docRejectForm = useForm({ reason: '' });
+
+    // forceFormData because the payload carries a File; Inertia would
+    // otherwise serialise it as JSON and drop the upload.
+    const submitUpload = (e: React.FormEvent) => {
+        e.preventDefault();
+        uploadForm.post(`/admin/vendors/${vendor.id}/documents`, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                uploadForm.reset();
+                setUploadOpen(false);
+            },
+        });
+    };
+
+    const approveDoc = (id: string) => {
+        router.put(`/admin/vendors/${vendor.id}/documents/${id}/approve`, {}, { preserveScroll: true });
+    };
+
+    const submitDocReject = () => {
+        if (!rejectDocId) return;
+        docRejectForm.put(`/admin/vendors/${vendor.id}/documents/${rejectDocId}/reject`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                docRejectForm.reset();
+                setRejectDocId(null);
+            },
+        });
+    };
+
+    const deleteDoc = () => {
+        if (!deleteDocId) return;
+        router.delete(`/admin/vendors/${vendor.id}/documents/${deleteDocId}`, {
+            preserveScroll: true,
+            onFinish: () => setDeleteDocId(null),
+        });
+    };
     const suspendForm = useForm({ reason: '' });
 
     function handleSendPasswordReset() {
@@ -383,13 +450,23 @@ export default function Show({ vendor, documentUrls }: Props) {
                 {/* Documents */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            {t('pages.admin.documents')}
-                        </CardTitle>
-                        <CardDescription>
-                            {t('pages.admin.vendor_documents_description')}
-                        </CardDescription>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5" />
+                                    {t('pages.admin.documents')}
+                                </CardTitle>
+                                <CardDescription>
+                                    {t('pages.admin.vendor_documents_description')}
+                                </CardDescription>
+                            </div>
+                            {canReviewDocuments && (
+                                <Button size="sm" onClick={() => setUploadOpen(true)}>
+                                    <Upload className="me-2 h-4 w-4" />
+                                    {t('btn.upload_document')}
+                                </Button>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {vendor.documents.length > 0 ? (
@@ -411,6 +488,13 @@ export default function Show({ vendor, documentUrls }: Props) {
                                             <tr key={doc.id} className="border-b last:border-0">
                                                 <td className="py-3 pr-4 font-medium">
                                                     {doc.title}
+                                                    {/* Absent for a vendor's own upload, which is the
+                                                        default and needs no annotation. */}
+                                                    {doc.uploader && (
+                                                        <span className="block text-xs font-normal text-muted-foreground">
+                                                            {t('vendor.doc_filed_by', { name: doc.uploader.name })}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="py-3 pr-4 capitalize">
                                                     {doc.document_type.replace(/_/g, ' ')}
@@ -428,17 +512,54 @@ export default function Show({ vendor, documentUrls }: Props) {
                                                     {formatFileSize(doc.file_size)}
                                                 </td>
                                                 <td className="py-3">
-                                                    {documentUrls[doc.id] && (
-                                                        <a
-                                                            href={documentUrls[doc.id]}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 text-primary hover:underline"
-                                                        >
-                                                            <ExternalLink className="h-3.5 w-3.5" />
-                                                            {t('btn.view')}
-                                                        </a>
-                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        {documentUrls[doc.id] && (
+                                                            <a
+                                                                href={documentUrls[doc.id]}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 text-primary hover:underline"
+                                                            >
+                                                                <ExternalLink className="h-3.5 w-3.5" />
+                                                                {t('btn.view')}
+                                                            </a>
+                                                        )}
+                                                        {canReviewDocuments && (
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-7 w-7"
+                                                                        aria-label={t('table.actions')}
+                                                                    >
+                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    {doc.status !== 'approved' && (
+                                                                        <DropdownMenuItem onSelect={() => approveDoc(doc.id)}>
+                                                                            <CheckCircle className="me-2 h-4 w-4" />
+                                                                            {t('btn.approve')}
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    {doc.status !== 'rejected' && (
+                                                                        <DropdownMenuItem onSelect={() => setRejectDocId(doc.id)}>
+                                                                            <XCircle className="me-2 h-4 w-4" />
+                                                                            {t('btn.reject')}
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuItem
+                                                                        onSelect={() => setDeleteDocId(doc.id)}
+                                                                        className="text-destructive focus:text-destructive"
+                                                                    >
+                                                                        <Trash2 className="me-2 h-4 w-4" />
+                                                                        {t('btn.delete')}
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -607,6 +728,154 @@ export default function Show({ vendor, documentUrls }: Props) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            {/* Filing a document the vendor handed over. Recorded as approved
+                with the filer named — see VendorDocumentService::uploadForVendor. */}
+            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+                <DialogContent>
+                    <form onSubmit={submitUpload}>
+                        <DialogHeader>
+                            <DialogTitle>{t('dialog.upload_vendor_document')}</DialogTitle>
+                            <DialogDescription>
+                                {t('dialog.upload_vendor_document_desc', { name: vendor.company_name })}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid gap-4 py-4">
+                            <div>
+                                <Label htmlFor="doc-type">{t('form.document_type')}</Label>
+                                <Select
+                                    value={uploadForm.data.document_type}
+                                    onValueChange={(value) => uploadForm.setData('document_type', value)}
+                                >
+                                    <SelectTrigger id="doc-type" className="mt-1.5">
+                                        <SelectValue placeholder={t('form.select_document_type')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {documentTypes.map((dt) => (
+                                            <SelectItem key={dt.value} value={dt.value}>
+                                                {t(dt.labelKey)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {uploadForm.errors.document_type && (
+                                    <p className="mt-1 text-sm text-destructive">{uploadForm.errors.document_type}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="doc-title">{t('form.title')}</Label>
+                                <Input
+                                    id="doc-title"
+                                    className="mt-1.5"
+                                    value={uploadForm.data.title}
+                                    onChange={(e) => uploadForm.setData('title', e.target.value)}
+                                />
+                                {uploadForm.errors.title && (
+                                    <p className="mt-1 text-sm text-destructive">{uploadForm.errors.title}</p>
+                                )}
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <Label htmlFor="doc-issue">{t('form.issue_date')}</Label>
+                                    <Input
+                                        id="doc-issue"
+                                        type="date"
+                                        className="mt-1.5"
+                                        value={uploadForm.data.issue_date}
+                                        onChange={(e) => uploadForm.setData('issue_date', e.target.value)}
+                                    />
+                                    {uploadForm.errors.issue_date && (
+                                        <p className="mt-1 text-sm text-destructive">{uploadForm.errors.issue_date}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="doc-expiry">{t('form.expiry_date')}</Label>
+                                    <Input
+                                        id="doc-expiry"
+                                        type="date"
+                                        className="mt-1.5"
+                                        value={uploadForm.data.expiry_date}
+                                        onChange={(e) => uploadForm.setData('expiry_date', e.target.value)}
+                                    />
+                                    {uploadForm.errors.expiry_date && (
+                                        <p className="mt-1 text-sm text-destructive">{uploadForm.errors.expiry_date}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="doc-file">{t('form.file')}</Label>
+                                <Input
+                                    id="doc-file"
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="mt-1.5"
+                                    onChange={(e) => uploadForm.setData('file', e.target.files?.[0] ?? null)}
+                                />
+                                <p className="mt-1 text-xs text-muted-foreground">{t('form.pdf_only_hint')}</p>
+                                {uploadForm.errors.file && (
+                                    <p className="mt-1 text-sm text-destructive">{uploadForm.errors.file}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setUploadOpen(false)}>
+                                {t('btn.cancel')}
+                            </Button>
+                            <Button type="submit" disabled={uploadForm.processing}>
+                                {uploadForm.processing ? t('btn.uploading') : t('btn.upload')}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={rejectDocId !== null} onOpenChange={(open) => !open && setRejectDocId(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('dialog.reject_document')}</DialogTitle>
+                        <DialogDescription>{t('dialog.reject_document_desc')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="doc-reject-reason">{t('form.reason')}</Label>
+                        <textarea
+                            id="doc-reject-reason"
+                            className="mt-1.5 flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            placeholder={t('form.enter_rejection_reason')}
+                            value={docRejectForm.data.reason}
+                            onChange={(e) => docRejectForm.setData('reason', e.target.value)}
+                        />
+                        {docRejectForm.errors.reason && (
+                            <p className="mt-1 text-sm text-destructive">{docRejectForm.errors.reason}</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRejectDocId(null)}>
+                            {t('btn.cancel')}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={submitDocReject}
+                            disabled={docRejectForm.processing}
+                        >
+                            {t('btn.reject')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={deleteDocId !== null}
+                onOpenChange={(open) => !open && setDeleteDocId(null)}
+                title={t('dialog.delete_document')}
+                description={t('dialog.delete_document_desc')}
+                confirmLabel={t('btn.delete')}
+                variant="destructive"
+                onConfirm={deleteDoc}
+            />
         </>
     );
 }

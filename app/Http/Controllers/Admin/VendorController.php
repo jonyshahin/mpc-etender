@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\DocumentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreVendorRequest;
 use App\Http\Requests\Admin\VendorPrequalificationRequest;
@@ -100,10 +101,10 @@ class VendorController extends Controller
             ->with('vendor_temp_password', ['vendor_id' => $vendor->id, 'value' => $temp]);
     }
 
-    public function show(Vendor $vendor): Response
+    public function show(Request $request, Vendor $vendor): Response
     {
         $vendor->load([
-            'documents' => fn ($q) => $q->orderByDesc('created_at'),
+            'documents' => fn ($q) => $q->with('uploader:id,name')->orderByDesc('created_at'),
             'categories:id,name_en,name_ar',
             'qualifiedBy:id,name',
         ]);
@@ -116,6 +117,9 @@ class VendorController extends Controller
         return Inertia::render('admin/Vendors/Show', [
             'vendor' => $vendor,
             'documentUrls' => $documentUrls,
+            // Gates the upload form and the approve/reject controls.
+            'canReviewDocuments' => $request->user()->can('reviewDocuments', Vendor::class),
+            'documentTypes' => DocumentType::options(),
         ]);
     }
 

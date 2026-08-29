@@ -172,6 +172,10 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | POST | `/admin/vendors/{vendor}/send-password-reset` | `admin.vendors.send-password-reset` | Email a reset link to the vendor |
 | POST | `/admin/vendors/{vendor}/force-temporary-password` | `admin.vendors.force-temporary-password` | Set a temporary password, shown once |
 | POST | `/admin/vendors/{vendor}/reissue-password` | `admin.vendors.reissue-password` | Mint a new temporary password and return to the letter with it (requires `vendors.update`) |
+| POST | `/admin/vendors/{vendor}/documents` | `admin.vendors.documents.store` | File a prequalification document on the vendor's behalf (requires `vendors.review_docs`) |
+| PUT | `/admin/vendors/{vendor}/documents/{document}/approve` | `admin.vendors.documents.approve` | Accept a document the vendor uploaded (requires `vendors.review_docs`) |
+| PUT | `/admin/vendors/{vendor}/documents/{document}/reject` | `admin.vendors.documents.reject` | Reject a document; `reason` required and shown to the vendor (requires `vendors.review_docs`) |
+| DELETE | `/admin/vendors/{vendor}/documents/{document}` | `admin.vendors.documents.destroy` | Remove a document and its stored file (requires `vendors.review_docs`) |
 
 `confirmation` renders `admin/Vendors/Confirmation` — a layout-less printable
 sheet listing the vendor's company details, contact person, categories and
@@ -208,6 +212,33 @@ to the letter with the new password on it. The previous password stops working �
 which is the intended behaviour, since a reprint usually means the first copy was
 lost. The letter surfaces the action only on a reprint and only to admins holding
 `vendors.update`, and explains on screen why the password is absent.
+
+### Vendor documents
+
+Vendors are onboarded by admins rather than registering themselves, so most
+prequalification paperwork arrives by hand or email and never passes through the
+vendor portal. `documents.store` is how it gets on file.
+
+A document an admin files is recorded as **approved**, with `uploaded_by` and
+`reviewed_by` both naming them: the admin received the paperwork directly, so
+filing it is the verification. A vendor's own upload lands as `pending` with
+`uploaded_by` null, and an admin approving it later sets only `reviewed_by` —
+the two columns stay distinguishable in an audit.
+
+Both paths run through `VendorDocumentService`, write to the same
+`vendors/{id}/documents` S3 prefix and enforce the same PDF-only, 5 MB policy
+(`App\Rules\PdfFile`), so a document is not identifiable later by which route it
+came in through. Every action writes an `AuditLog` row scoped to the vendor:
+`vendor_document_filed_by_admin`, `vendor_document_uploaded`,
+`vendor_document_approved`, `vendor_document_rejected`, `vendor_document_deleted`.
+
+`{document}` is bound independently of `{vendor}`, so each route asserts the
+document belongs to the vendor in the URL and 404s otherwise.
+
+Document types come from `App\Enums\DocumentType` and are served to both pickers
+as `documentTypes`. They were previously hardcoded in the React page and
+duplicated as an `in:` list in the FormRequest; the two had drifted, so four of
+the eight options the vendor was offered failed validation on submit.
 
 ## Administration (prefix: `/admin`)
 

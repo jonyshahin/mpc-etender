@@ -29,6 +29,12 @@ type VendorDocument = {
 
 type Props = {
     documents: VendorDocument[];
+    /**
+     * Served from App\Enums\DocumentType so the picker cannot drift from what
+     * validation accepts. It had: four of the eight options hardcoded here were
+     * rejected on submit.
+     */
+    documentTypes: Array<{ value: string; labelKey: string }>;
 };
 
 function formatDate(date: string | null): string {
@@ -42,20 +48,9 @@ function formatFileSize(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const DOCUMENT_TYPE_KEYS = [
-    { value: 'trade_license', key: 'vendor.doc_type_trade_license' },
-    { value: 'tax_certificate', key: 'vendor.doc_type_tax_certificate' },
-    { value: 'insurance', key: 'vendor.doc_type_insurance' },
-    { value: 'financial_statement', key: 'vendor.doc_type_financial_statement' },
-    { value: 'bank_reference', key: 'vendor.doc_type_bank_reference' },
-    { value: 'experience_certificate', key: 'vendor.doc_type_experience_certificate' },
-    { value: 'iso_certificate', key: 'vendor.doc_type_iso_certificate' },
-    { value: 'other', key: 'vendor.doc_type_other' },
-];
-
-export default function Index({ documents }: Props) {
+export default function Index({ documents, documentTypes }: Props) {
     const { t } = useTranslation();
-    const DOCUMENT_TYPES = DOCUMENT_TYPE_KEYS.map((dt) => ({ value: dt.value, label: t(dt.key) }));
+    const DOCUMENT_TYPES = documentTypes.map((dt) => ({ value: dt.value, label: t(dt.labelKey) }));
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const uploadForm = useForm({

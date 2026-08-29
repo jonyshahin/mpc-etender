@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Prequalification document uploaded by a vendor, subject to review.
  *
- * Relationships: vendor, reviewer.
+ * Relationships: vendor, uploader, reviewer.
  */
 class VendorDocument extends Model
 {
@@ -26,6 +26,7 @@ class VendorDocument extends Model
 
     protected $fillable = [
         'vendor_id',
+        'uploaded_by',
         'document_type',
         'title',
         'file_path',
@@ -53,6 +54,12 @@ class VendorDocument extends Model
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    /** The MPC user who filed this on the vendor's behalf; null if the vendor did. */
+    public function uploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 
     public function reviewer(): BelongsTo

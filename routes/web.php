@@ -232,6 +232,13 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin
     Route::post('vendors/{vendor}/force-temporary-password', [Admin\VendorController::class, 'forceTemporaryPassword'])->name('vendors.force-temporary-password');
     Route::post('vendors/{vendor}/reissue-password', [Admin\VendorController::class, 'reissuePassword'])->name('vendors.reissue-password');
 
+    // Prequalification documents. Vendors are onboarded by admins, so most
+    // paperwork arrives by hand and never passes through the vendor portal.
+    Route::post('vendors/{vendor}/documents', [Admin\VendorDocumentController::class, 'store'])->name('vendors.documents.store');
+    Route::put('vendors/{vendor}/documents/{document}/approve', [Admin\VendorDocumentController::class, 'approve'])->name('vendors.documents.approve');
+    Route::put('vendors/{vendor}/documents/{document}/reject', [Admin\VendorDocumentController::class, 'reject'])->name('vendors.documents.reject');
+    Route::delete('vendors/{vendor}/documents/{document}', [Admin\VendorDocumentController::class, 'destroy'])->name('vendors.documents.destroy');
+
     // Vendor category change requests — admin review queue
     Route::get('vendor-category-requests', [Admin\VendorCategoryRequestController::class, 'index'])->name('vendor-category-requests.index');
     Route::get('vendor-category-requests/{categoryRequest}', [Admin\VendorCategoryRequestController::class, 'show'])->name('vendor-category-requests.show');
