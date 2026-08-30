@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\DocumentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreVendorRequest;
+use App\Http\Requests\Admin\UpdateVendorRequest;
 use App\Http\Requests\Admin\VendorPrequalificationRequest;
 use App\Models\AuditLog;
 use App\Models\Category;
@@ -101,6 +102,22 @@ class VendorController extends Controller
             ->with('vendor_temp_password', ['vendor_id' => $vendor->id, 'value' => $temp]);
     }
 
+    /**
+     * Correct a vendor's details.
+     *
+     * The only way to change them: vendors are onboarded by admins and the
+     * portal gives a vendor no way to edit their own company record, so a typo
+     * in a licence number or a changed contact person had nowhere to go.
+     */
+    public function update(UpdateVendorRequest $request, Vendor $vendor): RedirectResponse
+    {
+        $this->vendorService->updateByAdmin($vendor, $request->validated(), $request->user());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Vendor updated successfully.')]);
+
+        return back();
+    }
+
     public function show(Request $request, Vendor $vendor): Response
     {
         $vendor->load([
@@ -120,6 +137,14 @@ class VendorController extends Controller
             // Gates the upload form and the approve/reject controls.
             'canReviewDocuments' => $request->user()->can('reviewDocuments', Vendor::class),
             'documentTypes' => DocumentType::options(),
+            // Gates the Edit button and feeds the form it opens.
+            'canUpdate' => $request->user()->can('update', $vendor),
+            'categories' => Category::active()
+                ->roots()
+                ->with('children:id,name_en,name_ar,parent_id')
+                ->orderBy('sort_order')
+                ->get(['id', 'name_en', 'name_ar', 'parent_id']),
+            'vendorCategoryIds' => $vendor->categories->pluck('id'),
         ]);
     }
 

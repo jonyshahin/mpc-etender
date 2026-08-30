@@ -11,6 +11,7 @@ import {
     FileText,
     Globe,
     MoreHorizontal,
+    Pencil,
     Trash2,
     Upload,
     KeyRound,
@@ -61,6 +62,8 @@ import {
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate as formatDateInZone } from '@/lib/datetime';
 import { maxUploadLabel } from '@/lib/uploads';
+import { VendorFormDialog  } from './Form';
+import type {Category as FormCategory} from './Form';
 
 type VendorDocument = {
     id: string;
@@ -106,6 +109,10 @@ type Props = {
     /** Backed by the vendors.review_docs permission. */
     canReviewDocuments: boolean;
     documentTypes: Array<{ value: string; labelKey: string }>;
+    /** Backed by the vendors.update permission. */
+    canUpdate: boolean;
+    categories: FormCategory[];
+    vendorCategoryIds: string[];
 };
 
 function formatFileSize(bytes: number): string {
@@ -120,7 +127,15 @@ function formatDate(value: string | null): string {
     return formatDateInZone(value, 'en-US');
 }
 
-export default function Show({ vendor, documentUrls, canReviewDocuments, documentTypes }: Props) {
+export default function Show({
+    vendor,
+    documentUrls,
+    canReviewDocuments,
+    documentTypes,
+    canUpdate,
+    categories,
+    vendorCategoryIds,
+}: Props) {
     const { t } = useTranslation();
     const page = usePage();
     const temporaryPassword = (page.props as { flash?: { temporary_password?: string } }).flash?.temporary_password;
@@ -139,6 +154,7 @@ export default function Show({ vendor, documentUrls, canReviewDocuments, documen
 
     const rejectForm = useForm({ reason: '' });
 
+    const [editOpen, setEditOpen] = useState(false);
     const [uploadOpen, setUploadOpen] = useState(false);
     const [rejectDocId, setRejectDocId] = useState<string | null>(null);
     const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
@@ -260,6 +276,15 @@ export default function Show({ vendor, documentUrls, canReviewDocuments, documen
                     </div>
 
                     <div className="flex gap-2">
+                        {/* The only way to correct a vendor's details: they are
+                            onboarded by admins and the portal gives them no way to
+                            edit their own company record. */}
+                        {canUpdate && (
+                            <Button variant="outline" onClick={() => setEditOpen(true)}>
+                                <Pencil className="me-2 h-4 w-4" />
+                                {t('btn.edit')}
+                            </Button>
+                        )}
                         {vendor.prequalification_status !== 'qualified' && (
                             <Button
                                 onClick={handleApprove}
@@ -867,6 +892,16 @@ export default function Show({ vendor, documentUrls, canReviewDocuments, documen
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {editOpen && (
+                <VendorFormDialog
+                    open={editOpen}
+                    onClose={() => setEditOpen(false)}
+                    categories={categories}
+                    vendor={vendor}
+                    categoryIds={vendorCategoryIds}
+                />
+            )}
 
             <ConfirmDialog
                 open={deleteDocId !== null}

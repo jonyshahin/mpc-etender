@@ -164,6 +164,7 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | GET | `/admin/vendors` | `admin.vendors.index` | List all vendors |
 | POST | `/admin/vendors` | `admin.vendors.store` | Onboard a new vendor (requires `vendors.create`) |
 | GET | `/admin/vendors/{vendor}` | `admin.vendors.show` | Vendor detail view |
+| PUT | `/admin/vendors/{vendor}` | `admin.vendors.update` | Correct company details, contact person and categories (requires `vendors.update`) |
 | GET | `/admin/vendors/{vendor}/confirmation` | `admin.vendors.confirmation` | Printable application-confirmation sheet with QR code (requires `vendors.view`) |
 | GET | `/admin/vendors/{vendor}/confirmation.pdf` | `admin.vendors.confirmation.pdf` | Same letter as a downloadable PDF (requires `vendors.view`) |
 | PUT | `/admin/vendors/{vendor}/prequalify` | `admin.vendors.prequalify` | Approve vendor |
@@ -212,6 +213,34 @@ to the letter with the new password on it. The previous password stops working �
 which is the intended behaviour, since a reprint usually means the first copy was
 lost. The letter surfaces the action only on a reprint and only to admins holding
 `vendors.update`, and explains on screen why the password is absent.
+
+### Editing a vendor
+
+`update` is the only way a vendor record changes. Vendors are onboarded by
+admins and the portal gives a vendor no way to edit their own company details,
+so before this a typo in a licence number or a changed contact person had
+nowhere to go.
+
+`VendorService::updateByAdmin()` is deliberately narrow: it writes the fields on
+the admin form plus the category assignment, and nothing else. Prequalification
+status, `is_active` and credentials each have their own action with their own
+audit row — folding them in here would let a routine typo fix quietly change a
+vendor's standing or lock them out. Posting those fields anyway has no effect,
+since the service is handed `$request->validated()`.
+
+Two of the editable fields are not cosmetic:
+
+- **`email` is the vendor's login identity**, so changing it changes who can
+  sign in. Its uniqueness rule ignores the vendor's own row, or saving an
+  untouched form would fail against the record it is saving.
+- **`category_ids` decides tender eligibility.** It is `sync()`ed, so an edit
+  removes categories as well as adding them. This is the admin-side counterpart
+  to the vendor-initiated `vendor_category_requests` queue, not a replacement
+  for it.
+
+The `vendor_updated_by_admin` audit row carries only the fields that actually
+moved, categories included. An unchanged save writes no row at all — an audit
+trail full of no-ops buries the changes worth finding.
 
 ### Arabic in the PDFs
 

@@ -6,6 +6,7 @@ use App\Enums\VendorStatus;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Vendor;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -70,6 +71,78 @@ class VendorService
             ]);
 
             return $vendor;
+        });
+    }
+
+    /**
+     * Correct a vendor's details on their behalf.
+     *
+     * Deliberately narrow: it writes the fields on the admin form and the
+     * category assignment, and nothing else. Prequalification status,
+     * credentials and is_active each have their own action with their own
+     * audit row, and folding them in here would let a routine typo fix quietly
+     * change a vendor's standing.
+     *
+     * Two of these fields are not cosmetic. `email` is the vendor's login
+     * identity, so changing it changes who can sign in; `category_ids` decides
+     * which tenders they are eligible for. Both show up in the diff below.
+     *
+     * @param  array  $data  Validated data from Admin\UpdateVendorRequest
+     * @param  User  $editor  The admin making the change
+     */
+    public function updateByAdmin(Vendor $vendor, array $data, User $editor): Vendor
+    {
+        return DB::transaction(function () use ($vendor, $data, $editor) {
+            $categoryIds = $data['category_ids'] ?? null;
+            unset($data['category_ids']);
+
+            // Captured before update() — Eloquent resyncs $original on save, so
+            // getOriginal() afterwards returns the value just written.
+            $before = $vendor->only(array_keys($data));
+            $categoriesBefore = $vendor->categories()->pluck('categories.id')->sort()->values()->all();
+
+            $vendor->update($data);
+
+            if ($categoryIds !== null) {
+                // sync(), not attach(): an edit removes categories as well as
+                // adding them. The pivot is a UuidPivot, so its key is generated.
+                $vendor->categories()->sync($categoryIds);
+            }
+
+            $after = $vendor->only(array_keys($data));
+            $categoriesAfter = $vendor->categories()->pluck('categories.id')->sort()->values()->all();
+
+            // Only what actually moved. An audit row listing every field on
+            // every save buries the one thing a reader came looking for.
+            $changed = array_keys(array_diff_assoc(
+                array_map(strval(...), $after),
+                array_map(strval(...), $before),
+            ));
+
+            if ($categoriesBefore !== $categoriesAfter) {
+                $changed[] = 'category_ids';
+                $before['category_ids'] = $categoriesBefore;
+                $after['category_ids'] = $categoriesAfter;
+            }
+
+            if ($changed === []) {
+                return $vendor->refresh();
+            }
+
+            AuditLog::create([
+                'user_id' => $editor->id,
+                'vendor_id' => $vendor->id,
+                'auditable_type' => Vendor::class,
+                'auditable_id' => $vendor->id,
+                'action' => 'vendor_updated_by_admin',
+                'old_values' => Arr::only($before, $changed),
+                'new_values' => Arr::only($after, $changed),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'created_at' => now(),
+            ]);
+
+            return $vendor->refresh();
         });
     }
 

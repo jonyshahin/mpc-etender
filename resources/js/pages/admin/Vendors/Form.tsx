@@ -29,10 +29,31 @@ export type Category = {
     children?: Category[];
 };
 
+/** The subset of a vendor this form writes. */
+export type EditableVendor = {
+    id: string;
+    company_name: string;
+    company_name_ar: string | null;
+    trade_license_no: string;
+    address: string | null;
+    city: string | null;
+    country: string | null;
+    website: string | null;
+    contact_person: string;
+    email: string;
+    phone: string | null;
+    whatsapp_number: string | null;
+    language_pref?: string | null;
+};
+
 type Props = {
     categories: Category[];
     open: boolean;
     onClose: () => void;
+    /** Present to edit that vendor; absent to onboard a new one. */
+    vendor?: EditableVendor | null;
+    /** The vendor's current categories, for the edit case. */
+    categoryIds?: string[];
 };
 
 /** Arabic name when reading Arabic, else the English one. There is no ku column. */
@@ -57,35 +78,45 @@ function toOptions(categories: Category[], locale: string): Array<{ value: strin
 }
 
 /**
- * Admin-side vendor onboarding form.
+ * Admin-side vendor form, for both onboarding and later corrections.
  *
- * Deliberately has no password field: the server generates a temporary
- * password and surfaces it once on the vendor detail page after redirect.
+ * Deliberately has no password field. On create the server generates a
+ * temporary password and surfaces it once on the vendor detail page; on edit
+ * credentials are left alone entirely, so a typo fix cannot lock a vendor out
+ * — reissuing is its own action with its own audit row.
  */
-function VendorForm({ categories, onClose }: Omit<Props, 'open'>) {
+function VendorForm({ categories, onClose, vendor, categoryIds }: Omit<Props, 'open'>) {
     const { t, locale } = useTranslation();
+    const editing = Boolean(vendor);
 
+    // Null columns become '' — a controlled input handed null warns and then
+    // switches itself to uncontrolled on the first keystroke.
     const form = useForm({
-        company_name: '',
-        company_name_ar: '',
-        trade_license_no: '',
-        address: '',
-        city: '',
-        country: '',
-        website: '',
-        contact_person: '',
-        email: '',
-        phone: '',
-        whatsapp_number: '',
-        language_pref: 'en',
-        category_ids: [] as string[],
+        company_name: vendor?.company_name ?? '',
+        company_name_ar: vendor?.company_name_ar ?? '',
+        trade_license_no: vendor?.trade_license_no ?? '',
+        address: vendor?.address ?? '',
+        city: vendor?.city ?? '',
+        country: vendor?.country ?? '',
+        website: vendor?.website ?? '',
+        contact_person: vendor?.contact_person ?? '',
+        email: vendor?.email ?? '',
+        phone: vendor?.phone ?? '',
+        whatsapp_number: vendor?.whatsapp_number ?? '',
+        language_pref: vendor?.language_pref ?? 'en',
+        category_ids: (categoryIds ?? []) as string[],
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        form.post('/admin/vendors', {
-            onSuccess: () => onClose(),
-        });
+
+        if (vendor) {
+            form.put(`/admin/vendors/${vendor.id}`, { onSuccess: () => onClose() });
+
+            return;
+        }
+
+        form.post('/admin/vendors', { onSuccess: () => onClose() });
     };
 
     const error = (field: keyof typeof form.errors) =>
@@ -238,26 +269,43 @@ function VendorForm({ categories, onClose }: Omit<Props, 'open'>) {
                     {t('btn.cancel')}
                 </Button>
                 <Button type="submit" disabled={form.processing}>
-                    {form.processing ? t('btn.submitting') : t('btn.create_vendor')}
+                    {form.processing
+                        ? t('btn.submitting')
+                        : editing
+                          ? t('btn.save_changes')
+                          : t('btn.create_vendor')}
                 </Button>
             </div>
         </form>
     );
 }
 
-export function VendorFormDialog({ categories, open, onClose }: Props) {
+export function VendorFormDialog({ categories, open, onClose, vendor, categoryIds }: Props) {
     const { t } = useTranslation();
+    const editing = Boolean(vendor);
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{t('pages.admin.create_vendor')}</DialogTitle>
+                    <DialogTitle>
+                        {editing ? t('pages.admin.edit_vendor') : t('pages.admin.create_vendor')}
+                    </DialogTitle>
                     <DialogDescription>
-                        {t('pages.admin.create_vendor_description')}
+                        {editing
+                            ? t('pages.admin.edit_vendor_description')
+                            : t('pages.admin.create_vendor_description')}
                     </DialogDescription>
                 </DialogHeader>
-                <VendorForm categories={categories} onClose={onClose} />
+                {/* Keyed so reopening on a different vendor rebuilds the form
+                    state rather than keeping the previous one's values. */}
+                <VendorForm
+                    key={vendor?.id ?? 'new'}
+                    categories={categories}
+                    onClose={onClose}
+                    vendor={vendor}
+                    categoryIds={categoryIds}
+                />
             </DialogContent>
         </Dialog>
     );
