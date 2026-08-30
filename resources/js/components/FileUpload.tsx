@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
+import { maxUploadBytes, maxUploadLabel } from '@/lib/uploads';
 
 export type ExistingDoc = {
     id: string;
@@ -27,7 +28,7 @@ export type FileUploadProps = {
     allowedDocTypes: Array<{ value: string; label: string }>;
     /** Pre-fill the doc-type select. Vendor can still change it. */
     defaultDocType?: string;
-    /** Bytes. Default 5 MB to match BidDocumentRequest server-side cap. */
+    /** Bytes. Defaults to the server-injected POLICY-01 cap; see lib/uploads. */
     maxFileSize?: number;
     /** Default 'application/pdf'. Server-side mimes:pdf is the source of truth. */
     accept?: string;
@@ -37,7 +38,6 @@ export type FileUploadProps = {
     emptyMessage?: string;
 };
 
-const FIVE_MB = 5 * 1024 * 1024;
 
 function formatFileSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
@@ -51,7 +51,7 @@ export function FileUpload({
     existingFiles,
     allowedDocTypes,
     defaultDocType = '',
-    maxFileSize = FIVE_MB,
+    maxFileSize = maxUploadBytes(),
     accept = 'application/pdf',
     canEdit,
     emptyMessage,
@@ -74,12 +74,12 @@ export function FileUpload({
         }
         // UX guards. BidDocumentRequest still validates server-side.
         if (file.size > maxFileSize) {
-            toast.error(t('bid.documents.file_too_large'));
+            toast.error(t('bid.documents.file_too_large', { size: maxUploadLabel() }));
             e.target.value = '';
             return;
         }
         if (file.type && file.type !== accept) {
-            toast.error(t('bid.documents.pdf_only'));
+            toast.error(t('bid.documents.pdf_only', { size: maxUploadLabel() }));
             e.target.value = '';
             return;
         }
@@ -153,7 +153,7 @@ export function FileUpload({
             {canEdit && (
                 <form onSubmit={handleSubmit} className="space-y-3 rounded-md border border-dashed p-3">
                     <p className="text-xs text-muted-foreground">
-                        {t('bid.documents.pdf_only')}
+                        {t('bid.documents.pdf_only', { size: maxUploadLabel() })}
                     </p>
                     <div className="grid gap-3 sm:grid-cols-3">
                         <div className="space-y-1.5 sm:col-span-1">

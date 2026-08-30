@@ -8,6 +8,7 @@ use App\Models\BidBoqPrice;
 use App\Models\BidDocument;
 use App\Models\Tender;
 use App\Models\Vendor;
+use App\Rules\PdfFile;
 use App\Services\BidService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -415,13 +416,14 @@ test('storeDocument rejects non-PDF (BUG-18 sub-A #4)', function () {
     expect(BidDocument::where('bid_id', $bid->id)->count())->toBe(0);
 });
 
-test('storeDocument rejects file over 5MB cap (BUG-18 sub-A #5)', function () {
+test('storeDocument rejects a file over the POLICY-01 cap (BUG-18 sub-A #5)', function () {
     Storage::fake('s3');
     [$vendor, $tender] = twoEnvelopeBidFixture();
     $bid = draftBid($vendor, $tender);
 
-    // 6 MB > 5 MB cap → mimes:pdf passes but max:5120 fails.
-    $file = UploadedFile::fake()->create('huge.pdf', 6144, 'application/pdf');
+    // Over the cap → mimes:pdf passes, the size check fails. Derived from
+    // the constant so raising POLICY-01 cannot leave this asserting nothing.
+    $file = UploadedFile::fake()->create('huge.pdf', PdfFile::MAX_KB + 1, 'application/pdf');
 
     $response = $this->actingAs($vendor, 'vendor')
         ->from(route('vendor.bids.show', $bid))

@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { fromDateTimeLocalInput } from '@/lib/datetime';
+import { maxUploadBytes, maxUploadLabel } from '@/lib/uploads';
 
 type Category = {
     id: string;
@@ -357,7 +358,6 @@ export default function Create({ projects, categories }: Props) {
      * back to step 2 (Documents). BUG-22 fix.
      */
     function runDocumentPreflight(): boolean {
-        const FIVE_MB = 5 * 1024 * 1024;
         const errs: Record<string, string> = {};
 
         documents.forEach((d, i) => {
@@ -369,13 +369,13 @@ export default function Create({ projects, categories }: Props) {
             if (d.title.trim() === '') {
                 errs[`documents.${i}.title`] = t('messages.tender.document_title_required');
             }
-            if (d.file.size > FIVE_MB) {
-                errs[`documents.${i}.file`] = t('bid.documents.file_too_large');
+            if (d.file.size > maxUploadBytes()) {
+                errs[`documents.${i}.file`] = t('bid.documents.file_too_large', { size: maxUploadLabel() });
             } else if (d.file.type !== 'application/pdf') {
                 // Some browsers report empty `type` for unknown extensions —
                 // also flag that case as non-PDF since the server's mimes:pdf
                 // would reject it too.
-                errs[`documents.${i}.file`] = t('bid.documents.pdf_only');
+                errs[`documents.${i}.file`] = t('bid.documents.pdf_only', { size: maxUploadLabel() });
             }
         });
 
@@ -1000,7 +1000,7 @@ export default function Create({ projects, categories }: Props) {
                                                         }
                                                     />
                                                     <p className="text-xs text-muted-foreground">
-                                                        {t('bid.documents.pdf_only')}
+                                                        {t('bid.documents.pdf_only', { size: maxUploadLabel() })}
                                                     </p>
                                                     <FieldError errors={errors} path={`documents.${i}.file`} />
                                                 </div>

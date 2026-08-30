@@ -52,6 +52,9 @@
             {{-- Display/input zone for every date the frontend renders. Storage
                  stays UTC; see config/mpc.php for why the two differ. --}}
             window.__timezone__ = @json(config('mpc.timezone'));
+            {{-- POLICY-01 upload cap, so client-side checks and "up to :size"
+                 hints match what the server will actually accept. --}}
+            window.__maxUploadBytes__ = @json(\App\Rules\PdfFile::MAX_BYTES);
         </script>
         <x-inertia::app />
     </body>

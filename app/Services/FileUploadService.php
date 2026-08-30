@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DocumentAccessLog;
+use App\Rules\PdfFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -30,12 +31,14 @@ class FileUploadService
             }
         }
 
-        // 5MB hard ceiling — matches FormRequest layer per POLICY-01.
-        // TODO(TECH-DEBT-02): make parameter-driven and add mime-sniffing
-        // (currently extension-based, weaker than FormRequest's mimes:pdf).
-        $maxSize = 5 * 1024 * 1024;
-        if ($file->getSize() > $maxSize) {
-            throw new \InvalidArgumentException('File size exceeds the maximum allowed size of 5MB.');
+        // Reads POLICY-01 off the rule rather than restating it: this ceiling
+        // and the FormRequest layer drifted apart the moment either moved.
+        // TODO(TECH-DEBT-02): add mime-sniffing (currently extension-based,
+        // weaker than FormRequest's mimes:pdf).
+        if ($file->getSize() > PdfFile::MAX_BYTES) {
+            throw new \InvalidArgumentException(
+                'File size exceeds the maximum allowed size of '.PdfFile::maxLabel().'.'
+            );
         }
 
         return $file->store($directory, 's3');

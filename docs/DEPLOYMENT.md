@@ -88,3 +88,43 @@ check fails.
   (`auditable_type` / `auditable_id`) with no foreign key, so retained rows will
   point at tenders and bids that no longer exist. The `vendor_id` column is
   nulled automatically. Keep them for compliance history, not for traceability.
+
+## Upload limits
+
+POLICY-01 caps user-uploaded documents at `App\Rules\PdfFile::MAX_KB` — **100 MB**,
+PDF only. That constant is the single source of truth: the FormRequests read it,
+`FileUploadService` enforces it, `app.blade.php` injects it as
+`window.__maxUploadBytes__` for the browser-side checks, and every "up to :size"
+string is filled from it. Raising the cap means editing that one constant.
+
+**The application rule is only ever as generous as the PHP settings underneath
+it.** PHP rejects an oversized request before Laravel is reached, so a 100 MB
+rule on top of a 2 MB `upload_max_filesize` accepts nothing.
+
+| setting | needs to be | why |
+| --- | --- | --- |
+| `upload_max_filesize` | ≥ 100M | per-file ceiling |
+| `post_max_size` | > `upload_max_filesize` | applies to the **sum** of files in one request — the tender wizard posts several documents together, plus the form fields around them |
+| `max_execution_time` | generous | a 100 MB body streams to S3 inside the request |
+
+`public/.user.ini` sets these for PHP-FPM and CGI. Other SAPIs ignore it, and it
+cannot touch anything in front of PHP:
+
+- **nginx** defaults `client_max_body_size` to 1 MB and returns its own 413.
+- **Laravel Cloud** applies its own request-body limit; set the PHP values in the
+  environment's settings rather than relying on `.user.ini` alone.
+- **Cloudflare** caps request bodies by plan (100 MB on Free/Pro). A 100 MB PDF
+  plus multipart overhead sits right on that boundary.
+
+Verify with a real upload of a near-limit file rather than assuming — each layer
+fails differently and only the last one produces a message the user can read.
+
+When `post_max_size` is exceeded, PHP discards the body before any validation
+rule can see it, so the failure surfaces as a bare 413 rather than a field
+error. `bootstrap/app.php` renders `PostTooLargeException` as the same
+"file exceeds :size" message the rule would have given, falling back to a plain
+413 body when the session has not started (`ValidatePostSize` runs ahead of it in
+the global middleware stack).
+
+BOQ template imports (xlsx/csv) are capped separately at 5 MB in `BoqController`
+and deliberately bypass POLICY-01 — those are data imports, not document storage.

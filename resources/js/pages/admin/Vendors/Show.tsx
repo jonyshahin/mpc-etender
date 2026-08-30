@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate as formatDateInZone } from '@/lib/datetime';
+import { maxUploadLabel } from '@/lib/uploads';
 
 type VendorDocument = {
     id: string;
@@ -814,7 +815,7 @@ export default function Show({ vendor, documentUrls, canReviewDocuments, documen
                                     className="mt-1.5"
                                     onChange={(e) => uploadForm.setData('file', e.target.files?.[0] ?? null)}
                                 />
-                                <p className="mt-1 text-xs text-muted-foreground">{t('form.pdf_only_hint')}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{t('form.pdf_only_hint', { size: maxUploadLabel() })}</p>
                                 {uploadForm.errors.file && (
                                     <p className="mt-1 text-sm text-destructive">{uploadForm.errors.file}</p>
                                 )}

@@ -37,6 +37,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { formatDateTime, formatDeadline, fromDateTimeLocalInput } from '@/lib/datetime';
+import { maxUploadLabel } from '@/lib/uploads';
 
 type BoqItem = {
     id: string;
@@ -817,7 +818,7 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                                                 }
                                             />
                                             <p className="text-xs text-muted-foreground">
-                                                {t('bid.documents.pdf_only')}
+                                                {t('bid.documents.pdf_only', { size: maxUploadLabel() })}
                                             </p>
                                         </div>
                                         <Button type="submit" disabled={docForm.processing}>

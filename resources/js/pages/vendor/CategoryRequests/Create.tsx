@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/hooks/use-translation';
+import { maxUploadBytes, maxUploadLabel } from '@/lib/uploads';
 
 type Category = {
     id: string;
@@ -21,7 +22,6 @@ type Props = {
     currentlyApprovedIds: string[];
 };
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB — POLICY-01
 const MAX_FILES = 10;
 const ACCEPTED = 'application/pdf';
 
@@ -394,11 +394,12 @@ function EvidenceDropzone({
         if (!fileList || fileList.length === 0) return;
         const newFiles = Array.from(fileList);
 
-        const oversized = newFiles.filter((f) => f.size > MAX_FILE_BYTES);
+        const oversized = newFiles.filter((f) => f.size > maxUploadBytes());
         if (oversized.length > 0) {
             toast.error(
                 t('vendor.category_requests.file_too_large', {
                     name: oversized.map((f) => f.name).join(', '),
+                    size: maxUploadLabel(),
                 }),
             );
             return;
@@ -437,7 +438,7 @@ function EvidenceDropzone({
                     {t('vendor.category_requests.dropzone_primary')}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                    {t('vendor.category_requests.dropzone_hint')}
+                    {t('vendor.category_requests.dropzone_hint', { size: maxUploadLabel() })}
                 </p>
             </div>
 

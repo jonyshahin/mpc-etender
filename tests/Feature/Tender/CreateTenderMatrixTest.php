@@ -5,6 +5,7 @@ use App\Models\Category;
 use App\Models\Project;
 use App\Models\Tender;
 use App\Models\User;
+use App\Rules\PdfFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 
@@ -251,7 +252,9 @@ it('T-C-22: uploads multiple documents with varied doc_types', function () {
 it('T-C-23: rejects oversized document uploads', function () {
     $payload = tenderPayload();
     $payload['documents'] = [
-        ['file' => fakeDoc('huge.pdf', 11000), 'title' => 'Huge', 'doc_type' => 'specification'],
+        // Derived from POLICY-01 rather than a literal, so raising the cap
+        // cannot quietly leave this asserting nothing.
+        ['file' => fakeDoc('huge.pdf', PdfFile::MAX_KB + 1), 'title' => 'Huge', 'doc_type' => 'specification'],
     ];
 
     $response = $this->actingAs($this->admin)->post(route('tenders.store'), $payload);

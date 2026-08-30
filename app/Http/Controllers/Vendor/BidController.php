@@ -272,7 +272,8 @@ class BidController extends Controller
     }
 
     /**
-     * Upload a document onto a draft bid. PDF only, max 5 MB, validated by
+     * Upload a document onto a draft bid. PDF only, size capped by POLICY-01
+     * (App\Rules\PdfFile), validated by
      * BidDocumentRequest. Storage goes through FileUploadService per the
      * project upload mandate. Caller picks envelope via the form payload —
      * 'single' for single-envelope tenders, 'technical' or 'financial' for

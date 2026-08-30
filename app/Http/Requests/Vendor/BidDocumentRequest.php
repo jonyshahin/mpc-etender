@@ -4,6 +4,7 @@ namespace App\Http\Requests\Vendor;
 
 use App\Enums\BidDocType;
 use App\Enums\EnvelopeType;
+use App\Rules\PdfFile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,11 +19,9 @@ class BidDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // PDF only, 5 MB hard cap (5120 KB) — mandated by procurement spec
-            // for bid documents (BUG-18). Max applies even for technical
-            // proposals; if a vendor needs to ship a larger file they should
-            // split or compress it.
-            'file' => ['required', 'file', 'mimes:pdf', 'max:5120'],
+            // POLICY-01 via the shared rule (BUG-18 mandated PDF-only for bid
+            // documents). Restating the cap here is what let it drift.
+            'file' => ['required', new PdfFile],
             'title' => ['required', 'string', 'max:255'],
             'envelope_type' => ['required', Rule::in([
                 EnvelopeType::Single->value,

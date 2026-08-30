@@ -226,7 +226,7 @@ filing it is the verification. A vendor's own upload lands as `pending` with
 the two columns stay distinguishable in an audit.
 
 Both paths run through `VendorDocumentService`, write to the same
-`vendors/{id}/documents` S3 prefix and enforce the same PDF-only, 5 MB policy
+`vendors/{id}/documents` S3 prefix and enforce the same PDF-only size policy
 (`App\Rules\PdfFile`), so a document is not identifiable later by which route it
 came in through. Every action writes an `AuditLog` row scoped to the vendor:
 `vendor_document_filed_by_admin`, `vendor_document_uploaded`,

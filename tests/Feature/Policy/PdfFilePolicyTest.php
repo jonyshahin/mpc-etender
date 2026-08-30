@@ -8,7 +8,10 @@ use App\Models\Tender;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Rules\PdfFile;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Exceptions\PostTooLargeException;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -20,13 +23,14 @@ beforeEach(function () {
 });
 
 /**
- * 5121 KB = 1 KB over the 5120 cap. Picking the smallest oversize file
- * keeps the assertion focused on the boundary, not on whether 50 MB
- * fakes work in the test runner.
+ * One kilobyte over the cap, derived from the constant rather than
+ * restated: the number moved once already and a test asserting a stale
+ * boundary passes for the wrong reason. Fake uploads only report a size,
+ * so nothing of this length is actually written.
  */
 function policyOversizePdf(): UploadedFile
 {
-    return UploadedFile::fake()->create('big.pdf', 5121, 'application/pdf');
+    return UploadedFile::fake()->create('big.pdf', PdfFile::MAX_KB + 1, 'application/pdf');
 }
 
 function policyDocxFile(): UploadedFile
@@ -61,7 +65,7 @@ function policyMpcUser(array $permissionSlugs): User
 
 // ── PdfFile rule (unit) ─────────────────────────────────────────────
 
-test('PdfFile rule accepts a valid PDF under 5 MB', function () {
+test('PdfFile rule accepts a valid PDF under the cap', function () {
     $validator = Validator::make(
         ['file' => policyValidPdf()],
         ['file' => [new PdfFile]],
@@ -80,14 +84,15 @@ test('PdfFile rule rejects non-PDF mime types', function () {
     expect($validator->errors()->first('file'))->toContain('PDF');
 });
 
-test('PdfFile rule rejects PDFs over 5 MB', function () {
+test('PdfFile rule rejects PDFs over the cap', function () {
     $validator = Validator::make(
         ['file' => policyOversizePdf()],
         ['file' => [new PdfFile]],
     );
 
     expect($validator->fails())->toBeTrue();
-    expect($validator->errors()->first('file'))->toContain('5 MB');
+    // Asserts the message names the current cap, not a literal that goes stale.
+    expect($validator->errors()->first('file'))->toContain(PdfFile::maxLabel());
 });
 
 // ── Vendor\FileUploadRequest (vendor profile docs) ──────────────────
@@ -234,4 +239,20 @@ test('Wizard documents reject oversize PDF', function () {
             ],
         ]))
         ->assertSessionHasErrors('documents.0.file');
+});
+
+/**
+ * PHP discards the body before Laravel sees it once post_max_size is exceeded,
+ * so this never reaches a validation rule — the framework raises a bare 413.
+ * Without the handler in bootstrap/app.php the user gets an unexplained error
+ * page, which is the likeliest way a large upload fails in practice.
+ */
+test('a request past post_max_size explains itself instead of erroring blankly', function () {
+    $response = app(ExceptionHandler::class)->render(
+        Request::create('/vendor/documents', 'POST'),
+        new PostTooLargeException,
+    );
+
+    expect($response->getStatusCode())->toBe(413)
+        ->and($response->getContent())->toContain(PdfFile::maxLabel());
 });

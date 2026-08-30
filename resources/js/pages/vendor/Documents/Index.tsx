@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, Trash2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate as formatDateInZone } from '@/lib/datetime';
+import { maxUploadLabel } from '@/lib/uploads';
 
 type VendorDocument = {
     id: string;
@@ -143,7 +144,7 @@ export default function Index({ documents, documentTypes }: Props) {
                                         }}
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        {t('bid.documents.pdf_only')}
+                                        {t('bid.documents.pdf_only', { size: maxUploadLabel() })}
                                     </p>
                                     {uploadForm.errors.file && (
                                         <p className="text-sm text-destructive">{uploadForm.errors.file}</p>
