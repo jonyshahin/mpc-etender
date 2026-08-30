@@ -162,9 +162,10 @@ class VendorController extends Controller
      * Downloadable PDF of the same sheet.
      *
      * Rendered from a Blade view rather than the React page because dompdf cannot
-     * execute JavaScript. Note dompdf performs no Arabic shaping or bidi, so the
-     * Arabic company name is deliberately omitted here — use the browser Print
-     * button for an Arabic-faithful copy.
+     * execute JavaScript. dompdf also does no bidi reordering and no Arabic
+     * shaping, so the template runs every user-supplied string through
+     * ArabicTextService first — without it, Arabic prints reversed and in
+     * disconnected letters.
      */
     public function confirmationPdf(Vendor $vendor): HttpResponse
     {

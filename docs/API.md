@@ -213,6 +213,30 @@ which is the intended behaviour, since a reprint usually means the first copy wa
 lost. The letter surfaces the action only on a reprint and only to admins holding
 `vendors.update`, and explains on screen why the password is absent.
 
+### Arabic in the PDFs
+
+dompdf draws glyphs in the order it is given them and does neither of the two
+things Arabic needs: no bidi reordering, and no shaping to the joined letter
+form that depends on a character's neighbours. Handed logical-order Arabic it
+prints text that is both reversed and written in disconnected isolated
+letters — `اربيل / موصل` came out as `لصوم / ليبرا`.
+
+Both PDF templates therefore pass every user-supplied string through
+`ArabicTextService::forPdf()`, which converts it to the visually-ordered
+Arabic Presentation Forms-B sequence dompdf can lay out. DejaVu Sans, which
+the templates use, carries 141 of that block's 144 glyphs. Strings with no
+Arabic pass through untouched, and Western digits are preserved rather than
+rewritten as Arabic-Indic.
+
+**Never apply it to anything a browser renders.** The React pages must receive
+logical order — browsers do their own bidi and shaping, and pre-shaped text
+breaks text selection, in-page search and screen readers.
+
+One limitation: because the text reaches dompdf already in visual order, a
+string long enough for the renderer to wrap will have its lines in the wrong
+order. The fields on these letters are short; a long Arabic paragraph would
+need ar-php to do the wrapping instead.
+
 ### Vendor documents
 
 Vendors are onboarded by admins rather than registering themselves, so most

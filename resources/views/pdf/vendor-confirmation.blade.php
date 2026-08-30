@@ -2,9 +2,13 @@
     PDF twin of resources/js/pages/admin/Vendors/Confirmation.tsx.
 
     Kept as a separate Blade view because dompdf renders HTML without executing
-    JavaScript, so the React page cannot be reused. dompdf also performs no
-    Arabic shaping or bidi reordering, which is why the Arabic company name is
-    omitted here — the browser Print button produces an Arabic-faithful copy.
+    JavaScript, so the React page cannot be reused.
+
+    Every user-supplied string goes through $rtl(). dompdf does no bidi
+    reordering and no Arabic shaping, so logical-order Arabic comes out both
+    reversed and in disconnected isolated letters; ArabicTextService converts
+    it to the visually-ordered presentation forms dompdf can lay out. Do NOT
+    apply it anywhere the browser renders — see the service docblock.
 
     Images are referenced by absolute filesystem path: dompdf cannot fetch over
     HTTP, and in tests there is no server to fetch from.
@@ -13,8 +17,11 @@
     // Prepared by PrintAssetService: an absolute path for vectors, a downscaled
     // data URI for rasters, or null when the file is missing.
     $logoPath = $logoSrc ?? null;
+
+    // Shapes Arabic for dompdf and leaves everything else untouched.
+    $rtl = fn (?string $value) => app(\App\Services\ArabicTextService::class)->forPdf($value);
     $reference = strtoupper(explode('-', $vendor->id)[0]);
-    $location = collect([$vendor->city, $vendor->country])->filter()->implode(', ');
+    $location = $rtl(collect([$vendor->city, $vendor->country])->filter()->implode(', '));
 @endphp
 <!DOCTYPE html>
 <html>
@@ -70,7 +77,7 @@
                         @endif
                         <td style="padding-left: 12px;">
                             @if ($projectName)
-                                <div class="project">{{ $projectName }}</div>
+                                <div class="project">{{ $rtl($projectName) }}</div>
                             @endif
                             <div class="doctitle">Vendor Application Confirmation</div>
                         </td>
@@ -80,7 +87,7 @@
             <td class="company-mark">
                 <table align="right">
                     <tr>
-                        <td class="company" style="padding-right: 10px;">{{ $companyName }}</td>
+                        <td class="company" style="padding-right: 10px;">{{ $rtl($companyName) }}</td>
                         @if ($companyLogoSrc)
                             <td><img src="{{ $companyLogoSrc }}" width="58"></td>
                         @endif
@@ -103,22 +110,25 @@
     <h2>Company Information</h2>
     <table class="fields">
         <tr>
-            <td><div class="label">Company Name</div><div class="value">{{ $vendor->company_name }}</div></td>
+            <td><div class="label">Company Name</div><div class="value">{{ $rtl($vendor->company_name) }}</div></td>
+            {{-- Restored now that the Arabic renders: it was dropped only because
+                 dompdf mangled it. --}}
+            <td><div class="label">Company Name (Arabic)</div><div class="value">{{ $rtl($vendor->company_name_ar) ?: '—' }}</div></td>
+        </tr>
+        <tr>
             <td><div class="label">Trade License No.</div><div class="value">{{ $vendor->trade_license_no ?: '—' }}</div></td>
+            <td><div class="label">Website</div><div class="value">{{ $vendor->website ?: '—' }}</div></td>
         </tr>
         <tr>
-            <td><div class="label">Address</div><div class="value">{{ $vendor->address ?: '—' }}</div></td>
+            <td><div class="label">Address</div><div class="value">{{ $rtl($vendor->address) ?: '—' }}</div></td>
             <td><div class="label">City</div><div class="value">{{ $location ?: '—' }}</div></td>
-        </tr>
-        <tr>
-            <td colspan="2"><div class="label">Website</div><div class="value">{{ $vendor->website ?: '—' }}</div></td>
         </tr>
     </table>
 
     <h2>Contact Person</h2>
     <table class="fields">
         <tr>
-            <td><div class="label">Contact Person</div><div class="value">{{ $vendor->contact_person }}</div></td>
+            <td><div class="label">Contact Person</div><div class="value">{{ $rtl($vendor->contact_person) }}</div></td>
             <td><div class="label">Email</div><div class="value">{{ $vendor->email }}</div></td>
         </tr>
         <tr>
@@ -130,7 +140,7 @@
     <h2>Business Categories</h2>
     <div>
         @forelse ($vendor->categories as $category)
-            <span class="chip">{{ $category->name_en }}</span>
+            <span class="chip">{{ $rtl($category->name_en) }}</span>
         @empty
             <span class="value">—</span>
         @endforelse
@@ -154,7 +164,7 @@
                 <div class="value" style="margin-bottom: 8px;">{{ ucfirst(str_replace('_', ' ', $vendor->prequalification_status->value ?? $vendor->prequalification_status)) }}</div>
                 <div class="note">
                     This letter confirms that the details above are recorded in the
-                    {{ $companyName }} e-Tender system. Prequalification is assessed
+                    {{ $rtl($companyName) }} e-Tender system. Prequalification is assessed
                     separately &mdash; the status shown reflects the application at the
                     time of issue.
                 </div>

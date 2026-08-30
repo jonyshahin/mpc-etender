@@ -1,3 +1,8 @@
+@php
+    // dompdf does no bidi or Arabic shaping — an Arabic tender title or vendor
+    // name would render reversed and in disconnected letters without this.
+    $rtl = fn (?string $value) => app(\App\Services\ArabicTextService::class)->forPdf($value);
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,7 +23,7 @@
 </head>
 <body>
     <h1>Evaluation Report</h1>
-    <p><strong>Tender:</strong> {{ $tender->reference_number }} — {{ $tender->title_en }}</p>
+    <p><strong>Tender:</strong> {{ $tender->reference_number }} — {{ $rtl($tender->title_en) }}</p>
     <p class="meta">Generated: {{ now()->timezone(config('mpc.timezone'))->format('Y-m-d H:i') }}</p>
 
     <h2>Final Ranking</h2>
@@ -36,7 +41,7 @@
             @foreach($ranking as $row)
             <tr class="{{ $row['rank'] === 1 ? 'rank-1' : '' }}">
                 <td class="text-center">{{ $row['rank'] }}</td>
-                <td>{{ $row['vendor_name'] }}</td>
+                <td>{{ $rtl($row['vendor_name']) }}</td>
                 <td class="text-right">{{ number_format($row['technical_score'], 2) }}</td>
                 <td class="text-right">{{ number_format($row['financial_score'], 2) }}</td>
                 <td class="text-right"><strong>{{ number_format($row['final_score'], 2) }}</strong></td>
