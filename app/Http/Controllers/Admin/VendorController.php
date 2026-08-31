@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\DocumentType;
+use App\Enums\VendorDocStatus;
+use App\Enums\VendorStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreVendorRequest;
 use App\Http\Requests\Admin\UpdateVendorRequest;
@@ -16,9 +18,11 @@ use App\Services\PrintAssetService;
 use App\Services\QrCodeService;
 use App\Services\VendorService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -34,32 +38,67 @@ class VendorController extends Controller
         private PrintAssetService $printAssetService,
     ) {}
 
+    /**
+     * Columns the vendor list may be ordered by.
+     *
+     * A whitelist because orderBy() does not check the column: Laravel
+     * validates the direction and throws on anything but asc/desc, but hands
+     * the column straight to the grammar, so `?sort=nope` was a 500.
+     */
+    private const SORTABLE = [
+        'company_name',
+        'email',
+        'prequalification_status',
+        'city',
+        'created_at',
+    ];
+
     public function index(Request $request): Response
     {
-        $query = Vendor::with('categories:id,name_en')
-            ->select('id', 'company_name', 'email', 'prequalification_status', 'qualified_at', 'city', 'country', 'created_at');
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+        $categoryId = $request->input('category_id');
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('company_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        // Everything except the status filter, so the status counts can be
+        // taken from the same scope the rows are drawn from.
+        $base = fn () => Vendor::query()
+            ->when($search !== '', fn ($q) => $q->where(function ($inner) use ($search) {
+                $inner->where('company_name', 'like', "%{$search}%")
+                    ->orWhere('company_name_ar', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('trade_license_no', 'like', "%{$search}%");
+            }))
+            ->when($categoryId, fn ($q) => $q->inCategory($categoryId));
 
-        if ($status = $request->input('status')) {
-            $query->where('prequalification_status', $status);
-        }
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
-        if ($categoryId = $request->input('category_id')) {
-            $query->inCategory($categoryId);
-        }
-
-        $query->orderBy($request->input('sort', 'created_at'), $request->input('direction', 'desc'));
+        $vendors = $base()
+            ->with('categories:id,name_en,name_ar')
+            // select() before withCount(): it replaces the select list, so
+            // calling it afterwards drops the count subqueries and the row
+            // arrives without documents_count at all.
+            ->select('id', 'company_name', 'company_name_ar', 'email', 'prequalification_status', 'qualified_at', 'city', 'country', 'created_at')
+            ->withCount(['documents', 'bids'])
+            ->when($status, fn ($q) => $q->where('prequalification_status', $status))
+            ->orderBy($sort, $direction)
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('admin/Vendors/Index', [
-            'vendors' => $query->paginate(15)->withQueryString(),
-            'filters' => $request->only('search', 'status', 'category_id', 'sort', 'direction'),
-            // Feeds the "Add Vendor" dialog's category tree.
+            'vendors' => $vendors,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status,
+                'category_id' => $categoryId,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'statusCounts' => $this->vendorStatusCounts($base()),
+            'summary' => $this->vendorSummary($base()),
+            // Feeds both the category filter and the "Add Vendor" dialog.
             'categories' => Category::active()
                 ->roots()
                 ->with('children:id,name_en,name_ar,parent_id')
@@ -67,6 +106,42 @@ class VendorController extends Controller
                 ->get(['id', 'name_en', 'name_ar', 'parent_id']),
             'canCreate' => $request->user()->can('create', Vendor::class),
         ]);
+    }
+
+    /**
+     * How many vendors sit at each prequalification status, every status present.
+     *
+     * @return array<string, int>
+     */
+    private function vendorStatusCounts(Builder $query): array
+    {
+        $counts = $query->select('prequalification_status', DB::raw('COUNT(*) as count'))
+            ->groupBy('prequalification_status')
+            ->pluck('count', 'prequalification_status');
+
+        return collect(VendorStatus::cases())
+            ->mapWithKeys(fn (VendorStatus $case) => [$case->value => (int) ($counts[$case->value] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * Headline figures, on the same scope as the rows beneath them.
+     *
+     * @return array<string, int>
+     */
+    private function vendorSummary(Builder $query): array
+    {
+        return [
+            'total' => (clone $query)->count(),
+            'qualified' => (clone $query)->where('prequalification_status', VendorStatus::Qualified)->count(),
+            // Pending and under review are one queue to whoever works it.
+            'awaiting_review' => (clone $query)
+                ->whereIn('prequalification_status', [VendorStatus::Pending, VendorStatus::UnderReview])
+                ->count(),
+            'documents_pending' => (clone $query)
+                ->whereHas('documents', fn ($q) => $q->where('status', VendorDocStatus::Pending))
+                ->count(),
+        ];
     }
 
     /**

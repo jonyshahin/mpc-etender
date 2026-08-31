@@ -242,6 +242,31 @@ The `vendor_updated_by_admin` audit row carries only the fields that actually
 moved, categories included. An unchanged save writes no row at all — an audit
 trail full of no-ops buries the changes worth finding.
 
+### The vendors list
+
+`GET /admin/vendors` follows the same shape as the tenders list: `statusCounts`
+and `summary` are built from the same base query as the rows, so the tiles and
+tab counts cannot disagree with the list under them. Counts follow the search
+and the category but deliberately **not** the status, or every other tab would
+read zero the moment one was selected. All six `VendorStatus` cases appear —
+the old UI offered four, leaving `under_review` and `blacklisted` unfilterable.
+
+`sort` is whitelisted, for the same reason as the tenders list: `orderBy()`
+checks the direction but not the column, so `?sort=anything` was a 500.
+
+Two things worth knowing about the query:
+
+- **`select()` comes before `withCount()`.** `select()` replaces the select
+  list, so calling it afterwards drops the count subqueries and rows arrive
+  with no `documents_count` at all.
+- **The `category_id` filter is not new** — the controller has always accepted
+  it and `scopeInCategory` has always existed. The page simply never rendered
+  a control for it, so it was unreachable from the UI. It now drives a select
+  built from the same category tree the Add Vendor dialog uses.
+
+Search covers the English name, the Arabic name, the email and the trade
+licence number.
+
 ### The tenders list
 
 `GET /tenders` is scoped by project assignment before every other filter — a
