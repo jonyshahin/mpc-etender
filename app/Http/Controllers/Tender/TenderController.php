@@ -10,8 +10,10 @@ use App\Http\Requests\Tender\UpdateTenderRequest;
 use App\Models\Category;
 use App\Models\Tender;
 use App\Services\TenderService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,33 +23,101 @@ class TenderController extends Controller
         private TenderService $tenderService,
     ) {}
 
+    /**
+     * Columns the list may be ordered by.
+     *
+     * A whitelist because orderBy() does not validate the column: Laravel
+     * checks the direction and throws on anything but asc/desc, but hands the
+     * column straight to the grammar, so `?sort=nope` was a 500.
+     */
+    private const SORTABLE = [
+        'reference_number',
+        'title_en',
+        'status',
+        'submission_deadline',
+        'bids_count',
+        'created_at',
+    ];
+
     public function index(Request $request): Response
     {
-        $query = Tender::with(['project:id,name,code', 'creator:id,name'])
-            ->withCount('bids')
-            ->select('id', 'project_id', 'created_by', 'reference_number', 'title_en', 'status', 'submission_deadline', 'created_at');
-
-        // Scope to user's projects
+        // Tender visibility is the project assignment — a user sees only the
+        // projects they are on, so this scope comes before every other filter.
         $projectIds = $request->user()->projects()->pluck('projects.id');
-        $query->whereIn('project_id', $projectIds);
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title_en', 'like', "%{$search}%")
+        $base = fn () => Tender::query()
+            ->whereIn('project_id', $projectIds)
+            ->when($search !== '', fn ($q) => $q->where(function ($inner) use ($search) {
+                $inner->where('title_en', 'like', "%{$search}%")
                     ->orWhere('reference_number', 'like', "%{$search}%");
-            });
-        }
+            }));
 
-        $query->orderBy($request->input('sort', 'created_at'), $request->input('direction', 'desc'));
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+
+        $tenders = $base()
+            ->with(['project:id,name,code', 'creator:id,name'])
+            ->withCount('bids')
+            ->select('id', 'project_id', 'created_by', 'reference_number', 'title_en', 'status', 'submission_deadline', 'created_at')
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->orderBy($sort, $direction)
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('tender/Index', [
-            'tenders' => $query->paginate(15)->withQueryString(),
-            'filters' => $request->only('search', 'status', 'sort', 'direction'),
+            'tenders' => $tenders,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            // Counts follow the search but not the status, so each tab shows
+            // how many the current search would find there.
+            'statusCounts' => $this->statusCounts($base()),
+            'summary' => $this->summary($base()),
         ]);
+    }
+
+    /**
+     * How many tenders sit in each status, every status present.
+     *
+     * @return array<string, int>
+     */
+    private function statusCounts(Builder $query): array
+    {
+        $counts = $query->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        return collect(TenderStatus::cases())
+            ->mapWithKeys(fn (TenderStatus $case) => [$case->value => (int) ($counts[$case->value] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * Headline figures for the list, on the same scope as the rows below them.
+     *
+     * @return array<string, int>
+     */
+    private function summary(Builder $query): array
+    {
+        return [
+            'total' => (clone $query)->count(),
+            'open' => (clone $query)->where('status', TenderStatus::Published)->count(),
+            'closing_this_week' => (clone $query)
+                ->where('status', TenderStatus::Published)
+                ->whereBetween('submission_deadline', [now(), now()->addDays(7)])
+                ->count(),
+            'awaiting_evaluation' => (clone $query)
+                ->whereIn('status', [TenderStatus::SubmissionClosed, TenderStatus::UnderEvaluation])
+                ->count(),
+        ];
     }
 
     public function create(Request $request): Response

@@ -242,6 +242,30 @@ The `vendor_updated_by_admin` audit row carries only the fields that actually
 moved, categories included. An unchanged save writes no row at all — an audit
 trail full of no-ops buries the changes worth finding.
 
+### The tenders list
+
+`GET /tenders` is scoped by project assignment before every other filter — a
+user sees only tenders in the projects they are on.
+
+It returns `statusCounts` and `summary` alongside the paginated rows. Both are
+built from the same base query as the rows, so the tiles and the tab counts
+can never disagree with the list under them. The counts follow the search but
+deliberately **not** the status filter: they answer "how many would this
+search find in each tab", and applying the status filter to them would make
+every other tab read zero the moment one was selected. Every status appears,
+including empty ones, so a tab never disappears as it empties.
+
+`sort` is checked against a whitelist. `orderBy()` validates the direction and
+throws on anything but asc/desc, but hands the column straight to the grammar
+— so `?sort=anything` used to be a 500. Both now fall back to
+`created_at desc`.
+
+The page echoes the complete filter set back as `filters`, and passes it to
+`DataTable`. That prop is not optional in practice: `DataTable` merges it into
+every sort request, so without it sorting wiped the search and status, and —
+because it compares against a `filters.sort` that was always undefined —
+could never toggle to descending.
+
 ### The landing dashboard
 
 `GET /dashboard` was a `Route::inertia` stub rendering four placeholder
