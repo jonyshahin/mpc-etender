@@ -70,7 +70,14 @@ function SelectContent({
         position={position}
         side={side}
         sideOffset={sideOffset}
-        avoidCollisions={false}
+        // `side` is the preferred side, not a fixed one. The starter kit
+        // shipped avoidCollisions={false}, which pinned every dropdown below
+        // its trigger — a field near the foot of the page opened entirely
+        // below the fold and was invisible. With collision handling on, Radix
+        // flips to the top when there is more room there, and caps the height
+        // via --radix-select-content-available-height when neither side fits.
+        avoidCollisions
+        collisionPadding={8}
         align={align}
         {...props}
       >
