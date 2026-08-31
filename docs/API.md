@@ -242,6 +242,33 @@ The `vendor_updated_by_admin` audit row carries only the fields that actually
 moved, categories included. An unchanged save writes no row at all — an audit
 trail full of no-ops buries the changes worth finding.
 
+### The landing dashboard
+
+`GET /dashboard` was a `Route::inertia` stub rendering four placeholder
+rectangles — every internal user's first screen after signing in carried no
+information at all. It is now backed by `DashboardService::landing()`.
+
+The page has two halves. The headline tiles describe the portfolio and are the
+same for everyone. The "needs your attention" queues describe *this* user's
+work and are each gated on the permission behind the page they link to, so a
+procurement officer and an evaluator get different lists from the same route —
+showing a queue someone cannot open would turn the dashboard into a list of
+dead ends. A queue with a count of zero is dropped client-side.
+
+Two details worth keeping:
+
+- **The award trend is grouped in PHP, not SQL.** The older `monthlySpend()`
+  uses `DATE_FORMAT`, which is MySQL-only and throws under the SQLite test
+  suite. Row counts here are small enough that portability wins. It is
+  gap-filled to a full twelve months so the axis is a continuous timeline
+  rather than a line joining whichever months happened to have activity.
+- **The pipeline is returned in `TenderStatus` order, not count order**, and
+  includes stages with zero tenders. The sequence is the meaning; sorting by
+  size would destroy it.
+
+`/dashboard/portfolio` and `/dashboard/project/{project}` are unchanged and
+remain the deeper reporting views.
+
 ### Arabic in the PDFs
 
 dompdf draws glyphs in the order it is given them and does neither of the two

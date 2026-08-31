@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [Dashboard\DashboardController::class, 'index'])->name('dashboard');
 });
 
 // ── Language switch ──

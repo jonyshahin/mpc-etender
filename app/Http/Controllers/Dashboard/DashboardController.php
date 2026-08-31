@@ -18,6 +18,21 @@ class DashboardController extends Controller
     ) {}
 
     /**
+     * The landing page after signing in.
+     *
+     * Was a Route::inertia stub rendering four placeholder rectangles — every
+     * internal user's first screen carried no information at all. The portfolio
+     * and project dashboards stay as the deeper reporting views; this one
+     * answers "what needs me today".
+     */
+    public function index(Request $request): Response
+    {
+        return Inertia::render('dashboard', [
+            'dashboard' => $this->dashboardService->landing($request->user()),
+        ]);
+    }
+
+    /**
      * Portfolio-wide dashboard for managers.
      */
     public function portfolio(Request $request): Response
