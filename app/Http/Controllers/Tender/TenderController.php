@@ -62,8 +62,11 @@ class TenderController extends Controller
 
         $tenders = $base()
             ->with(['project:id,name,code', 'creator:id,name'])
-            ->withCount('bids')
+            // select() before withCount(): select() replaces the select
+            // list, so calling it afterwards discards the count subquery —
+            // the Bids column was rendering empty on every row.
             ->select('id', 'project_id', 'created_by', 'reference_number', 'title_en', 'status', 'submission_deadline', 'created_at')
+            ->withCount('bids')
             ->when($status, fn ($q) => $q->where('status', $status))
             ->orderBy($sort, $direction)
             ->paginate(15)

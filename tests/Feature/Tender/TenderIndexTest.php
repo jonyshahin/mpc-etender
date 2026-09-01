@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TenderStatus;
+use App\Models\Bid;
 use App\Models\Project;
 use App\Models\Tender;
 use App\Models\User;
@@ -175,4 +176,27 @@ test('it renders for a user with no projects at all', function () {
             ->where('summary.total', 0)
             ->where('tenders.data', [])
         );
+});
+
+/**
+ * The Bids column renders this on every row.
+ *
+ * The query called withCount() before select(), and select() replaces the
+ * select list wholesale — so the count subquery was built and then discarded,
+ * leaving the column blank for everyone.
+ */
+test('each row carries its bid count', function () {
+    [$user, $project] = userOnProject();
+    $tender = Tender::factory()->create(['project_id' => $project->id]);
+    Bid::factory()->count(2)->create(['tender_id' => $tender->id]);
+
+    $this->actingAs($user)
+        ->get(route('tenders.index'))
+        ->assertOk()
+        ->assertInertia(function (Assert $page) {
+            $rows = $page->toArray()['props']['tenders']['data'];
+
+            expect($rows[0])->toHaveKey('bids_count')
+                ->and($rows[0]['bids_count'])->toBe(2);
+        });
 });
