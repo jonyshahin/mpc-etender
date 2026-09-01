@@ -1208,6 +1208,8 @@
     "eval.criteria_count": "المعايير: :count",
     "eval.your_progress": "تقدّمك",
     "eval.criteria_word": "معيار",
+    "form.provide_justification": "ما مبرر هذه الدرجة؟",
+    "eval.score_every_criterion_to_complete": "قيّم جميع المعايير قبل اعتماد هذا العطاء كمكتمل.",
     "eval.weights_do_not_total_100": "مجموع أوزان المعايير :total% وليس 100%. لن تكون المجاميع المرجّحة قابلة للمقارنة بين العطاءات حتى يصححها مالك المناقصة.",
 
     "Addendum issued.": "تم إصدار الملحق.",

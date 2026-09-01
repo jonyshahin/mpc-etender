@@ -1208,6 +1208,8 @@
     "eval.criteria_count": "Criteria: :count",
     "eval.your_progress": "Your progress",
     "eval.criteria_word": "criteria",
+    "form.provide_justification": "Why this score?",
+    "eval.score_every_criterion_to_complete": "Score every criterion before marking this bid complete.",
     "eval.weights_do_not_total_100": "The criteria weights add up to :total%, not 100%. Weighted totals will not be comparable between bids until the tender owner corrects them.",
 
     "Addendum issued.": "Addendum issued.",
