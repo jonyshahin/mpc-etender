@@ -23,6 +23,9 @@ class Role extends Model
 
     protected $keyType = 'string';
 
+    /** The one role that may administer other super admins. */
+    public const SUPER_ADMIN = 'super_admin';
+
     protected $fillable = [
         'name',
         'slug',
@@ -46,5 +49,10 @@ class Role extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->slug === self::SUPER_ADMIN;
     }
 }

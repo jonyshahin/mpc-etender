@@ -104,6 +104,17 @@ class User extends Authenticatable
 
     // ── Helpers ──
 
+    /**
+     * A super admin outranks every other role.
+     *
+     * Deliberately reads the role slug rather than a permission: the whole
+     * point is that permissions are grantable and this is not.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role?->isSuperAdmin() ?? false;
+    }
+
     public function hasPermission(string $slug): bool
     {
         return $this->role->permissions()->where('slug', $slug)->exists();

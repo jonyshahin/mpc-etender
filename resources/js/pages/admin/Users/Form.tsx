@@ -35,13 +35,21 @@ type Props = {
     };
     userProjectIds?: string[];
     roles: Array<{ id: string; name: string; slug: string }>;
+    /**
+     * False when you are editing your own account.
+     *
+     * Nobody sets their own level — self-promotion was the shortest path
+     * to super admin. The field is locked rather than silently reverted on
+     * save, so the rule is visible instead of surprising.
+     */
+    canChangeRole?: boolean;
     projects?: Array<{ id: string; name: string; code: string }>;
     /** Dialog mode props */
     open?: boolean;
     onClose?: () => void;
 };
 
-function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
+function UserForm({ user, userProjectIds, roles, canChangeRole = true, projects, onClose }: Props) {
     const { t } = useTranslation();
     const isEdit = !!user;
 
@@ -133,6 +141,7 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
                 <Select
                     value={form.data.role_id}
                     onValueChange={(value) => form.setData('role_id', value)}
+                    disabled={!canChangeRole}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder={t('form.select_role')} />
@@ -145,6 +154,9 @@ function UserForm({ user, userProjectIds, roles, projects, onClose }: Props) {
                         ))}
                     </SelectContent>
                 </Select>
+                {!canChangeRole && (
+                    <p className="text-sm text-muted-foreground">{t('form.cannot_change_own_role')}</p>
+                )}
                 {form.errors.role_id && (
                     <p className="text-sm text-destructive">{form.errors.role_id}</p>
                 )}

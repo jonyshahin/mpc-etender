@@ -1179,6 +1179,7 @@
     "btn.confirm_opening": "تأكيد وفتح العطاءات",
     "btn.cancel_request": "إلغاء الطلب",
     "status.confirmed": "مؤكد",
+    "form.cannot_change_own_role": "لا يمكنك تغيير دورك الخاص. اطلب ذلك من مسؤول آخر.",
 
     "Addendum issued.": "تم إصدار الملحق.",
     "Answer saved.": "تم حفظ الإجابة.",

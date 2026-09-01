@@ -1179,6 +1179,7 @@
     "btn.confirm_opening": "Confirm and open bids",
     "btn.cancel_request": "Cancel request",
     "status.confirmed": "Confirmed",
+    "form.cannot_change_own_role": "You cannot change your own role. Ask another administrator.",
 
     "Addendum issued.": "Addendum issued.",
     "Answer saved.": "Answer saved.",

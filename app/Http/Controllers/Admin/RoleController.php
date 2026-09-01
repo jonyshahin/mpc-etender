@@ -58,6 +58,11 @@ class RoleController extends Controller
 
     public function updatePermissions(UpdatePermissionsRequest $request, Role $role): RedirectResponse
     {
+        // update() refused to rename a system role, but this had no guard at
+        // all — so the protection was walked around by editing what a role
+        // can do rather than what it is called.
+        $this->authorize('updatePermissions', $role);
+
         $role->permissions()->sync($request->validated('permission_ids'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Permissions updated successfully.')]);
