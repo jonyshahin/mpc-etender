@@ -381,11 +381,13 @@ All routes require `auth` + `verified` middleware. Permission checks via Form Re
 | GET | `/admin/users/{user}/edit` | `admin.users.edit` | Edit user form |
 | PUT | `/admin/users/{user}` | `admin.users.update` | Update user |
 | DELETE | `/admin/users/{user}` | `admin.users.destroy` | Deactivate user |
-| GET | `/admin/projects` | `admin.projects.index` | List projects |
+| GET | `/admin/projects` | `admin.projects.index` | List projects. Accepts `search` (name, Arabic name, code, client), `status` (a `ProjectStatus` value), `sort` (one of `name`, `code`, `location`, `status`, `start_date`, `end_date`, `created_at`) and `direction`; anything else falls back to `created_at desc` |
 | POST | `/admin/projects` | `admin.projects.store` | Create project |
 | GET | `/admin/projects/{project}/edit` | `admin.projects.edit` | Edit project form |
 | PUT | `/admin/projects/{project}` | `admin.projects.update` | Update project |
 | POST | `/admin/projects/{project}/assign-users` | `admin.projects.assign-users` | Assign users to project |
+| PUT | `/admin/projects/{project}/users/{user}` | `admin.projects.users.update` | Change a member's project role |
+| DELETE | `/admin/projects/{project}/users/{user}` | `admin.projects.users.destroy` | Remove a member from the project |
 | GET | `/admin/roles` | `admin.roles.index` | List roles |
 | POST | `/admin/roles` | `admin.roles.store` | Create role |
 | PUT | `/admin/roles/{role}` | `admin.roles.update` | Update role |

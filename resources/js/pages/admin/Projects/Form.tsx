@@ -39,9 +39,11 @@ type Props = {
     };
     assignedUsers: AssignedUser[];
     availableUsers: Array<{ id: string; name: string; email: string }>;
+    /** From the ProjectStatus enum, so this picker cannot drift from validation. */
+    statusOptions: Array<{ value: string; labelKey: string }>;
 };
 
-export default function Form({ project, assignedUsers, availableUsers }: Props) {
+export default function Form({ project, assignedUsers, availableUsers, statusOptions }: Props) {
     const { t } = useTranslation();
 
     const PROJECT_ROLES = [
@@ -171,10 +173,11 @@ export default function Form({ project, assignedUsers, availableUsers }: Props) 
                                             <SelectValue placeholder={t('form.select_status')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="active">{t('status.active')}</SelectItem>
-                                            <SelectItem value="on_hold">{t('status.on_hold')}</SelectItem>
-                                            <SelectItem value="completed">{t('status.completed')}</SelectItem>
-                                            <SelectItem value="cancelled">{t('status.cancelled')}</SelectItem>
+                                            {statusOptions.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {t(option.labelKey)}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     {form.errors.status && (

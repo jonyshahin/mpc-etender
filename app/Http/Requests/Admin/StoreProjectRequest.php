@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\ProjectStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProjectRequest extends FormRequest
 {
@@ -20,7 +22,7 @@ class StoreProjectRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:2000'],
             'location' => ['nullable', 'string', 'max:255'],
             'client_name' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:active,on_hold,completed,cancelled'],
+            'status' => ['required', Rule::enum(ProjectStatus::class)],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ];

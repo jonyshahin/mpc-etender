@@ -2,41 +2,116 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ProjectStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignProjectUsersRequest;
 use App\Http\Requests\Admin\StoreProjectRequest;
 use App\Http\Requests\Admin\UpdateProjectRequest;
 use App\Models\Project;
+use App\Models\Tender;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProjectController extends Controller
 {
+    /**
+     * Columns the list may be ordered by.
+     *
+     * A whitelist because orderBy() does not check the column: Laravel
+     * validates the direction and throws on anything but asc/desc, but hands
+     * the column straight to the grammar, so `?sort=nope` was a 500.
+     */
+    private const SORTABLE = [
+        'name',
+        'code',
+        'location',
+        'status',
+        'start_date',
+        'end_date',
+        'created_at',
+    ];
+
     public function index(Request $request): Response
     {
-        $query = Project::withCount(['tenders', 'users'])
-            ->select('id', 'name', 'code', 'location', 'status', 'start_date', 'end_date', 'created_at');
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
+        // Everything bar the status filter, so the tab counts can come off the
+        // same scope the rows do.
+        $base = fn () => Project::query()
+            ->when($search !== '', fn ($q) => $q->where(function ($inner) use ($search) {
+                $inner->where('name', 'like', "%{$search}%")
+                    ->orWhere('name_ar', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('client_name', 'like', "%{$search}%");
+            }));
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
-        $query->orderBy($request->input('sort', 'created_at'), $request->input('direction', 'desc'));
+        $projects = $base()
+            // select() before withCount(): select() replaces the select list,
+            // so calling it afterwards drops the count subqueries entirely —
+            // the Tenders and Team Size columns were rendering empty.
+            ->select('id', 'name', 'name_ar', 'code', 'location', 'client_name', 'status', 'start_date', 'end_date', 'created_at')
+            ->withCount(['tenders', 'users'])
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->orderBy($sort, $direction)
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('admin/Projects/Index', [
-            'projects' => $query->paginate(15)->withQueryString(),
-            'filters' => $request->only('search', 'status', 'sort', 'direction'),
+            'projects' => $projects,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'statusCounts' => $this->projectStatusCounts($base()),
+            'summary' => $this->projectSummary($base()),
+            'statusOptions' => ProjectStatus::options(),
         ]);
+    }
+
+    /**
+     * How many projects sit at each status, every status present.
+     *
+     * @return array<string, int>
+     */
+    private function projectStatusCounts(Builder $query): array
+    {
+        $counts = $query->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        return collect(ProjectStatus::cases())
+            ->mapWithKeys(fn (ProjectStatus $case) => [$case->value => (int) ($counts[$case->value] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * Headline figures, on the same scope as the rows beneath them.
+     *
+     * @return array<string, int>
+     */
+    private function projectSummary(Builder $query): array
+    {
+        return [
+            'total' => (clone $query)->count(),
+            'active' => (clone $query)->where('status', ProjectStatus::Active)->count(),
+            'tenders' => (int) Tender::whereIn('project_id', (clone $query)->select('id'))->count(),
+            // A project nobody is assigned to hides every one of its tenders,
+            // including from a super admin — worth surfacing, not burying.
+            'unstaffed' => (clone $query)->doesntHave('users')->count(),
+        ];
     }
 
     public function store(StoreProjectRequest $request): RedirectResponse
@@ -68,6 +143,7 @@ class ProjectController extends Controller
                 ->select('id', 'name', 'email')
                 ->orderBy('name')
                 ->get(),
+            'statusOptions' => ProjectStatus::options(),
         ]);
     }
 

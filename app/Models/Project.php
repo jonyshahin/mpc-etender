@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectStatus;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,6 +41,7 @@ class Project extends Model
     protected function casts(): array
     {
         return [
+            'status' => ProjectStatus::class,
             'start_date' => 'date',
             'end_date' => 'date',
         ];
