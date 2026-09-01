@@ -153,7 +153,7 @@ Route::middleware(['auth', 'verified'])->prefix('tenders')->name('tenders.')->gr
     Route::post('{tender}/committees', [Evaluation\CommitteeController::class, 'store'])->name('committees.store');
     Route::put('{tender}/committees/{committee}', [Evaluation\CommitteeController::class, 'update'])->name('committees.update');
     Route::post('{tender}/committees/{committee}/members', [Evaluation\CommitteeController::class, 'addMember'])->name('committees.members.store');
-    Route::delete('{tender}/committees/{committee}/members/{member}', [Evaluation\CommitteeController::class, 'removeMember'])->name('committees.members.destroy');
+    Route::delete('{tender}/committees/{committee}/members/{user}', [Evaluation\CommitteeController::class, 'removeMember'])->name('committees.members.destroy');
 
     // Two-envelope workflow
     Route::post('{tender}/complete-technical', [Evaluation\EnvelopeController::class, 'completeTechnical'])->name('complete-technical');

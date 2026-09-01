@@ -8,6 +8,7 @@ use App\Http\Requests\Evaluation\StoreCommitteeRequest;
 use App\Models\CommitteeMember;
 use App\Models\EvaluationCommittee;
 use App\Models\Tender;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -107,14 +108,24 @@ class CommitteeController extends Controller
         return back();
     }
 
-    public function removeMember(Tender $tender, EvaluationCommittee $committee, CommitteeMember $member): RedirectResponse
+    /**
+     * Bound by USER, not by the pivot row.
+     *
+     * EvaluationCommittee::members() is a belongsToMany over users and does
+     * not expose the pivot id, so the screen only ever had a user id to
+     * send — while this bound a CommitteeMember. Removal 404'd every time.
+     */
+    public function removeMember(Tender $tender, EvaluationCommittee $committee, User $user): RedirectResponse
     {
         // No FormRequest and no authorize(): any verified user could delete any
         // committee membership row in the system, changing who may score and
         // the denominator of every aggregate built from those scores.
         $this->authorize('manageCommittees', $tender);
         $this->assertCommitteeBelongsTo($tender, $committee);
-        abort_unless($member->committee_id === $committee->id, 404);
+
+        $member = CommitteeMember::where('committee_id', $committee->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
 
         $member->delete();
 

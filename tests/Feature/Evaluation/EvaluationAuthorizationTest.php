@@ -75,9 +75,12 @@ test('but a project member can still read it', function () {
 test('committee mutations are refused outside the project', function (string $call) {
     $tender = Tender::factory()->create();
     $committee = EvaluationCommittee::factory()->create(['tender_id' => $tender->id]);
-    $member = CommitteeMember::factory()->create([
+    // The route binds the USER, not the pivot row — members() is a
+    // belongsToMany over users and never exposed a pivot id.
+    $memberUser = User::factory()->create();
+    CommitteeMember::factory()->create([
         'committee_id' => $committee->id,
-        'user_id' => User::factory()->create()->id,
+        'user_id' => $memberUser->id,
     ]);
 
     // Holds the permission globally, but belongs to no project.
@@ -93,7 +96,7 @@ test('committee mutations are refused outside the project', function (string $ca
             ['user_id' => User::factory()->create()->id, 'role' => 'member'],
         ),
         'removeMember' => $this->actingAs($outsider)->delete(
-            route('tenders.committees.members.destroy', [$tender, $committee, $member]),
+            route('tenders.committees.members.destroy', [$tender, $committee, $memberUser]),
         ),
     };
 
@@ -103,13 +106,15 @@ test('committee mutations are refused outside the project', function (string $ca
 test('a committee member survives an unauthorised delete attempt', function () {
     $tender = Tender::factory()->create();
     $committee = EvaluationCommittee::factory()->create(['tender_id' => $tender->id]);
+    $memberUser = User::factory()->create();
     $member = CommitteeMember::factory()->create([
         'committee_id' => $committee->id,
-        'user_id' => User::factory()->create()->id,
+        'user_id' => $memberUser->id,
     ]);
 
     $this->actingAs(User::factory()->create())
-        ->delete(route('tenders.committees.members.destroy', [$tender, $committee, $member]));
+        ->delete(route('tenders.committees.members.destroy', [$tender, $committee, $memberUser]))
+        ->assertForbidden();
 
     expect(CommitteeMember::find($member->id))->not->toBeNull();
 });

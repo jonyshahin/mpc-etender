@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Evaluation\StoreScoresRequest;
 use App\Models\Bid;
 use App\Models\CommitteeMember;
+use App\Models\EvaluationCriterion;
 use App\Models\EvaluationScore;
 use App\Models\Tender;
+use App\Models\User;
 use App\Services\EvaluationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,6 +33,43 @@ class ScoringController extends Controller
     private function assertBidBelongsTo(Tender $tender, Bid $bid): void
     {
         abort_unless($bid->tender_id === $tender->id, 404);
+    }
+
+    /**
+     * Mark the evaluator done — but only once every bid really is scored.
+     *
+     * 'complete' arrives from the ScoreBid screen, which scores ONE bid, and
+     * the old handler set has_scored on every membership for the tender. So
+     * finishing the first bid showed the evaluator as done while the rest
+     * still read 'Not scored', and the committee screen agreed.
+     *
+     * @param  Collection<string, EvaluationCriterion>  $scorable
+     */
+    private function markCompleteIfEverythingScored(Tender $tender, Bid $bid, User $user, $scorable): void
+    {
+        $bidIds = $tender->bids()
+            ->whereNotIn('status', ['withdrawn', 'disqualified'])
+            ->pluck('id');
+
+        $criterionIds = $scorable->keys();
+        $required = $bidIds->count() * $criterionIds->count();
+
+        if ($required === 0) {
+            return;
+        }
+
+        $written = EvaluationScore::where('evaluator_id', $user->id)
+            ->whereIn('bid_id', $bidIds)
+            ->whereIn('criterion_id', $criterionIds)
+            ->count();
+
+        if ($written < $required) {
+            return;
+        }
+
+        CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
+            ->where('user_id', $user->id)
+            ->update(['has_scored' => true, 'scored_at' => now()]);
     }
 
     public function index(Request $request, Tender $tender): Response
@@ -150,11 +191,15 @@ class ScoringController extends Controller
             ->get()
             ->keyBy('id');
 
+        // Every score is checked before any is written. The guard used to sit
+        // inside the write loop and `return back()` from the middle of it, so a
+        // rejected submission left some criteria saved and some not while the
+        // screen still showed everything the user had typed.
         foreach ($data['scores'] as $scoreData) {
-            // Validate score is within max_score
             $criterion = $scorable->get($scoreData['criterion_id']);
             abort_if($criterion === null, 404);
-            if ($criterion && $scoreData['score'] > $criterion->max_score) {
+
+            if ($scoreData['score'] > $criterion->max_score) {
                 Inertia::flash('toast', [
                     'type' => 'error',
                     'message' => __('Score for :name exceeds maximum of :max.', [
@@ -165,27 +210,28 @@ class ScoringController extends Controller
 
                 return back();
             }
-
-            EvaluationScore::updateOrCreate(
-                [
-                    'bid_id' => $bid->id,
-                    'criterion_id' => $scoreData['criterion_id'],
-                    'evaluator_id' => $user->id,
-                ],
-                [
-                    'score' => $scoreData['score'],
-                    'justification' => $scoreData['justification'] ?? null,
-                    'scored_at' => now(),
-                ]
-            );
         }
 
-        // Mark as completed if requested
-        if ($data['complete'] ?? false) {
-            CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
-                ->where('user_id', $user->id)
-                ->update(['has_scored' => true, 'scored_at' => now()]);
-        }
+        DB::transaction(function () use ($data, $bid, $user, $tender, $scorable) {
+            foreach ($data['scores'] as $scoreData) {
+                EvaluationScore::updateOrCreate(
+                    [
+                        'bid_id' => $bid->id,
+                        'criterion_id' => $scoreData['criterion_id'],
+                        'evaluator_id' => $user->id,
+                    ],
+                    [
+                        'score' => $scoreData['score'],
+                        'justification' => $scoreData['justification'] ?? null,
+                        'scored_at' => now(),
+                    ]
+                );
+            }
+
+            if ($data['complete'] ?? false) {
+                $this->markCompleteIfEverythingScored($tender, $bid, $user, $scorable);
+            }
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Scores saved.')]);
 

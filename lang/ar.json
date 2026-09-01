@@ -1184,6 +1184,9 @@
     "eval.criteria_and_weight": ":count معيار، الوزن الإجمالي :weight%",
     "eval.scored_progress": "تم تقييم :scored من :total",
     "eval.no_criteria_for_your_committee": "لا توجد معايير مخصصة للجنتك في هذه المناقصة. اطلب من مالك المناقصة تحديدها قبل التقييم.",
+    "eval.remove_member": "إزالة عضو اللجنة",
+    "eval.remove_member_confirm": "إزالة :name من هذه اللجنة؟ لن يعود بإمكانه تقييم العطاءات في هذه المناقصة.",
+    "nav.evaluation": "التقييم",
 
     "Addendum issued.": "تم إصدار الملحق.",
     "Answer saved.": "تم حفظ الإجابة.",

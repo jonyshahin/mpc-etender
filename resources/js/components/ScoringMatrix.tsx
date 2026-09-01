@@ -55,9 +55,48 @@ export function ScoringMatrix({ criteria, existingScores = {}, readOnly = false,
         [onChange, criteria],
     );
 
-    const handleScoreChange = (criterionId: string, maxScore: number, value: string) => {
-        const num = Math.max(0, Math.min(maxScore, parseFloat(value) || 0));
-        const updated = { ...scores, [criterionId]: { ...scores[criterionId], score: num } };
+    /**
+     * What the evaluator has typed, before it is a number.
+     *
+     * Every keystroke used to be parsed and clamped and written straight
+     * back into the controlled input, which made a decimal impossible to
+     * enter: "7." parsed to 7, so the point vanished and 7.5 could never be
+     * typed. A partial "7" on the way to 75 was clamped to the maximum for
+     * the same reason, and the field could never be cleared.
+     */
+    const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+    const handleScoreChange = (criterionId: string, value: string) => {
+        setDrafts((current) => ({ ...current, [criterionId]: value }));
+
+        const parsed = parseFloat(value);
+        const updated = {
+            ...scores,
+            [criterionId]: {
+                ...scores[criterionId],
+                score: Number.isFinite(parsed) ? parsed : 0,
+            },
+        };
+        setScores(updated);
+        emitChange(updated);
+    };
+
+    /** Settle the value once, when the evaluator leaves the field. */
+    const handleScoreBlur = (criterionId: string, maxScore: number) => {
+        const parsed = parseFloat(drafts[criterionId] ?? '');
+        const settled = Number.isFinite(parsed) ? Math.max(0, Math.min(maxScore, parsed)) : 0;
+
+        setDrafts((current) => {
+            const next = { ...current };
+            delete next[criterionId];
+
+            return next;
+        });
+
+        const updated = {
+            ...scores,
+            [criterionId]: { ...scores[criterionId], score: settled },
+        };
         setScores(updated);
         emitChange(updated);
     };
@@ -116,8 +155,10 @@ export function ScoringMatrix({ criteria, existingScores = {}, readOnly = false,
                                             min={0}
                                             max={maxScore}
                                             step="0.01"
-                                            value={entry?.score ?? 0}
-                                            onChange={(e) => handleScoreChange(criterion.id, maxScore, e.target.value)}
+                                            value={drafts[criterion.id] ?? (entry?.score ?? '')}
+                                            onChange={(e) => handleScoreChange(criterion.id, e.target.value)}
+                                            onBlur={() => handleScoreBlur(criterion.id, maxScore)}
+                                            aria-invalid={(entry?.score ?? 0) > maxScore}
                                             className="w-20 mx-auto text-center"
                                         />
                                     )}

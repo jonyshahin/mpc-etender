@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tender\StoreTenderRequest;
 use App\Http\Requests\Tender\UpdateTenderRequest;
 use App\Models\Category;
+use App\Models\EvaluationReport;
+use App\Models\EvaluationScore;
 use App\Models\Tender;
 use App\Services\TenderService;
 use Illuminate\Database\Eloquent\Builder;
@@ -214,6 +216,12 @@ class TenderController extends Controller
             'canEdit' => $request->user()->can('update', $tender),
             'canPublish' => $request->user()->can('publish', $tender),
             'canCancel' => $request->user()->can('cancel', $tender),
+            // The evaluation screens are all tender-scoped and were linked from
+            // nowhere in the app — sidebar, this page, anywhere. The whole
+            // module could only be reached by typing a URL. Each flag mirrors
+            // the policy its destination enforces, so no link leads to a 403.
+            'canScore' => $request->user()->can('score', [EvaluationScore::class, $tender]),
+            'canViewEvaluationReport' => $request->user()->can('viewAny', [EvaluationReport::class, $tender]),
             // BUG-23: addendum issuance is a separate concern from tender
             // editing. canEdit is correctly gated to Draft (you can't edit
             // a published tender's BOQ/docs/etc), but addenda are precisely

@@ -128,6 +128,10 @@ type Props = {
     // amendments to a Published tender — distinct concern, distinct
     // permission (`tenders.issue_addenda`).
     canIssueAddendum: boolean;
+    /** Mirrors EvaluationScorePolicy::score — permission plus committee membership. */
+    canScore: boolean;
+    /** Mirrors EvaluationReportPolicy::viewAny — project plus evaluations.view. */
+    canViewEvaluationReport: boolean;
     canPublish: boolean;
     canCancel: boolean;
 };
@@ -141,8 +145,34 @@ function formatFileSize(bytes: number) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function Show({ tender, canEdit, canPublish, canCancel, canIssueAddendum }: Props) {
+export default function Show({
+    tender,
+    canEdit,
+    canPublish,
+    canCancel,
+    canIssueAddendum,
+    canScore,
+    canViewEvaluationReport,
+}: Props) {
     const { t } = useTranslation();
+
+    // Shown once the tender reaches the stage each screen is for, so the
+    // row does not offer bid opening on a draft.
+    const pastSubmission = ['submission_closed', 'under_evaluation', 'awarded', 'completed'].includes(
+        tender.status,
+    );
+    const evaluationLinks = [
+        ...(pastSubmission
+            ? [{ href: `/tenders/${tender.id}/bid-summary`, label: t('eval.bid_opening') }]
+            : []),
+        { href: `/tenders/${tender.id}/committees`, label: t('eval.committees') },
+        ...(canScore
+            ? [{ href: `/evaluations/${tender.id}/score`, label: t('eval.scoring') }]
+            : []),
+        ...(canViewEvaluationReport
+            ? [{ href: `/tenders/${tender.id}/evaluation-report`, label: t('eval.report') }]
+            : []),
+    ];
     const [activeTab, setActiveTab] = useState('Overview');
     const [showPublishConfirm, setShowPublishConfirm] = useState(false);
     const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -321,6 +351,25 @@ export default function Show({ tender, canEdit, canPublish, canCancel, canIssueA
                         )}
                     </div>
                 </div>
+
+                {/* The evaluation screens live at their own tender-scoped URLs and
+                    were reachable from nowhere in the app — not the sidebar, not
+                    here. Each link is gated on the same policy its destination
+                    enforces, so none of them lands on a 403. */}
+                {evaluationLinks.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                        <span className="text-sm font-medium text-muted-foreground">
+                            {t('nav.evaluation')}
+                        </span>
+                        {evaluationLinks.map((link) => (
+                            <Link key={link.href} href={link.href}>
+                                <Button variant="outline" size="sm">
+                                    {link.label}
+                                </Button>
+                            </Link>
+                        ))}
+                    </div>
+                )}
 
                 {/* Tab Navigation */}
                 <div className="flex gap-1 border-b">

@@ -1184,6 +1184,9 @@
     "eval.criteria_and_weight": ":count criteria, :weight% total weight",
     "eval.scored_progress": "Scored :scored of :total",
     "eval.no_criteria_for_your_committee": "No criteria are assigned to your committee for this tender. Ask the tender owner to define them before scoring.",
+    "eval.remove_member": "Remove committee member",
+    "eval.remove_member_confirm": "Remove :name from this committee? They will no longer be able to score bids on this tender.",
+    "nav.evaluation": "Evaluation",
 
     "Addendum issued.": "Addendum issued.",
     "Answer saved.": "Answer saved.",

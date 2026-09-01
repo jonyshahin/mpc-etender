@@ -73,7 +73,7 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | POST | `/tenders/{tender}/committees` | `tenders.committees.store` | Create committee |
 | PUT | `/tenders/{tender}/committees/{c}` | `tenders.committees.update` | Update committee |
 | POST | `/tenders/{tender}/committees/{c}/members` | `tenders.committees.members.store` | Add member |
-| DELETE | `/tenders/{tender}/committees/{c}/members/{m}` | `tenders.committees.members.destroy` | Remove member |
+| DELETE | `/tenders/{tender}/committees/{c}/members/{user}` | `tenders.committees.members.destroy` | Remove member. Binds the **user**, not the pivot row — `members()` is a belongsToMany over users and never exposed a `committee_members.id` |
 | POST | `/tenders/{tender}/complete-technical` | `tenders.complete-technical` | Complete technical eval |
 | POST | `/tenders/{tender}/complete-financial` | `tenders.complete-financial` | Complete financial eval |
 | POST | `/tenders/{tender}/evaluation-report` | `tenders.report.generate` | Generate eval report |

@@ -17,6 +17,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { formatDate } from '@/lib/datetime';
 import { Plus, X, Check, Clock, Users } from 'lucide-react';
 
@@ -70,12 +71,26 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
         });
     };
 
-    const handleRemoveMember = (committeeId: string, memberId: string) => {
-        if (!confirm('Remove this member from the committee?')) return;
-        const form = useForm({});
-        form.delete(`/tenders/${tender.id}/committees/${committeeId}/members/${memberId}`, {
-            preserveScroll: true,
-        });
+    // useForm() used to be called INSIDE this handler. It is a React hook,
+    // so invoking it outside render threw "Invalid hook call" and blew up
+    // the page — removing a member was impossible. Hoisted, and the native
+    // confirm() replaced with the project's dialog so the prompt is styled
+    // and translated like every other destructive action.
+    const removeForm = useForm({});
+    const [pendingRemoval, setPendingRemoval] = useState<
+        { committeeId: string; userId: string; name: string } | null
+    >(null);
+
+    const confirmRemoveMember = () => {
+        if (!pendingRemoval) return;
+
+        // The URL takes the USER id: members() is a belongsToMany over users
+        // and never exposed a pivot id, so sending member.id as a
+        // CommitteeMember id 404'd every time.
+        removeForm.delete(
+            `/tenders/${tender.id}/committees/${pendingRemoval.committeeId}/members/${pendingRemoval.userId}`,
+            { preserveScroll: true, onFinish: () => setPendingRemoval(null) },
+        );
     };
 
     const roleBadgeVariant = (role: string) => {
@@ -163,7 +178,13 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 text-destructive"
-                                                    onClick={() => handleRemoveMember(committee.id, member.id)}
+                                                    onClick={() =>
+                                                        setPendingRemoval({
+                                                            committeeId: committee.id,
+                                                            userId: member.id,
+                                                            name: member.name,
+                                                        })
+                                                    }
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>
@@ -292,6 +313,14 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={pendingRemoval !== null}
+                onOpenChange={(open) => !open && setPendingRemoval(null)}
+                onConfirm={confirmRemoveMember}
+                title={t('eval.remove_member')}
+                description={t('eval.remove_member_confirm', { name: pendingRemoval?.name ?? '' })}
+            />
         </>
     );
 }
