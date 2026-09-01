@@ -1216,6 +1216,12 @@
     "eval.without_members": "بدون أعضاء",
     "eval.cannot_score_yet": "لا يمكن التقييم قبل تعيين الأعضاء",
     "eval.edit_committee": "تعديل اللجنة",
+    "eval.submitted_to_this_tender": "مُقدَّمة لهذه المناقصة",
+    "eval.not_yet_opened": "لم تُفتح بعد",
+    "eval.prices_visible": "الأسعار ظاهرة الآن",
+    "eval.request_has_expired": "انتهت صلاحية طلب الفتح",
+    "eval.request_expired_ask_again": "انتهت مهلة التأكيد. اطلب طلب فتح جديدًا.",
+    "eval.no_eligible_authorizer": "لا يوجد شخص آخر في هذا المشروع يملك صلاحية فتح العطاءات، لذا لا يوجد من يوقّع معك.",
     "eval.weights_do_not_total_100": "مجموع أوزان المعايير :total% وليس 100%. لن تكون المجاميع المرجّحة قابلة للمقارنة بين العطاءات حتى يصححها مالك المناقصة.",
 
     "Addendum issued.": "تم إصدار الملحق.",

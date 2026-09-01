@@ -1216,6 +1216,12 @@
     "eval.without_members": "Without members",
     "eval.cannot_score_yet": "Cannot score until staffed",
     "eval.edit_committee": "Edit committee",
+    "eval.submitted_to_this_tender": "Submitted to this tender",
+    "eval.not_yet_opened": "Not yet opened",
+    "eval.prices_visible": "Prices now visible",
+    "eval.request_has_expired": "This opening request has expired",
+    "eval.request_expired_ask_again": "The confirmation window has passed. Ask for a new opening request.",
+    "eval.no_eligible_authorizer": "Nobody else on this project holds the bid-opening permission, so there is no one to countersign.",
     "eval.weights_do_not_total_100": "The criteria weights add up to :total%, not 100%. Weighted totals will not be comparable between bids until the tender owner corrects them.",
 
     "Addendum issued.": "Addendum issued.",
