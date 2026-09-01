@@ -39,6 +39,12 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
         complete: false,
     });
 
+    // Everything the server said about the scores, top-level and per-item.
+    const scoreErrors = Object.entries(form.errors)
+        .filter(([key]) => key === 'scores' || key.startsWith('scores.'))
+        .map(([, message]) => message)
+        .filter((message): message is string => Boolean(message));
+
     const handleScoresChange = (
         scores: Array<{ criterion_id: string; score: number; justification: string | null }>,
     ) => {
@@ -92,8 +98,16 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
                             onChange={handleScoresChange}
                         />
 
-                        {form.errors.scores && (
-                            <p className="mt-4 text-sm text-destructive">{form.errors.scores}</p>
+                        {/* StoreScoresRequest produces per-item keys — scores.0.score,
+                            scores.2.justification — and only the top-level key was
+                            rendered, so a rejected row gave the evaluator nothing to
+                            go on. */}
+                        {scoreErrors.length > 0 && (
+                            <ul className="mt-4 list-inside list-disc text-sm text-destructive">
+                                {scoreErrors.map((message, index) => (
+                                    <li key={index}>{message}</li>
+                                ))}
+                            </ul>
                         )}
                     </CardContent>
                 </Card>
@@ -114,6 +128,7 @@ export default function ScoreBid({ tender, bid, criteria, existingScores }: Prop
                 open={confirmComplete}
                 onOpenChange={setConfirmComplete}
                 onConfirm={handleCompleteScoring}
+                loading={form.processing}
                 title={t('eval.complete_scoring')}
                 description={t('eval.complete_scoring_confirm')}
             />

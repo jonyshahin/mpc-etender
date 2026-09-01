@@ -101,11 +101,12 @@ export default function BidOpening({
         const opening = new Date(tender.opening_date).getTime();
         const now = Date.now();
         const diff = opening - now;
-        if (diff <= 0) return 'Opening time has passed';
+        if (diff <= 0) return t('eval.opening_time_passed');
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        return `${days}d ${hours}h ${minutes}m remaining`;
+        return t('eval.time_remaining', { days, hours, minutes });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tender.opening_date]);
 
     const sealedCount = bids.filter((b) => b.is_sealed).length;
@@ -153,7 +154,7 @@ export default function BidOpening({
 
     return (
         <>
-            <Head title={`Bid Opening - ${tender.reference_number}`} />
+            <Head title={`${t('eval.bid_opening')} - ${tender.reference_number}`} />
             <Heading title={t('pages.eval.bid_opening')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
@@ -170,7 +171,7 @@ export default function BidOpening({
                                 <Lock className="h-8 w-8 text-muted-foreground" />
                                 <div>
                                     <p className="text-lg font-semibold">
-                                        {sealedCount} bid{sealedCount !== 1 ? 's are' : ' is'} sealed
+                                        {t('eval.bids_sealed_count', { count: sealedCount })}
                                     </p>
                                     <p className="flex items-center gap-1 text-sm text-muted-foreground">
                                         <Clock className="h-4 w-4" />
@@ -223,8 +224,14 @@ export default function BidOpening({
                                         )}
                                     </div>
                                 </div>
+                            ) : !canOpen ? (
+                                /* Neither a pending request nor an openable tender left
+                                   this whole area blank, with nothing to say why. */
+                                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                                    {t('eval.nothing_to_do_yet')}
+                                </p>
                             ) : (
-                                canOpen && (
+                                (
                                     <div className="space-y-3">
                                         <p className="text-sm text-muted-foreground">
                                             {t('eval.two_step_note')}
@@ -279,7 +286,7 @@ export default function BidOpening({
                                 <Unlock className="h-5 w-5" />
                                 {t('eval.opened_bids')}
                                 <Badge variant="outline" className="ml-2">
-                                    {bids.length} bid{bids.length !== 1 ? 's' : ''}
+                                    {t('eval.bid_count', { count: bids.length })}
                                 </Badge>
                             </CardTitle>
                         </CardHeader>

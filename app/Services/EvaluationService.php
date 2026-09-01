@@ -13,6 +13,7 @@ use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Evaluation engine: aggregates scores, applies weights, ranks bids.
@@ -207,19 +208,34 @@ class EvaluationService
         $recommendedBidId = ! empty($ranking) ? $ranking[0]['bid_id'] : null;
 
         // Generate PDF
+        // A report is evidence of how an award was reached, so a regeneration
+        // must not silently replace the file an earlier one produced. The path
+        // used to be keyed on the tender reference alone.
         $pdf = Pdf::loadView('pdf.evaluation-report', [
             'tender' => $tender,
             'ranking' => $ranking,
         ]);
 
-        $pdfPath = "reports/evaluation-{$tender->reference_number}.pdf";
+        // Stamped, so a regeneration cannot silently replace the file an earlier
+        // one produced. The path was keyed on the tender reference alone, and a
+        // report is the evidence of how an award was reached.
+        // Timestamp for a human reading the bucket, random suffix for actual
+        // uniqueness: second precision alone collides when a report is
+        // regenerated twice in the same second, which puts us straight back to
+        // one run overwriting another.
+        $pdfPath = sprintf(
+            'reports/evaluation-%s-%s-%s.pdf',
+            $tender->reference_number,
+            now()->format('Ymd-His'),
+            Str::lower(Str::random(6)),
+        );
         Storage::disk('s3')->put($pdfPath, $pdf->output());
 
         return EvaluationReport::create([
             'tender_id' => $tender->id,
             'generated_by' => $generatedBy->id,
             'report_type' => $tender->is_two_envelope ? 'two_envelope' : 'single_envelope',
-            'summary' => 'Evaluation completed. '.count($ranking).' bids ranked.',
+            'summary' => __(':count bids ranked.', ['count' => count($ranking)]),
             'ranking_data' => $ranking,
             'recommended_bid_id' => $recommendedBidId,
             'status' => 'draft',

@@ -90,7 +90,27 @@ class CommitteeController extends Controller
 
         $data = $request->validated();
 
-        if ($committee->committeeMemberRecords()->where('user_id', $data['user_id'])->exists()) {
+        $candidate = User::findOrFail($data['user_id']);
+
+        // AddMemberRequest validates only that the id exists somewhere in the
+        // users table. Committee membership is what EvaluationScorePolicy::score
+        // gates on, so adding an outsider hands them the evaluation data for a
+        // project they have nothing to do with.
+        if (! $candidate->isAssignedToProject($tender->project_id)) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('That user is not assigned to this project.')]);
+
+            return back();
+        }
+
+        // One committee per tender per person. Sitting on both the technical
+        // and the financial committee is not a richer role — it is an ambiguity
+        // the scoring screen has to guess its way out of.
+        $alreadyOnThisTender = CommitteeMember::whereHas(
+            'committee',
+            fn ($q) => $q->where('tender_id', $tender->id),
+        )->where('user_id', $candidate->id)->exists();
+
+        if ($alreadyOnThisTender) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('User is already a member.')]);
 
             return back();

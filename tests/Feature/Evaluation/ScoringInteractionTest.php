@@ -9,6 +9,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tender;
 use App\Models\User;
+use App\Services\EvaluationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -150,4 +151,75 @@ test('completing the last outstanding bid does mark the tender scored', function
         ]);
 
     expect(CommitteeMember::where('user_id', $evaluator->id)->first()->has_scored)->toBeTrue();
+});
+
+/**
+ * AddMemberRequest validates only that the user id exists somewhere in the
+ * users table. Committee membership is what EvaluationScorePolicy::score gates
+ * on, so adding an outsider hands them the evaluation data for a project they
+ * have nothing to do with.
+ */
+test('someone outside the project cannot be added to a committee', function () {
+    $tender = Tender::factory()->create();
+    $manager = interactionEvaluator($tender);
+    $committee = EvaluationCommittee::factory()->create(['tender_id' => $tender->id]);
+
+    $this->actingAs($manager)->post(
+        route('tenders.committees.members.store', [$tender, $committee]),
+        ['user_id' => User::factory()->create()->id, 'role' => 'member'],
+    );
+
+    expect(CommitteeMember::where('committee_id', $committee->id)->count())->toBe(0);
+});
+
+/**
+ * Sitting on both the technical and the financial committee of one tender is
+ * not a richer role — it is an ambiguity the scoring screen has to guess its
+ * way out of.
+ */
+test('the same person cannot sit on two committees of one tender', function () {
+    $tender = Tender::factory()->create();
+    $manager = interactionEvaluator($tender);
+
+    $technical = EvaluationCommittee::factory()->create([
+        'tender_id' => $tender->id, 'committee_type' => 'technical',
+    ]);
+    $financial = EvaluationCommittee::factory()->create([
+        'tender_id' => $tender->id, 'committee_type' => 'financial',
+    ]);
+
+    $candidate = User::factory()->create();
+    $candidate->projects()->attach($tender->project_id, [
+        'id' => (string) Str::uuid(), 'project_role' => 'viewer', 'assigned_at' => now(),
+    ]);
+
+    foreach ([$technical, $financial] as $committee) {
+        $this->actingAs($manager)->post(
+            route('tenders.committees.members.store', [$tender, $committee]),
+            ['user_id' => $candidate->id, 'role' => 'member'],
+        );
+    }
+
+    expect(CommitteeMember::where('user_id', $candidate->id)->count())->toBe(1);
+});
+
+/**
+ * A report is the evidence of how an award was reached, so regenerating must
+ * not silently replace the file an earlier run produced.
+ */
+test('regenerating the report does not overwrite the previous file', function () {
+    Storage::fake('s3');
+
+    $tender = Tender::factory()->create(['is_two_envelope' => false]);
+    $generator = interactionEvaluator($tender);
+    Bid::factory()->create(['tender_id' => $tender->id]);
+    EvaluationCriterion::factory()->create(['tender_id' => $tender->id, 'envelope' => 'technical']);
+
+    $service = app(EvaluationService::class);
+    $first = $service->generateReport($tender, $generator);
+    $second = $service->generateReport($tender->fresh(), $generator);
+
+    expect($second->file_path)->not->toBe($first->file_path);
+    Storage::disk('s3')->assertExists($first->file_path);
+    Storage::disk('s3')->assertExists($second->file_path);
 });

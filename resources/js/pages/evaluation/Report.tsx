@@ -66,9 +66,15 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
 
     const maxScore = ranking.length > 0 ? Math.max(...ranking.map((r) => r.final_score)) : 100;
 
+    // The two segments are shares of the SAME track, and together they make
+    // up final_score — which is what maxScore measures. Scaling each by 50
+    // meant even the top-ranked bid filled only half the bar, so every row
+    // read as roughly half as good as it was.
+    const barWidth = (value: number) => (maxScore > 0 ? (value / maxScore) * 100 : 0);
+
     return (
         <>
-            <Head title={`Evaluation Report - ${tender.reference_number}`} />
+            <Head title={`${t('pages.eval.evaluation_report')} - ${tender.reference_number}`} />
             <Heading title={t('pages.eval.evaluation_report')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
@@ -134,14 +140,14 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                                                     <div
                                                                         className="bg-blue-500 transition-all"
                                                                         style={{
-                                                                            width: `${maxScore > 0 ? (row.technical_score / maxScore) * 50 : 0}%`,
+                                                                            width: `${barWidth(row.technical_score)}%`,
                                                                         }}
                                                                         title={`Technical: ${row.technical_score.toFixed(2)}`}
                                                                     />
                                                                     <div
                                                                         className="bg-emerald-500 transition-all"
                                                                         style={{
-                                                                            width: `${maxScore > 0 ? (row.financial_score / maxScore) * 50 : 0}%`,
+                                                                            width: `${barWidth(row.financial_score)}%`,
                                                                         }}
                                                                         title={`Financial: ${row.financial_score.toFixed(2)}`}
                                                                     />
@@ -150,7 +156,7 @@ export default function Report({ tender, report, ranking, criteria }: Props) {
                                                                 <div
                                                                     className="bg-blue-500 transition-all"
                                                                     style={{
-                                                                        width: `${maxScore > 0 ? (row.final_score / maxScore) * 100 : 0}%`,
+                                                                        width: `${barWidth(row.final_score)}%`,
                                                                     }}
                                                                 />
                                                             )}

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Criterion = {
     id: string;
@@ -30,6 +31,7 @@ type ScoringMatrixProps = {
 };
 
 export function ScoringMatrix({ criteria, existingScores = {}, readOnly = false, onChange }: ScoringMatrixProps) {
+    const { t } = useTranslation();
     const [scores, setScores] = useState<Record<string, { score: number; justification: string | null }>>(() => {
         const initial: Record<string, { score: number; justification: string | null }> = {};
         for (const criterion of criteria) {
@@ -118,16 +120,27 @@ export function ScoringMatrix({ criteria, existingScores = {}, readOnly = false,
         }, 0);
     }, [scores, criteria]);
 
+    // A matrix with no rows still rendered its headings and a "Weighted Total
+    // 0.00%" footer, so an evaluator whose committee has no criteria saw a
+    // table that looked usable and two buttons that failed server validation.
+    if (criteria.length === 0) {
+        return (
+            <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                {t('empty.no_criteria_defined')}
+            </p>
+        );
+    }
+
     return (
         <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
                 <thead>
                     <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left font-medium">Criterion</th>
-                        <th className="px-4 py-3 text-center font-medium">Weight</th>
-                        <th className="px-4 py-3 text-center font-medium">Max Score</th>
-                        <th className="px-4 py-3 text-center font-medium">Score</th>
-                        <th className="px-4 py-3 text-left font-medium">Justification</th>
+                        <th className="px-4 py-3 text-start font-medium">{t('table.criterion')}</th>
+                        <th className="px-4 py-3 text-center font-medium">{t('table.weight')}</th>
+                        <th className="px-4 py-3 text-center font-medium">{t('table.max_score')}</th>
+                        <th className="px-4 py-3 text-center font-medium">{t('table.score')}</th>
+                        <th className="px-4 py-3 text-start font-medium">{t('table.justification')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -183,7 +196,7 @@ export function ScoringMatrix({ criteria, existingScores = {}, readOnly = false,
                 <tfoot>
                     <tr className="bg-muted/50 font-semibold">
                         <td className="px-4 py-3" colSpan={3}>
-                            Weighted Total
+                            {t('eval.weighted_total')}
                         </td>
                         <td className="px-4 py-3 text-center text-lg">{weightedTotal.toFixed(2)}%</td>
                         <td className="px-4 py-3"></td>

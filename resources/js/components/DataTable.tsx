@@ -3,6 +3,7 @@ import { Link, router } from '@inertiajs/react';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 import { nextSortDirection, resolveTableFilters } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
@@ -73,6 +74,7 @@ export function DataTable<T = any>({
     onSearch,
     actions,
 }: DataTableProps<T>) {
+    const { t } = useTranslation();
     const [searchValue, setSearchValue] = useState(
         (filters.search as string) ?? '',
     );
@@ -165,7 +167,7 @@ export function DataTable<T = any>({
                                     colSpan={columns.length + (actions ? 1 : 0)}
                                     className="px-4 py-8 text-center text-muted-foreground"
                                 >
-                                    No results found.
+                                    {t('empty.no_results')}
                                 </td>
                             </tr>
                         ) : (

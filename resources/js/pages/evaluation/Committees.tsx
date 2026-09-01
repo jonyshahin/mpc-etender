@@ -108,7 +108,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
 
     return (
         <>
-            <Head title={`Committees - ${tender.reference_number}`} />
+            <Head title={`${t('eval.committees')} - ${tender.reference_number}`} />
             <Heading title={t('pages.eval.evaluation_committees')} description={`${tender.reference_number} - ${tender.title_en}`} />
 
             <div className="mt-6 space-y-6">
@@ -138,9 +138,9 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="flex items-center gap-2">
                                         {committee.name}
-                                        <Badge>{committee.committee_type}</Badge>
+                                        <Badge>{t(`eval.${committee.committee_type}`)}</Badge>
                                     </CardTitle>
-                                    <Badge variant="outline">{committee.status}</Badge>
+                                    <Badge variant="outline">{t(`status.${committee.status}`)}</Badge>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     {t('eval.formed')}: {formatDate(committee.formed_at)}
@@ -148,6 +148,13 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
+                                    {/* store() creates a committee with no members, so this
+                                        is the state every committee starts in. */}
+                                    {committee.members.length === 0 && (
+                                        <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                                            {t('eval.no_members_yet')}
+                                        </p>
+                                    )}
                                     {committee.members.map((member) => (
                                         <div
                                             key={member.id}
@@ -159,7 +166,7 @@ export default function Committees({ tender, committees, projectUsers }: Props) 
                                                     <p className="text-xs text-muted-foreground">{member.email}</p>
                                                 </div>
                                                 <Badge variant={roleBadgeVariant(member.pivot.role)}>
-                                                    {member.pivot.role}
+                                                    {t(`eval.role_${member.pivot.role}`)}
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-2">

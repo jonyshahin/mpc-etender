@@ -28,7 +28,10 @@ class BidOpeningController extends Controller
 
         $bids = $tender->bids()
             ->with('vendor:id,company_name')
-            ->select('id', 'vendor_id', 'bid_reference', 'status', 'total_amount', 'is_sealed', 'submitted_at', 'opened_at')
+            // currency travels with the amount. Without it the screen printed
+            // a bare number and left the reader to assume which currency an
+            // award of 750,000 was in.
+            ->select('id', 'vendor_id', 'bid_reference', 'status', 'total_amount', 'currency', 'is_sealed', 'submitted_at', 'opened_at')
             ->where('status', '!=', 'withdrawn')
             // Ordering by amount ranked the bids cheapest-first on screen, which
             // gave away the commercial standings before the ceremony even
@@ -48,8 +51,12 @@ class BidOpeningController extends Controller
         });
 
         // Get project team members with bids.open permission for authorizer dropdown
+        // Everyone entitled to countersign, except the person asking. Dual
+        // authorisation means two different people, so offering yourself is a
+        // guaranteed dead end — the service refuses it on submit.
         $authorizers = $tender->project->users()
             ->whereHas('role.permissions', fn ($q) => $q->where('slug', 'bids.open'))
+            ->where('users.id', '!=', $request->user()->id)
             ->select('users.id', 'users.name')
             ->get();
 
