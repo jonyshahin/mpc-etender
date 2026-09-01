@@ -1173,6 +1173,7 @@
 
     "Addendum issued.": "تم إصدار الملحق.",
     "Answer saved.": "تم حفظ الإجابة.",
+    "Approval thresholds are set in :currency and this tender is in :actual. Convert the tender to :currency before requesting approval.": "حدود الموافقة محددة بعملة :currency وهذه المناقصة بعملة :actual. حوّل المناقصة إلى :currency قبل طلب الموافقة.",
     "Approval delegated successfully.": "تم تفويض الموافقة بنجاح.",
     "Approval rejected.": "تم رفض الموافقة.",
     "Approval request created successfully.": "تم إنشاء طلب الموافقة بنجاح.",

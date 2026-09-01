@@ -59,11 +59,11 @@ type Criterion = {
     max_score: string;
 };
 
-const CURRENCIES = [
-    { value: 'USD', label: 'USD' },
-    { value: 'IQD', label: 'IQD' },
-    { value: 'EUR', label: 'EUR' },
-];
+// USD only, deliberately. The approval thresholds on /admin/settings are
+// denominated in USD and nothing converts, so a tender in another currency
+// was levelled against them raw — every IQD award landed at Level 3
+// regardless of size. Restore the other options once a rate exists.
+const CURRENCIES = [{ value: 'USD', label: 'USD' }];
 
 function FieldError({ errors, path }: { errors: Record<string, string>; path: string }) {
     const msg = errors[path];

@@ -1173,6 +1173,7 @@
 
     "Addendum issued.": "Addendum issued.",
     "Answer saved.": "Answer saved.",
+    "Approval thresholds are set in :currency and this tender is in :actual. Convert the tender to :currency before requesting approval.": "Approval thresholds are set in :currency and this tender is in :actual. Convert the tender to :currency before requesting approval.",
     "Approval delegated successfully.": "Approval delegated successfully.",
     "Approval rejected.": "Approval rejected.",
     "Approval request created successfully.": "Approval request created successfully.",

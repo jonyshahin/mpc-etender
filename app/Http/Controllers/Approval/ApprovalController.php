@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ApprovalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -124,13 +125,26 @@ class ApprovalController extends Controller
      */
     public function requestApproval(Request $request, Tender $tender): RedirectResponse
     {
-        $report = $tender->evaluationReports()->latest()->firstOrFail();
+        // reports(), not evaluationReports(): the latter does not exist on Tender,
+        // so this endpoint raised BadMethodCallException — a 500 on every attempt
+        // to start an approval, which is why the levelling bugs below it went
+        // unnoticed.
+        $report = $tender->reports()->latest()->firstOrFail();
 
-        $this->approvalService->requestApproval(
-            $tender,
-            $report,
-            $request->user(),
-        );
+        try {
+            $this->approvalService->requestApproval(
+                $tender,
+                $report,
+                $request->user(),
+            );
+        } catch (ValidationException $e) {
+            // As a toast, not the thrown error bag: the service refuses on
+            // `currency`, and this page renders only `comments` and
+            // `delegatee_id` errors — the refusal would have been invisible.
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->validator->errors()->first()]);
+
+            return redirect()->back();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval request created successfully.')]);
 

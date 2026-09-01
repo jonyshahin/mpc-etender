@@ -20,7 +20,7 @@ class UpdateTenderRequest extends FormRequest
             'description_ar' => ['nullable', 'string', 'max:5000'],
             'tender_type' => ['required', 'in:open,restricted,direct_invitation,framework'],
             'estimated_value' => ['nullable', 'numeric', 'min:0'],
-            'currency' => ['required', 'string', 'size:3'],
+            'currency' => ['required', 'string', 'in:USD'],
             'submission_deadline' => ['required', 'date', 'after:now'],
             'opening_date' => ['required', 'date', 'after:submission_deadline'],
             'is_two_envelope' => ['required', 'boolean'],

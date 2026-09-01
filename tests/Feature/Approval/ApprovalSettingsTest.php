@@ -21,6 +21,10 @@ uses(RefreshDatabase::class);
  *
  * These assert the settings actually drive behaviour, so a re-regression to
  * hardcoded values fails rather than passing quietly.
+ *
+ * They read `required_level`, not `approval_level`: a chain now starts at level
+ * 1 and escalates, so `approval_level` is the level a request currently sits at
+ * while `required_level` is how high it must go. See ApprovalChainTest.
  */
 function setApprovalSetting(string $key, string $value): void
 {
@@ -39,36 +43,36 @@ function raiseApproval(float $estimatedValue): ApprovalRequest
 }
 
 test('approval level falls back to the built-in thresholds when nothing is configured', function () {
-    expect(raiseApproval(10_000)->approval_level)->toBe(1);
-    expect(raiseApproval(200_000)->approval_level)->toBe(2);
-    expect(raiseApproval(900_000)->approval_level)->toBe(3);
+    expect(raiseApproval(10_000)->required_level)->toBe(1);
+    expect(raiseApproval(200_000)->required_level)->toBe(2);
+    expect(raiseApproval(900_000)->required_level)->toBe(3);
 });
 
 test('the configured level 1 threshold changes how an award is routed', function () {
     // 200k is Level 2 under the default 50k threshold.
-    expect(raiseApproval(200_000)->approval_level)->toBe(2);
+    expect(raiseApproval(200_000)->required_level)->toBe(2);
 
     // Raise Level 1's ceiling above it and the same value must route to Level 1.
     setApprovalSetting('approval.level1_threshold', '250000');
 
-    expect(raiseApproval(200_000)->approval_level)->toBe(1);
+    expect(raiseApproval(200_000)->required_level)->toBe(1);
 });
 
 test('the configured level 2 threshold changes how an award is routed', function () {
-    expect(raiseApproval(900_000)->approval_level)->toBe(3);
+    expect(raiseApproval(900_000)->required_level)->toBe(3);
 
     setApprovalSetting('approval.level2_threshold', '1000000');
 
-    expect(raiseApproval(900_000)->approval_level)->toBe(2);
+    expect(raiseApproval(900_000)->required_level)->toBe(2);
 });
 
 test('lowering the thresholds escalates a value that previously sat at level 1', function () {
-    expect(raiseApproval(10_000)->approval_level)->toBe(1);
+    expect(raiseApproval(10_000)->required_level)->toBe(1);
 
     setApprovalSetting('approval.level1_threshold', '5000');
     setApprovalSetting('approval.level2_threshold', '8000');
 
-    expect(raiseApproval(10_000)->approval_level)->toBe(3);
+    expect(raiseApproval(10_000)->required_level)->toBe(3);
 });
 
 test('the approval deadline honours approval.expiry_days', function () {

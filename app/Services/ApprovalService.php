@@ -14,24 +14,33 @@ use App\Models\SystemSetting;
 use App\Models\Tender;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Validation\ValidationException;
 
 class ApprovalService
 {
+    /** The currency approval.level*_threshold is denominated in. */
+    private const THRESHOLD_CURRENCY = 'USD';
+
     /**
      * Create an approval request for a tender award.
-     * Auto-determines approval level from tender value and system settings.
+     *
+     * The chain starts at level 1 and escalates. It used to be created already
+     * sitting at the maximum level, which made approve()'s escalation branch
+     * (`approval_level < required`) unreachable — so a single signature
+     * finalised an award of any size and levels 2 and 3 were dead code.
      */
     public function requestApproval(Tender $tender, EvaluationReport $report, User $requestedBy): ApprovalRequest
     {
-        $level = $this->determineApprovalLevel($tender);
+        $value = $this->awardValue($tender, $report);
 
         return ApprovalRequest::create([
             'tender_id' => $tender->id,
             'report_id' => $report->id,
             'requested_by' => $requestedBy->id,
             'approval_type' => ApprovalType::Award,
-            'value_threshold' => $tender->estimated_value,
-            'approval_level' => $level,
+            'value_threshold' => $value,
+            'approval_level' => 1,
+            'required_level' => $this->determineApprovalLevel($value),
             'status' => ApprovalStatus::Pending,
             'requested_at' => now(),
             'deadline' => $this->approvalDeadline(),
@@ -52,9 +61,12 @@ class ApprovalService
             'decided_at' => now(),
         ]);
 
-        $maxLevel = $this->determineApprovalLevel($request->tender);
+        // Frozen when the chain was raised, not recomputed here: re-deriving it
+        // from the live tender and the live thresholds let an admin shorten a
+        // chain that was already running, just by editing either one.
+        $requiredLevel = (int) $request->required_level;
 
-        if ($request->approval_level < $maxLevel) {
+        if ($request->approval_level < $requiredLevel) {
             // Create next level request
             $request->update(['status' => ApprovalStatus::Approved]);
 
@@ -65,6 +77,7 @@ class ApprovalService
                 'approval_type' => $request->approval_type,
                 'value_threshold' => $request->value_threshold,
                 'approval_level' => $request->approval_level + 1,
+                'required_level' => $requiredLevel,
                 'status' => ApprovalStatus::Pending,
                 'requested_at' => now(),
                 'deadline' => $this->approvalDeadline(),
@@ -132,6 +145,7 @@ class ApprovalService
                     'approval_type' => $request->approval_type,
                     'value_threshold' => $request->value_threshold,
                     'approval_level' => $request->approval_level + 1,
+                    'required_level' => $request->required_level,
                     'status' => ApprovalStatus::Pending,
                     'requested_at' => now(),
                     'deadline' => $this->approvalDeadline(),
@@ -179,14 +193,57 @@ class ApprovalService
     }
 
     /**
-     * Determine required approval level based on tender value.
-     * Level 1 (< $50K), Level 2 ($50K-$500K), Level 3 (> $500K).
+     * The money the award actually commits.
+     *
+     * The thresholds are described on /admin/settings as applying to the award
+     * value, and createAward() books the award at the winning bid's total — but
+     * the level was taken from the tender's *estimate*. A tender estimated at
+     * 45k whose winning bid came in at 600k therefore cleared on one Level 1
+     * signature. Falls back to the estimate only while no bid is recommended
+     * yet, which is the one case where nothing better exists.
+     */
+    private function awardValue(Tender $tender, EvaluationReport $report): float
+    {
+        $this->guardCurrency($tender->currency);
+
+        $bid = $report->recommendedBid;
+
+        if ($bid !== null) {
+            $this->guardCurrency($bid->currency);
+
+            return (float) $bid->total_amount;
+        }
+
+        return (float) $tender->estimated_value;
+    }
+
+    /**
+     * Thresholds are denominated in USD and nothing converts between currencies.
+     *
+     * An IQD tender was compared against them raw, so a 50,000,000 IQD award
+     * (about 38k USD, a Level 1 value) landed at Level 3 — the thresholds were
+     * meaningless for any non-USD tender. Refusing is the honest answer until a
+     * rate exists; silently levelling against the wrong currency is not.
+     */
+    private function guardCurrency(?string $currency): void
+    {
+        if ($currency !== null && $currency !== self::THRESHOLD_CURRENCY) {
+            throw ValidationException::withMessages([
+                'currency' => __(
+                    'Approval thresholds are set in :currency and this tender is in :actual. Convert the tender to :currency before requesting approval.',
+                    ['currency' => self::THRESHOLD_CURRENCY, 'actual' => $currency],
+                ),
+            ]);
+        }
+    }
+
+    /**
+     * Determine required approval level for an award value.
+     * Level 1 (<= $50K), Level 2 ($50K-$500K), Level 3 (> $500K).
      * Thresholds from system_settings.
      */
-    private function determineApprovalLevel(Tender $tender): int
+    private function determineApprovalLevel(float $value): int
     {
-        $value = (float) $tender->estimated_value;
-
         // Keys must match SystemSettingSeeder exactly. These previously read
         // `approval_threshold_level1/2`, which are seeded nowhere — so the
         // lookups always returned null and the defaults below silently won,

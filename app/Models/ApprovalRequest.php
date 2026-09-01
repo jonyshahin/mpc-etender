@@ -32,6 +32,7 @@ class ApprovalRequest extends Model
         'approval_type',
         'value_threshold',
         'approval_level',
+        'required_level',
         'status',
         'requested_at',
         'deadline',
