@@ -47,7 +47,8 @@ class ReportController extends Controller
             'tender' => $tender->only('id', 'reference_number', 'title_en', 'status', 'is_two_envelope', 'estimated_value', 'currency'),
             'report' => $report,
             'ranking' => $ranking,
-            'criteria' => $tender->evaluationCriteria()->orderBy('envelope')->orderBy('sort_order')->get(),
+            // 'criteria' used to be queried and shipped here; the page never read
+            // it. The breakdown it would have supported is the score table.
         ]);
     }
 

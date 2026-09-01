@@ -1222,6 +1222,12 @@
     "eval.request_has_expired": "This opening request has expired",
     "eval.request_expired_ask_again": "The confirmation window has passed. Ask for a new opening request.",
     "eval.no_eligible_authorizer": "Nobody else on this project holds the bid-opening permission, so there is no one to countersign.",
+    "eval.highest_ranked": "Highest ranked",
+    "eval.ranked_by_final_score": "Ranked by final score",
+    "eval.score_breakdown": "Score breakdown",
+    "eval.generated_on": "Generated :time",
+    "empty.no_ranking": "No scores yet",
+    "empty.no_ranking_description": "Bids are ranked once the evaluation committees have scored them.",
     "eval.weights_do_not_total_100": "The criteria weights add up to :total%, not 100%. Weighted totals will not be comparable between bids until the tender owner corrects them.",
 
     "Addendum issued.": "Addendum issued.",

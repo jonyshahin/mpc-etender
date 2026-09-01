@@ -1222,6 +1222,12 @@
     "eval.request_has_expired": "انتهت صلاحية طلب الفتح",
     "eval.request_expired_ask_again": "انتهت مهلة التأكيد. اطلب طلب فتح جديدًا.",
     "eval.no_eligible_authorizer": "لا يوجد شخص آخر في هذا المشروع يملك صلاحية فتح العطاءات، لذا لا يوجد من يوقّع معك.",
+    "eval.highest_ranked": "الأعلى ترتيبًا",
+    "eval.ranked_by_final_score": "مرتّبة حسب الدرجة النهائية",
+    "eval.score_breakdown": "تفصيل الدرجات",
+    "eval.generated_on": "أُنشئ :time",
+    "empty.no_ranking": "لا توجد درجات بعد",
+    "empty.no_ranking_description": "يتم ترتيب العطاءات بعد أن تقيّمها لجان التقييم.",
     "eval.weights_do_not_total_100": "مجموع أوزان المعايير :total% وليس 100%. لن تكون المجاميع المرجّحة قابلة للمقارنة بين العطاءات حتى يصححها مالك المناقصة.",
 
     "Addendum issued.": "تم إصدار الملحق.",
