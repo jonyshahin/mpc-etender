@@ -1210,6 +1210,12 @@
     "eval.criteria_word": "معيار",
     "form.provide_justification": "ما مبرر هذه الدرجة؟",
     "eval.score_every_criterion_to_complete": "قيّم جميع المعايير قبل اعتماد هذا العطاء كمكتمل.",
+    "eval.evaluators": "المقيّمون",
+    "eval.across_all_committees": "في جميع اللجان",
+    "eval.evaluators_finished": "المقيّمون الذين أنهوا التقييم",
+    "eval.without_members": "بدون أعضاء",
+    "eval.cannot_score_yet": "لا يمكن التقييم قبل تعيين الأعضاء",
+    "eval.edit_committee": "تعديل اللجنة",
     "eval.weights_do_not_total_100": "مجموع أوزان المعايير :total% وليس 100%. لن تكون المجاميع المرجّحة قابلة للمقارنة بين العطاءات حتى يصححها مالك المناقصة.",
 
     "Addendum issued.": "تم إصدار الملحق.",

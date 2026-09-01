@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CommitteeStatus;
 use App\Models\Bid;
 use App\Models\CommitteeMember;
 use App\Models\EvaluationCommittee;
@@ -222,4 +223,49 @@ test('regenerating the report does not overwrite the previous file', function ()
     expect($second->file_path)->not->toBe($first->file_path);
     Storage::disk('s3')->assertExists($first->file_path);
     Storage::disk('s3')->assertExists($second->file_path);
+});
+
+/**
+ * tenders.committees.update existed but nothing in the app called it, so a
+ * committee could never be renamed or marked completed — and completion is the
+ * flag the evaluation workflow reads.
+ */
+test('a committee can be renamed and marked completed', function () {
+    $tender = Tender::factory()->create();
+    $manager = interactionEvaluator($tender);
+    $committee = EvaluationCommittee::factory()->create([
+        'tender_id' => $tender->id,
+        'name' => 'Technical Panel',
+        'status' => CommitteeStatus::Active,
+    ]);
+
+    $this->actingAs($manager)->put(
+        route('tenders.committees.update', [$tender, $committee]),
+        ['name' => 'Technical Panel A', 'status' => 'completed'],
+    );
+
+    $fresh = $committee->fresh();
+
+    expect($fresh->name)->toBe('Technical Panel A')
+        ->and($fresh->status)->toBe(CommitteeStatus::Completed);
+});
+
+/**
+ * Three sources disagreed on this column: the migration defaulted it to
+ * 'pending', store() wrote 'active', update() accepted only active|completed.
+ */
+test('a committee status outside the enum is refused', function () {
+    $tender = Tender::factory()->create();
+    $manager = interactionEvaluator($tender);
+    $committee = EvaluationCommittee::factory()->create([
+        'tender_id' => $tender->id,
+        'status' => CommitteeStatus::Active,
+    ]);
+
+    $this->actingAs($manager)->put(
+        route('tenders.committees.update', [$tender, $committee]),
+        ['name' => 'Renamed', 'status' => 'pending'],
+    );
+
+    expect($committee->fresh()->status)->toBe(CommitteeStatus::Active);
 });

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CommitteeStatus;
 use App\Enums\CommitteeType;
 use App\Models\EvaluationCommittee;
 use App\Models\Tender;
@@ -18,7 +19,7 @@ class EvaluationCommitteeFactory extends Factory
             'tender_id' => Tender::factory(),
             'name' => fake()->randomElement(['Technical Evaluation Committee', 'Financial Evaluation Committee', 'Combined Committee']),
             'committee_type' => fake()->randomElement(CommitteeType::cases()),
-            'status' => 'pending',
+            'status' => CommitteeStatus::Active,
             'formed_at' => now(),
             'completed_at' => null,
         ];

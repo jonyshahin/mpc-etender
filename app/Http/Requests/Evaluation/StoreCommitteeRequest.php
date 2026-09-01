@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Evaluation;
 
+use App\Enums\CommitteeType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCommitteeRequest extends FormRequest
 {
@@ -15,7 +17,7 @@ class StoreCommitteeRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'committee_type' => ['required', 'in:technical,financial,combined'],
+            'committee_type' => ['required', Rule::enum(CommitteeType::class)],
         ];
     }
 }

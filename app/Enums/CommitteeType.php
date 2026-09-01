@@ -36,6 +36,15 @@ enum CommitteeType: string
         };
     }
 
+    /** @return array<int, array{value: string, labelKey: string}> */
+    public static function options(): array
+    {
+        return array_map(
+            fn (self $case) => ['value' => $case->value, 'labelKey' => $case->labelKey()],
+            self::cases(),
+        );
+    }
+
     public function labelKey(): string
     {
         return 'eval.'.$this->value;

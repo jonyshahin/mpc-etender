@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Evaluation;
 
+use App\Enums\CommitteeStatus;
+use App\Enums\CommitteeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Evaluation\AddMemberRequest;
 use App\Http\Requests\Evaluation\StoreCommitteeRequest;
@@ -11,6 +13,7 @@ use App\Models\Tender;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,6 +47,11 @@ class CommitteeController extends Controller
             'tender' => $tender->only('id', 'reference_number', 'title_en', 'is_two_envelope'),
             'committees' => $committees,
             'projectUsers' => $projectUsers,
+            // Served from the enums rather than listed in the page, so the
+            // pickers cannot drift from what validation accepts.
+            'typeOptions' => CommitteeType::options(),
+            'statusOptions' => CommitteeStatus::options(),
+            'canManage' => $request->user()->can('manageCommittees', $tender),
         ]);
     }
 
@@ -53,7 +61,7 @@ class CommitteeController extends Controller
 
         $tender->committees()->create([
             ...$request->validated(),
-            'status' => 'active',
+            'status' => CommitteeStatus::Active,
             'formed_at' => now(),
         ]);
 
@@ -72,7 +80,7 @@ class CommitteeController extends Controller
 
         $committee->update($request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'in:active,completed'],
+            'status' => ['required', Rule::enum(CommitteeStatus::class)],
         ]));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Committee updated.')]);

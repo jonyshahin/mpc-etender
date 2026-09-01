@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CommitteeStatus;
 use App\Enums\CommitteeType;
 use Database\Factories\EvaluationCommitteeFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -37,6 +38,7 @@ class EvaluationCommittee extends Model
     protected function casts(): array
     {
         return [
+            'status' => CommitteeStatus::class,
             'committee_type' => CommitteeType::class,
             'formed_at' => 'datetime',
             'completed_at' => 'datetime',
