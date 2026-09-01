@@ -190,6 +190,12 @@ class TenderController extends Controller
 
     public function show(Request $request, Tender $tender): Response
     {
+        // The only read action in this controller that never called it. Without
+        // it any verified internal user could open any tender in any project and
+        // read estimated_value — MPC's own cost estimate — plus notes_internal,
+        // the full BOQ and the evaluation criteria weights.
+        $this->authorize('view', $tender);
+
         $tender->load([
             'project:id,name,code',
             'creator:id,name',

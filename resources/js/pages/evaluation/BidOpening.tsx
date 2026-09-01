@@ -17,7 +17,11 @@ type Bid = {
     vendor_id: string;
     bid_reference: string;
     status: string;
-    total_amount: string | null;
+    /**
+     * Absent, not null, while the bid is still sealed — the server omits the
+     * key entirely rather than sending a price nobody is entitled to yet.
+     */
+    total_amount?: string | null;
     is_sealed: boolean;
     submitted_at: string;
     opened_at: string | null;

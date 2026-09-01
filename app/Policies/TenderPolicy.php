@@ -13,6 +13,20 @@ class TenderPolicy
         return $user->isAssignedToProject($tender->project_id);
     }
 
+    /**
+     * Forming and staffing evaluation committees.
+     *
+     * Not update(): that additionally demands the tender still be Draft, and
+     * committees are formed once bidding is over. The permission alone was
+     * not enough either — it is global, so a holder could staff committees on
+     * projects they have nothing to do with.
+     */
+    public function manageCommittees(User $user, Tender $tender): bool
+    {
+        return $user->hasPermission('evaluations.manage_committees')
+            && $user->isAssignedToProject($tender->project_id);
+    }
+
     public function create(User $user): bool
     {
         return $user->hasPermission('tenders.create');

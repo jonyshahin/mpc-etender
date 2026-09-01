@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Evaluation;
 
 use App\Http\Controllers\Controller;
+use App\Models\EvaluationReport;
 use App\Models\Tender;
 use App\Services\EvaluationService;
 use App\Services\FileUploadService;
@@ -20,7 +21,13 @@ class ReportController extends Controller
 
     public function generate(Request $request, Tender $tender): RedirectResponse
     {
+        // Was gated on 'view' — bare project membership — so any project member
+        // could mint the report at any point in the lifecycle and read the
+        // financial scores from it, including a technical evaluator midway
+        // through technical evaluation. EvaluationReportPolicy was written for
+        // exactly this and had no call sites anywhere.
         $this->authorize('view', $tender);
+        $this->authorize('generate', EvaluationReport::class);
 
         $this->evaluationService->generateReport($tender, $request->user());
 
@@ -31,7 +38,7 @@ class ReportController extends Controller
 
     public function show(Request $request, Tender $tender): Response
     {
-        $this->authorize('view', $tender);
+        $this->authorize('viewAny', [EvaluationReport::class, $tender]);
 
         $report = $tender->reports()->latest()->first();
         $ranking = $report?->ranking_data ?? $this->evaluationService->computeFinalRanking($tender);
@@ -46,7 +53,7 @@ class ReportController extends Controller
 
     public function downloadPdf(Request $request, Tender $tender)
     {
-        $this->authorize('view', $tender);
+        $this->authorize('viewAny', [EvaluationReport::class, $tender]);
 
         $report = $tender->reports()->latest()->firstOrFail();
 

@@ -44,6 +44,26 @@ class Bid extends Model
         'submission_user_agent',
     ];
 
+    /**
+     * Never serialised. Reveal deliberately, never by default.
+     *
+     * Both fields were reaching the browser on any page that passed a Bid model
+     * into Inertia props: the model declared no $hidden, and toArray() runs
+     * get-mutators — so getEncryptedPricingDataAttribute() *decrypted* the
+     * sealed pricing on its way out. total_amount is stored in plaintext from
+     * the moment of submission (BidSealingService::sealBid), so sealing never
+     * protected it at all; only access control does.
+     *
+     * Where a viewer is genuinely entitled to a price — a vendor looking at
+     * their own bid, or anyone after a dual-authorised opening — the controller
+     * calls ->makeVisible('total_amount') explicitly. Fail closed: a surface
+     * that forgets shows nothing rather than leaking.
+     */
+    protected $hidden = [
+        'encrypted_pricing_data',
+        'total_amount',
+    ];
+
     protected function casts(): array
     {
         return [

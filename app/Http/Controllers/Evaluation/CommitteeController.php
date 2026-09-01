@@ -15,6 +15,17 @@ use Inertia\Response;
 
 class CommitteeController extends Controller
 {
+    /**
+     * {tender} and {committee} are bound independently by the router.
+     *
+     * Nothing tied them together, so passing a committee belonging to another
+     * tender authorised against the wrong tender entirely.
+     */
+    private function assertCommitteeBelongsTo(Tender $tender, EvaluationCommittee $committee): void
+    {
+        abort_unless($committee->tender_id === $tender->id, 404);
+    }
+
     public function index(Request $request, Tender $tender): Response
     {
         $this->authorize('view', $tender);
@@ -37,6 +48,8 @@ class CommitteeController extends Controller
 
     public function store(StoreCommitteeRequest $request, Tender $tender): RedirectResponse
     {
+        $this->authorize('manageCommittees', $tender);
+
         $tender->committees()->create([
             ...$request->validated(),
             'status' => 'active',
@@ -50,6 +63,12 @@ class CommitteeController extends Controller
 
     public function update(Request $request, Tender $tender, EvaluationCommittee $committee): RedirectResponse
     {
+        // Took a plain Request and called no authorize(): any verified user
+        // could rename any committee in the system and flip its status, which
+        // is the flag the evaluation workflow reads to decide completion.
+        $this->authorize('manageCommittees', $tender);
+        $this->assertCommitteeBelongsTo($tender, $committee);
+
         $committee->update($request->validate([
             'name' => ['required', 'string', 'max:255'],
             'status' => ['required', 'in:active,completed'],
@@ -62,6 +81,12 @@ class CommitteeController extends Controller
 
     public function addMember(AddMemberRequest $request, Tender $tender, EvaluationCommittee $committee): RedirectResponse
     {
+        // AddMemberRequest checks a global permission only, so a holder could
+        // add themselves to a committee on another project and thereby unlock
+        // everything EvaluationScorePolicy::score() gates.
+        $this->authorize('manageCommittees', $tender);
+        $this->assertCommitteeBelongsTo($tender, $committee);
+
         $data = $request->validated();
 
         if ($committee->committeeMemberRecords()->where('user_id', $data['user_id'])->exists()) {
@@ -84,6 +109,13 @@ class CommitteeController extends Controller
 
     public function removeMember(Tender $tender, EvaluationCommittee $committee, CommitteeMember $member): RedirectResponse
     {
+        // No FormRequest and no authorize(): any verified user could delete any
+        // committee membership row in the system, changing who may score and
+        // the denominator of every aggregate built from those scores.
+        $this->authorize('manageCommittees', $tender);
+        $this->assertCommitteeBelongsTo($tender, $committee);
+        abort_unless($member->committee_id === $committee->id, 404);
+
         $member->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);

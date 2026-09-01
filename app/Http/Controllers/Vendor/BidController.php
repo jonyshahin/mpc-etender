@@ -40,6 +40,12 @@ class BidController extends Controller
             ->latest()
             ->paginate(15);
 
+        // Bid hides total_amount by default so no screen leaks a price by
+        // omission. A vendor looking at their own bids is the clearest case for
+        // revealing it: the query is already scoped to their vendor_id, and it
+        // is their own number.
+        $bids->through(fn (Bid $bid) => $bid->makeVisible('total_amount'));
+
         return Inertia::render('vendor/Bids/Index', [
             'bids' => $bids,
         ]);

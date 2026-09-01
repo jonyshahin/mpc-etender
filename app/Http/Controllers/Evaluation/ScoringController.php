@@ -15,8 +15,25 @@ use Inertia\Response;
 
 class ScoringController extends Controller
 {
+    /**
+     * {tender} and {bid} are bound independently by the router.
+     *
+     * Nothing tied them together, so a committee member on tender A could
+     * pass a bid from tender B and read or score it.
+     */
+    private function assertBidBelongsTo(Tender $tender, Bid $bid): void
+    {
+        abort_unless($bid->tender_id === $tender->id, 404);
+    }
+
     public function index(Request $request, Tender $tender): Response
     {
+        // EvaluationScorePolicy::score() already checked permission *and*
+        // committee membership; this controller simply never called it. Without
+        // it, a user on no committee fell through to the 'technical' default
+        // below and the page rendered every bid on the tender.
+        $this->authorize('score', [EvaluationScore::class, $tender]);
+
         $user = $request->user();
 
         // Get committees the user belongs to for this tender
@@ -55,6 +72,8 @@ class ScoringController extends Controller
 
     public function scoreBid(Request $request, Tender $tender, Bid $bid): Response
     {
+        $this->authorize('score', [EvaluationScore::class, $tender]);
+
         $user = $request->user();
 
         $memberRecord = CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
@@ -68,6 +87,8 @@ class ScoringController extends Controller
             ->where('envelope', $envelope)
             ->orderBy('sort_order')
             ->get();
+
+        $this->assertBidBelongsTo($tender, $bid);
 
         $existingScores = EvaluationScore::where('evaluator_id', $user->id)
             ->where('bid_id', $bid->id)
@@ -84,6 +105,11 @@ class ScoringController extends Controller
 
     public function storeScores(StoreScoresRequest $request, Tender $tender, Bid $bid): RedirectResponse
     {
+        // StoreScoresRequest::authorize() tests the global evaluations.score
+        // permission only, so any holder could score any bid on any tender.
+        $this->authorize('score', [EvaluationScore::class, $tender]);
+        $this->assertBidBelongsTo($tender, $bid);
+
         $user = $request->user();
         $data = $request->validated();
 
@@ -130,6 +156,8 @@ class ScoringController extends Controller
 
     public function myProgress(Request $request, Tender $tender): Response
     {
+        $this->authorize('score', [EvaluationScore::class, $tender]);
+
         $user = $request->user();
 
         $memberRecords = CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
