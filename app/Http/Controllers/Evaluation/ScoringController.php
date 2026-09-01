@@ -8,6 +8,7 @@ use App\Models\Bid;
 use App\Models\CommitteeMember;
 use App\Models\EvaluationScore;
 use App\Models\Tender;
+use App\Services\EvaluationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +16,10 @@ use Inertia\Response;
 
 class ScoringController extends Controller
 {
+    public function __construct(
+        private readonly EvaluationService $evaluationService,
+    ) {}
+
     /**
      * {tender} and {bid} are bound independently by the router.
      *
@@ -42,21 +47,34 @@ class ScoringController extends Controller
             ->with('committee')
             ->get();
 
-        $envelope = $memberRecords->first()?->committee?->committee_type?->value ?? 'technical';
+        $envelopes = $this->evaluationService->scorableEnvelopes(
+            $tender,
+            $memberRecords->pluck('committee.committee_type')->filter(),
+        );
 
         $criteria = $tender->evaluationCriteria()
-            ->where('envelope', $envelope)
+            ->whereIn('envelope', $envelopes)
             ->orderBy('sort_order')
             ->get();
 
         $bids = $tender->bids()
             ->with('vendor:id,company_name')
+            // Only what the page shows. Whole Bid models also carried
+            // submission_ip, submission_user_agent, technical_notes and
+            // withdrawal_reason into the props of a screen that displays none
+            // of them.
+            ->select('id', 'vendor_id', 'bid_reference', 'status')
             ->whereNotIn('status', ['withdrawn', 'disqualified'])
             ->get();
 
-        // Get existing scores by this evaluator
+        // Scoped to the criteria actually on screen. Ungated, this returned
+        // every score the evaluator had written across all envelopes, and the
+        // page compared its length against a filtered criteria list — so a
+        // part-scored bid could show a green tick and a finished one could
+        // read 'Not scored'.
         $existingScores = EvaluationScore::where('evaluator_id', $user->id)
             ->whereIn('bid_id', $bids->pluck('id'))
+            ->whereIn('criterion_id', $criteria->pluck('id'))
             ->get()
             ->groupBy('bid_id');
 
@@ -65,8 +83,8 @@ class ScoringController extends Controller
             'criteria' => $criteria,
             'bids' => $bids,
             'existingScores' => $existingScores,
-            'envelope' => $envelope,
-            'hasCompleted' => $memberRecords->first()?->has_scored ?? false,
+            'envelopes' => $envelopes,
+            'hasCompleted' => $memberRecords->every(fn ($m) => $m->has_scored) && $memberRecords->isNotEmpty(),
         ]);
     }
 
@@ -76,15 +94,18 @@ class ScoringController extends Controller
 
         $user = $request->user();
 
-        $memberRecord = CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
+        $memberRecords = CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
             ->where('user_id', $user->id)
             ->with('committee')
-            ->firstOrFail();
+            ->get();
 
-        $envelope = $memberRecord->committee->committee_type->value;
+        $envelopes = $this->evaluationService->scorableEnvelopes(
+            $tender,
+            $memberRecords->pluck('committee.committee_type')->filter(),
+        );
 
         $criteria = $tender->evaluationCriteria()
-            ->where('envelope', $envelope)
+            ->whereIn('envelope', $envelopes)
             ->orderBy('sort_order')
             ->get();
 
@@ -113,9 +134,26 @@ class ScoringController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
+        $memberRecords = CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
+            ->where('user_id', $user->id)
+            ->with('committee')
+            ->get();
+
+        // StoreScoresRequest checks only that the criterion id exists SOMEWHERE,
+        // so scores could be posted against another tender's criteria, or
+        // against an envelope this evaluator has no standing to judge.
+        $scorable = $tender->evaluationCriteria()
+            ->whereIn('envelope', $this->evaluationService->scorableEnvelopes(
+                $tender,
+                $memberRecords->pluck('committee.committee_type')->filter(),
+            ))
+            ->get()
+            ->keyBy('id');
+
         foreach ($data['scores'] as $scoreData) {
             // Validate score is within max_score
-            $criterion = $tender->evaluationCriteria()->find($scoreData['criterion_id']);
+            $criterion = $scorable->get($scoreData['criterion_id']);
+            abort_if($criterion === null, 404);
             if ($criterion && $scoreData['score'] > $criterion->max_score) {
                 Inertia::flash('toast', [
                     'type' => 'error',
@@ -152,34 +190,5 @@ class ScoringController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Scores saved.')]);
 
         return back();
-    }
-
-    public function myProgress(Request $request, Tender $tender): Response
-    {
-        $this->authorize('score', [EvaluationScore::class, $tender]);
-
-        $user = $request->user();
-
-        $memberRecords = CommitteeMember::whereHas('committee', fn ($q) => $q->where('tender_id', $tender->id))
-            ->where('user_id', $user->id)
-            ->with('committee')
-            ->get();
-
-        $bids = $tender->bids()
-            ->with('vendor:id,company_name')
-            ->whereNotIn('status', ['withdrawn', 'disqualified'])
-            ->get();
-
-        $scoredBidIds = EvaluationScore::where('evaluator_id', $user->id)
-            ->whereIn('bid_id', $bids->pluck('id'))
-            ->distinct('bid_id')
-            ->pluck('bid_id');
-
-        return Inertia::render('evaluation/MyProgress', [
-            'tender' => $tender->only('id', 'reference_number', 'title_en'),
-            'bids' => $bids,
-            'scoredBidIds' => $scoredBidIds,
-            'hasCompleted' => $memberRecords->first()?->has_scored ?? false,
-        ]);
     }
 }

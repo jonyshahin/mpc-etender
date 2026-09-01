@@ -125,6 +125,11 @@ class ApprovalController extends Controller
      */
     public function requestApproval(Request $request, Tender $tender): RedirectResponse
     {
+        // This method had no authorize() of any kind: any verified user could
+        // raise an approval request on any tender, and the chain it starts is
+        // what an award is made from.
+        $this->authorize('view', $tender);
+
         // reports(), not evaluationReports(): the latter does not exist on Tender,
         // so this endpoint raised BadMethodCallException — a 500 on every attempt
         // to start an approval, which is why the levelling bugs below it went

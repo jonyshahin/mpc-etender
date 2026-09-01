@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\BidStatus;
+use App\Enums\CommitteeType;
+use App\Enums\EnvelopeType;
 use App\Models\Bid;
 use App\Models\EvaluationReport;
 use App\Models\EvaluationScore;
@@ -18,16 +20,49 @@ use Illuminate\Support\Facades\Storage;
 class EvaluationService
 {
     /**
+     * Criterion envelopes an evaluator may score, given their committees.
+     *
+     * committee_type and criterion envelope are different vocabularies that
+     * happen to share two words; comparing them directly left Combined
+     * committees matching nothing. The union across memberships also fixes
+     * the evaluator who sits on both committees of a two-envelope tender —
+     * the old code took whichever membership the database returned first and
+     * silently hid the other envelope.
+     *
+     * @param  iterable<int, CommitteeType>  $committeeTypes
+     * @return array<int, string>
+     */
+    public function scorableEnvelopes(Tender $tender, iterable $committeeTypes): array
+    {
+        // On a single-envelope tender the split carries no meaning: one
+        // committee judges the whole bid, however the criteria are labelled.
+        if (! $tender->is_two_envelope) {
+            return array_map(fn (EnvelopeType $e) => $e->value, EnvelopeType::cases());
+        }
+
+        $envelopes = [];
+
+        foreach ($committeeTypes as $type) {
+            $envelopes = array_merge($envelopes, $type->criterionEnvelopes());
+        }
+
+        return array_values(array_unique($envelopes));
+    }
+
+    /**
      * Aggregate scores from all evaluators for a tender.
      * For each bid: average each criterion score across evaluators,
      * then compute weighted total.
      *
      * @return array<int, array{bid_id: string, vendor_name: string, criteria_scores: array, weighted_total: float, rank: int}>
      */
-    public function aggregateScores(Tender $tender, string $envelope = 'technical'): array
+    public function aggregateScores(Tender $tender, ?array $envelopes = null): array
     {
+        // null means every criterion on the tender. The parameter used to be
+        // a single envelope string, which forced callers to name one bucket
+        // and made 'score everything' inexpressible.
         $criteria = $tender->evaluationCriteria()
-            ->where('envelope', $envelope)
+            ->when($envelopes !== null, fn ($q) => $q->whereIn('envelope', $envelopes))
             ->get();
 
         $bids = $tender->bids()
@@ -91,7 +126,7 @@ class EvaluationService
      */
     public function getPassingBids(Tender $tender): Collection
     {
-        $technicalResults = $this->aggregateScores($tender, 'technical');
+        $technicalResults = $this->aggregateScores($tender, CommitteeType::Technical->criterionEnvelopes());
         $threshold = (float) $tender->technical_pass_score;
 
         $passingBidIds = collect($technicalResults)
@@ -116,8 +151,15 @@ class EvaluationService
     public function computeFinalRanking(Tender $tender): array
     {
         if (! $tender->is_two_envelope) {
-            // Single envelope: use combined scores
-            $results = $this->aggregateScores($tender, 'single');
+            // Every criterion counts, whatever envelope it happens to carry.
+            //
+            // This used to aggregate envelope 'single' alone — a bucket no
+            // reachable path writes, since the tender wizard only ever stores
+            // 'technical' or 'financial'. Single-envelope is the DEFAULT
+            // tender, so every bid ranked 0.00, ranks fell out of array order,
+            // and the top of that list became the recommended bid on the
+            // approval request the award is made from.
+            $results = $this->aggregateScores($tender);
 
             return array_map(fn ($r) => [
                 'bid_id' => $r['bid_id'],
@@ -130,8 +172,8 @@ class EvaluationService
         }
 
         // Two-envelope: combine technical + financial
-        $technicalResults = collect($this->aggregateScores($tender, 'technical'));
-        $financialResults = collect($this->aggregateScores($tender, 'financial'));
+        $technicalResults = collect($this->aggregateScores($tender, CommitteeType::Technical->criterionEnvelopes()));
+        $financialResults = collect($this->aggregateScores($tender, CommitteeType::Financial->criterionEnvelopes()));
 
         $combined = [];
         foreach ($technicalResults as $tech) {

@@ -10,6 +10,7 @@ use App\Models\Tender;
 use App\Models\User;
 use App\Services\ApprovalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -197,7 +198,17 @@ test('the currency refusal reaches the user as an error toast', function () {
         'recommended_bid_id' => $bid->id,
     ]);
 
-    $this->actingAs(User::factory()->create())
+    // On the project: requestApproval now gates on TenderPolicy::view, so an
+    // unassigned user would be refused before reaching the currency check and
+    // this would pass without testing anything.
+    $requester = User::factory()->create();
+    $requester->projects()->attach($tender->project_id, [
+        'id' => (string) Str::uuid(),
+        'project_role' => 'viewer',
+        'assigned_at' => now(),
+    ]);
+
+    $this->actingAs($requester)
         ->from(route('approvals.index'))
         ->post(route('tenders.request-approval', $tender))
         ->assertRedirect(route('approvals.index'))

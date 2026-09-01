@@ -9,6 +9,7 @@ import { Check, Circle, ClipboardList } from 'lucide-react';
 type Criterion = {
     id: string;
     name_en: string;
+    name_ar: string | null;
     envelope: string;
     weight_percentage: string;
     max_score: string;
@@ -27,17 +28,31 @@ type Props = {
     criteria: Criterion[];
     bids: Bid[];
     existingScores: Record<string, Array<{ criterion_id: string; score: string; justification: string | null }>>;
-    envelope: string;
+    /** Criterion envelopes this evaluator may score, from their committees. */
+    envelopes: string[];
     hasCompleted: boolean;
 };
 
-export default function Scoring({ tender, criteria, bids, existingScores, envelope, hasCompleted }: Props) {
-    const { t } = useTranslation();
+export default function Scoring({ tender, criteria, bids, existingScores, envelopes, hasCompleted }: Props) {
+    const { t, locale } = useTranslation();
+
+    const criterionName = (c: Criterion) => (locale === 'ar' ? (c.name_ar ?? c.name_en) : c.name_en);
+
+    // Set membership over ids, not a length comparison. The two counts were
+    // drawn from different sets — criteria filtered by envelope, scores not —
+    // so a part-scored bid could show a green tick and a finished one could
+    // read 'Not scored'.
     const isBidScored = (bidId: string) => {
-        const scores = existingScores[bidId];
-        return scores && scores.length === criteria.length;
+        if (criteria.length === 0) {
+            return false;
+        }
+
+        const scored = new Set((existingScores[bidId] ?? []).map((s) => s.criterion_id));
+
+        return criteria.every((c) => scored.has(c.id));
     };
 
+    const scoredCount = bids.filter((b) => isBidScored(b.id)).length;
     const totalWeight = criteria.reduce((sum, c) => sum + parseFloat(c.weight_percentage), 0);
 
     return (
@@ -47,11 +62,21 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
 
             <div className="mt-6 space-y-6">
                 <div className="flex items-center gap-4">
+                    {envelopes.map((env) => (
+                        <Badge key={env} variant="outline" className="text-sm">
+                            {t('eval.envelope')}: {t(`eval.${env}`)}
+                        </Badge>
+                    ))}
                     <Badge variant="outline" className="text-sm">
-                        {t('eval.envelope')}: {envelope}
+                        {t('eval.criteria_and_weight', {
+                            count: criteria.length,
+                            weight: totalWeight,
+                        })}
                     </Badge>
+                    {/* Folded in from the my-progress page, which rendered a
+                        component that never existed and was linked from nowhere. */}
                     <Badge variant="outline" className="text-sm">
-                        {criteria.length} criteria ({totalWeight}% total weight)
+                        {t('eval.scored_progress', { scored: scoredCount, total: bids.length })}
                     </Badge>
                     {hasCompleted && (
                         <Badge variant="default" className="bg-green-600 text-sm">
@@ -118,7 +143,16 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                     </CardContent>
                 </Card>
 
-                {criteria.length > 0 && (
+                {criteria.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-10 text-center">
+                            <p className="font-medium">{t('empty.no_criteria_defined')}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                {t('eval.no_criteria_for_your_committee')}
+                            </p>
+                        </CardContent>
+                    </Card>
+                ) : (
                     <Card>
                         <CardHeader>
                             <CardTitle>{t('eval.evaluation_criteria')}</CardTitle>
@@ -136,7 +170,7 @@ export default function Scoring({ tender, criteria, bids, existingScores, envelo
                                     {criteria.map((c) => (
                                         <tr key={c.id} className="border-b">
                                             <td className="px-4 py-2">
-                                                <div>{c.name_en}</div>
+                                                <div>{criterionName(c)}</div>
                                                 {c.description && (
                                                     <div className="text-xs text-muted-foreground">{c.description}</div>
                                                 )}

@@ -1180,6 +1180,10 @@
     "btn.cancel_request": "Cancel request",
     "status.confirmed": "Confirmed",
     "form.cannot_change_own_role": "You cannot change your own role. Ask another administrator.",
+    "eval.single": "Single envelope",
+    "eval.criteria_and_weight": ":count criteria, :weight% total weight",
+    "eval.scored_progress": "Scored :scored of :total",
+    "eval.no_criteria_for_your_committee": "No criteria are assigned to your committee for this tender. Ask the tender owner to define them before scoring.",
 
     "Addendum issued.": "Addendum issued.",
     "Answer saved.": "Answer saved.",

@@ -170,7 +170,6 @@ Route::middleware(['auth', 'verified'])->prefix('evaluations')->name('evaluation
     Route::get('{tender}/score', [Evaluation\ScoringController::class, 'index'])->name('score.index');
     Route::get('{tender}/score/{bid}', [Evaluation\ScoringController::class, 'scoreBid'])->name('score.bid');
     Route::post('{tender}/score/{bid}', [Evaluation\ScoringController::class, 'storeScores'])->name('score.store');
-    Route::get('{tender}/my-progress', [Evaluation\ScoringController::class, 'myProgress'])->name('my-progress');
 });
 
 // ── Approval routes ──

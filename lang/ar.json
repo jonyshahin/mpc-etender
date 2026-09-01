@@ -1180,6 +1180,10 @@
     "btn.cancel_request": "إلغاء الطلب",
     "status.confirmed": "مؤكد",
     "form.cannot_change_own_role": "لا يمكنك تغيير دورك الخاص. اطلب ذلك من مسؤول آخر.",
+    "eval.single": "مظروف واحد",
+    "eval.criteria_and_weight": ":count معيار، الوزن الإجمالي :weight%",
+    "eval.scored_progress": "تم تقييم :scored من :total",
+    "eval.no_criteria_for_your_committee": "لا توجد معايير مخصصة للجنتك في هذه المناقصة. اطلب من مالك المناقصة تحديدها قبل التقييم.",
 
     "Addendum issued.": "تم إصدار الملحق.",
     "Answer saved.": "تم حفظ الإجابة.",
