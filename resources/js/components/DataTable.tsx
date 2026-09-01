@@ -3,6 +3,7 @@ import { Link, router } from '@inertiajs/react';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { nextSortDirection, resolveTableFilters } from '@/lib/table';
 import { cn } from '@/lib/utils';
 
 /**
@@ -84,20 +85,19 @@ export function DataTable<T = any>({
     const paginationLinks = data.meta?.links ?? data.links ?? [];
 
     function handleSort(key: string) {
-        const currentSort = filters.sort;
-        const currentDirection = filters.direction;
-
-        let direction = 'asc';
-        if (currentSort === key && currentDirection === 'asc') {
-            direction = 'desc';
-        }
+        // Falls back to the query string when the caller omitted `filters`.
+        // Six of the ten list pages had, and each sorted with an empty set:
+        // the active search and filters were wiped, and the toggle below —
+        // comparing against an always-undefined sort — could never reach
+        // descending.
+        const active = resolveTableFilters(filters, window.location.search);
 
         router.get(
             window.location.pathname,
             {
-                ...filters,
+                ...active,
                 sort: key,
-                direction,
+                direction: nextSortDirection(key, active.sort, active.direction),
             },
             { preserveState: true, preserveScroll: true },
         );
