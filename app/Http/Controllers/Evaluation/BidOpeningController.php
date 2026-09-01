@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Evaluation;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Evaluation\OpenBidsRequest;
+use App\Models\BidOpeningRequest;
 use App\Models\Tender;
 use App\Models\User;
+use App\Services\BidOpeningRequestService;
 use App\Services\BidSealingService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,9 +19,10 @@ class BidOpeningController extends Controller
 {
     public function __construct(
         private BidSealingService $sealingService,
+        private BidOpeningRequestService $openingRequests,
     ) {}
 
-    public function summary(Tender $tender): Response
+    public function summary(Request $request, Tender $tender): Response
     {
         $this->authorize('view', $tender);
 
@@ -48,48 +53,100 @@ class BidOpeningController extends Controller
             ->select('users.id', 'users.name')
             ->get();
 
+        $pending = $this->openingRequests->actionableFor($tender);
+        $viewer = $request->user();
+
         return Inertia::render('evaluation/BidOpening', [
             'tender' => $tender->only('id', 'reference_number', 'title_en', 'status', 'opening_date', 'submission_deadline'),
             'bids' => $bids,
             'authorizers' => $authorizers,
             'canOpen' => $this->sealingService->canOpen($tender) && $tender->status->value === 'submission_closed',
             'isOpened' => $tender->status->value === 'under_evaluation' || $tender->bids()->where('is_sealed', false)->exists(),
+            // The ceremony is two-step now: whoever is looking needs to know
+            // which half they are, and what they are waiting for.
+            'pendingRequest' => $pending === null ? null : [
+                'id' => $pending->id,
+                'requested_by_name' => $pending->requester?->name,
+                'authorizer_name' => $pending->authorizer?->name,
+                'requested_at' => $pending->requested_at,
+                'expires_at' => $pending->expires_at,
+                'viewer_is_authorizer' => $viewer->id === $pending->authorizer_id,
+                'viewer_is_requester' => $viewer->id === $pending->requested_by,
+            ],
         ]);
     }
 
+    /**
+     * The opener's half: nominate who must countersign.
+     *
+     * This used to open the bids outright. `authorizer_id` was an
+     * attacker-chosen field validated only as existing-and-different, so one
+     * person could produce a complete "dual" authorisation — and
+     * BidSealingService then wrote that name into an append-only audit row.
+     */
     public function open(OpenBidsRequest $request, Tender $tender): RedirectResponse
     {
-        $opener = $request->user();
-
-        // OpenBidsRequest checks a global bids.open permission, unscoped. The
-        // authorizer was checked against the project below but the opener never
-        // was, so exactly half of the dual-authorisation control was scoped.
         $this->authorize('view', $tender);
-
-        // summary() computes canOpen as "opening date passed AND status is
-        // submission_closed", but only the date half was enforced server-side —
-        // the status half was advisory UI. A tender still open for submissions
-        // could be force-flipped to under_evaluation with its bids unsealed.
-        if ($tender->status->value !== 'submission_closed') {
-            Inertia::flash('toast', ['type' => 'error', 'message' => __('Bids can only be opened once submissions have closed.')]);
-
-            return back();
-        }
 
         $authorizer = User::findOrFail($request->validated('authorizer_id'));
 
-        // Verify authorizer has permission and is on the project
-        if (! $authorizer->hasPermission('bids.open') || ! $authorizer->isAssignedToProject($tender->project_id)) {
-            Inertia::flash('toast', ['type' => 'error', 'message' => __('Authorizer does not have permission.')]);
-
-            return back();
+        try {
+            $this->openingRequests->request($tender, $request->user(), $authorizer);
+        } catch (ValidationException $e) {
+            return $this->refuse($e);
         }
 
-        $this->sealingService->openBids($tender, $opener, $authorizer);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Opening requested. :name must now confirm it.', ['name' => $authorizer->name]),
+        ]);
 
-        $tender->update(['status' => 'under_evaluation']);
+        return back();
+    }
+
+    /** The authorizer's half, from their own session. */
+    public function confirm(Request $request, Tender $tender, BidOpeningRequest $openingRequest): RedirectResponse
+    {
+        $this->authorize('view', $tender);
+        abort_unless($openingRequest->tender_id === $tender->id, 404);
+
+        try {
+            $this->openingRequests->confirm($openingRequest, $request->user());
+        } catch (ValidationException $e) {
+            return $this->refuse($e);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Bids opened successfully.')]);
+
+        return back();
+    }
+
+    /** Either party may call it off. */
+    public function cancel(Request $request, Tender $tender, BidOpeningRequest $openingRequest): RedirectResponse
+    {
+        $this->authorize('view', $tender);
+        abort_unless($openingRequest->tender_id === $tender->id, 404);
+
+        try {
+            $this->openingRequests->cancel($openingRequest, $request->user());
+        } catch (ValidationException $e) {
+            return $this->refuse($e);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Opening request cancelled.')]);
+
+        return back();
+    }
+
+    /**
+     * Surface a refusal as a toast.
+     *
+     * The service refuses on keys this page renders no field for, so letting
+     * the error bag bubble would leave the user staring at a silent no-op.
+     */
+    private function refuse(ValidationException $e): RedirectResponse
+    {
+        Inertia::flash('toast', ['type' => 'error', 'message' => $e->validator->errors()->first()]);
 
         return back();
     }

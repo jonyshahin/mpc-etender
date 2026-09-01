@@ -141,8 +141,11 @@ Route::middleware(['auth', 'verified'])->prefix('tenders')->name('tenders.')->gr
     Route::put('{tender}/evaluation-criteria/{criterion}', [Tender\EvaluationCriteriaController::class, 'update'])->name('criteria.update');
     Route::delete('{tender}/evaluation-criteria/{criterion}', [Tender\EvaluationCriteriaController::class, 'destroy'])->name('criteria.destroy');
 
-    // Bid opening & evaluation
+    // Bid opening & evaluation. Opening is two steps by design: one person
+    // requests it, a second confirms from their own session.
     Route::post('{tender}/open-bids', [Evaluation\BidOpeningController::class, 'open'])->name('open-bids');
+    Route::post('{tender}/open-bids/{openingRequest}/confirm', [Evaluation\BidOpeningController::class, 'confirm'])->name('open-bids.confirm');
+    Route::delete('{tender}/open-bids/{openingRequest}', [Evaluation\BidOpeningController::class, 'cancel'])->name('open-bids.cancel');
     Route::get('{tender}/bid-summary', [Evaluation\BidOpeningController::class, 'summary'])->name('bid-summary');
 
     // Committees

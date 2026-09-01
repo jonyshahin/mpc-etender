@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { formatDate } from '@/lib/datetime';
-import { Lock, Unlock, Clock } from 'lucide-react';
+import { formatDate, formatDateTime } from '@/lib/datetime';
+import { Clock, Lock, Unlock, UserCheck } from 'lucide-react';
 
 type Bid = {
     id: string;
@@ -41,18 +41,60 @@ type Props = {
     authorizers: Array<{ id: string; name: string }>;
     canOpen: boolean;
     isOpened: boolean;
+    /**
+     * An opening awaiting its second signature, if there is one.
+     *
+     * Opening is deliberately two steps: one person requests it, a different
+     * person confirms from their own session. Whoever is looking needs to know
+     * which half they are.
+     */
+    pendingRequest: {
+        id: string;
+        requested_by_name: string | null;
+        authorizer_name: string | null;
+        requested_at: string;
+        expires_at: string;
+        viewer_is_authorizer: boolean;
+        viewer_is_requester: boolean;
+    } | null;
 };
 
-export default function BidOpening({ tender, bids, authorizers, canOpen, isOpened }: Props) {
-    const { t } = useTranslation();
+export default function BidOpening({
+    tender,
+    bids,
+    authorizers,
+    canOpen,
+    isOpened,
+    pendingRequest,
+}: Props) {
+    const { t, locale } = useTranslation();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const form = useForm({ authorizer_id: '' });
+    const confirmForm = useForm({});
 
-    const handleOpenBids = () => {
-        form.post(`/tenders/${tender.id}/open-bids`, {
-            preserveScroll: true,
-        });
+    // Requesting is reversible — either party can cancel — so it needs no
+    // confirmation step. Confirming unseals every bid and cannot be undone,
+    // which is where the friction belongs.
+    const requestOpening = () => {
+        form.post(`/tenders/${tender.id}/open-bids`, { preserveScroll: true });
+    };
+
+    const confirmOpening = () => {
+        if (pendingRequest) {
+            confirmForm.post(`/tenders/${tender.id}/open-bids/${pendingRequest.id}/confirm`, {
+                preserveScroll: true,
+            });
+        }
+
         setConfirmOpen(false);
+    };
+
+    const cancelRequest = () => {
+        if (pendingRequest) {
+            confirmForm.delete(`/tenders/${tender.id}/open-bids/${pendingRequest.id}`, {
+                preserveScroll: true,
+            });
+        }
     };
 
     const countdown = useMemo(() => {
@@ -137,37 +179,96 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
                                 </div>
                             </div>
 
-                            {canOpen && (
-                                <div className="flex items-end gap-4">
-                                    <div className="w-64 space-y-2">
-                                        <label className="text-sm font-medium">{t('eval.second_authorizer')}</label>
-                                        <Select
-                                            value={form.data.authorizer_id}
-                                            onValueChange={(value) => form.setData('authorizer_id', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={t('form.select_authorizer')} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {authorizers.map((auth) => (
-                                                    <SelectItem key={auth.id} value={auth.id}>
-                                                        {auth.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {form.errors.authorizer_id && (
-                                            <p className="text-sm text-destructive">{form.errors.authorizer_id}</p>
+                            {pendingRequest ? (
+                                <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+                                    <p className="flex items-center gap-2 font-medium">
+                                        <UserCheck className="size-4" aria-hidden="true" />
+                                        {t('eval.awaiting_confirmation')}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {pendingRequest.viewer_is_authorizer
+                                            ? t('eval.you_must_confirm', {
+                                                  requester: pendingRequest.requested_by_name ?? '',
+                                              })
+                                            : t('eval.waiting_on_authorizer', {
+                                                  requester: pendingRequest.requested_by_name ?? '',
+                                                  authorizer: pendingRequest.authorizer_name ?? '',
+                                              })}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('eval.request_expires', {
+                                            time: formatDateTime(pendingRequest.expires_at, locale),
+                                        })}
+                                    </p>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {pendingRequest.viewer_is_authorizer && (
+                                            <Button
+                                                onClick={() => setConfirmOpen(true)}
+                                                disabled={confirmForm.processing}
+                                            >
+                                                <Unlock className="me-2 size-4" />
+                                                {t('btn.confirm_opening')}
+                                            </Button>
+                                        )}
+                                        {(pendingRequest.viewer_is_authorizer ||
+                                            pendingRequest.viewer_is_requester) && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={cancelRequest}
+                                                disabled={confirmForm.processing}
+                                            >
+                                                {t('btn.cancel_request')}
+                                            </Button>
                                         )}
                                     </div>
-                                    <Button
-                                        onClick={() => setConfirmOpen(true)}
-                                        disabled={!form.data.authorizer_id || form.processing}
-                                    >
-                                        <Unlock className="mr-2 h-4 w-4" />
-                                        {t('btn.open_bids')}
-                                    </Button>
                                 </div>
+                            ) : (
+                                canOpen && (
+                                    <div className="space-y-3">
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('eval.two_step_note')}
+                                        </p>
+                                        <div className="flex flex-wrap items-end gap-4">
+                                            <div className="w-64 space-y-2">
+                                                <label className="text-sm font-medium">
+                                                    {t('eval.second_authorizer')}
+                                                </label>
+                                                <Select
+                                                    value={form.data.authorizer_id}
+                                                    onValueChange={(value) =>
+                                                        form.setData('authorizer_id', value)
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue
+                                                            placeholder={t('form.select_authorizer')}
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {authorizers.map((auth) => (
+                                                            <SelectItem key={auth.id} value={auth.id}>
+                                                                {auth.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                {form.errors.authorizer_id && (
+                                                    <p className="text-sm text-destructive">
+                                                        {form.errors.authorizer_id}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <Button
+                                                onClick={requestOpening}
+                                                disabled={!form.data.authorizer_id || form.processing}
+                                            >
+                                                <UserCheck className="me-2 size-4" />
+                                                {t('btn.request_opening')}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )
                             )}
                         </CardContent>
                     </Card>
@@ -192,7 +293,7 @@ export default function BidOpening({ tender, bids, authorizers, canOpen, isOpene
             <ConfirmDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
-                onConfirm={handleOpenBids}
+                onConfirm={confirmOpening}
                 title={t('eval.open_bids')}
                 description={t('eval.open_bids_confirm')}
             />

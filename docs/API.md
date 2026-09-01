@@ -65,7 +65,9 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | POST | `/tenders/{tender}/evaluation-criteria` | `tenders.criteria.store` | Add evaluation criterion |
 | PUT | `/tenders/{tender}/evaluation-criteria/{c}` | `tenders.criteria.update` | Update criterion |
 | DELETE | `/tenders/{tender}/evaluation-criteria/{c}` | `tenders.criteria.destroy` | Delete criterion |
-| POST | `/tenders/{tender}/open-bids` | `tenders.open-bids` | Open bids (dual auth) |
+| POST | `/tenders/{tender}/open-bids` | `tenders.open-bids` | **Request** an opening, nominating a second authorizer. Opens nothing on its own — requires `bids.open` and project assignment for *both* parties, tender status `submission_closed`, and a past `opening_date` |
+| POST | `/tenders/{tender}/open-bids/{openingRequest}/confirm` | `tenders.open-bids.confirm` | The nominated authorizer confirms from their own session; this is what actually unseals the bids. Rejected for anyone else, for the requester, and once the 30-minute window has passed |
+| DELETE | `/tenders/{tender}/open-bids/{openingRequest}` | `tenders.open-bids.cancel` | Either party calls off a pending opening |
 | GET | `/tenders/{tender}/bid-summary` | `tenders.bid-summary` | Bid opening summary |
 | GET | `/tenders/{tender}/committees` | `tenders.committees.index` | List committees |
 | POST | `/tenders/{tender}/committees` | `tenders.committees.store` | Create committee |

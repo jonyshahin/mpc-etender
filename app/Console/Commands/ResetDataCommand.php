@@ -67,6 +67,8 @@ class ResetDataCommand extends Command
         // Approval workflow hangs off tenders.
         'approval_decisions',
         'approval_requests',
+        // Pending dual-authorisation openings, likewise.
+        'bid_opening_requests',
         // Tender children, then tenders.
         'clarifications',
         'addenda',
