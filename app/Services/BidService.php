@@ -72,6 +72,11 @@ class BidService
     /**
      * Submit a bid — validates completeness and seals it.
      *
+     * Every refusal raised here reaches the vendor verbatim — the controller
+     * flashes getMessage() into a toast — so each one is translated. Three
+     * were English string literals, which told an Arabic-reading vendor "All
+     * unit prices must be greater than zero." with no way to change that.
+     *
      * @param  Bid  $bid  The draft bid to submit.
      *
      * @throws \RuntimeException If not all BOQ items are priced or any price is invalid.
@@ -84,12 +89,15 @@ class BidService
         $pricedItems = $bid->boqPrices()->count();
 
         if ($pricedItems < $totalBoqItems) {
-            throw new \RuntimeException("All BOQ items must be priced. {$pricedItems}/{$totalBoqItems} priced.");
+            throw new \RuntimeException(__('messages.bid.items_unpriced', [
+                'priced' => $pricedItems,
+                'total' => $totalBoqItems,
+            ]));
         }
 
         // Verify all unit_prices > 0
         if ($bid->boqPrices()->where('unit_price', '<=', 0)->exists()) {
-            throw new \RuntimeException('All unit prices must be greater than zero.');
+            throw new \RuntimeException(__('messages.bid.price_not_positive'));
         }
 
         // Two-envelope tenders require at least one technical document. The
@@ -118,7 +126,7 @@ class BidService
     public function withdraw(Bid $bid, string $reason): void
     {
         if (! $bid->tender->is_open_for_submission) {
-            throw new \RuntimeException('Cannot withdraw after submission deadline.');
+            throw new \RuntimeException(__('messages.bid.withdraw_after_deadline'));
         }
 
         $bid->update([

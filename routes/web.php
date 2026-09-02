@@ -91,6 +91,10 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
     // Tender browsing
     Route::get('tenders', [Vendor\TenderBrowseController::class, 'index'])->name('tenders.index');
     Route::get('tenders/{tender}', [Vendor\TenderBrowseController::class, 'show'])->name('tenders.show');
+    // The Show page has rendered a Download button pointing here all along;
+    // the route was never declared, so every one of them was a 404 and a
+    // vendor could not obtain the documents they must bid against.
+    Route::get('tenders/{tender}/documents/{document}/download', [Vendor\TenderBrowseController::class, 'downloadDocument'])->name('tenders.documents.download');
 
     // Clarifications (vendor asking)
     Route::post('tenders/{tender}/clarifications', [Tender\ClarificationController::class, 'store'])->name('tenders.clarifications.store');

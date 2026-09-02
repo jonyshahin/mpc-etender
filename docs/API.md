@@ -159,7 +159,8 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | POST | `/vendor/notifications/read-all` | `vendor.notifications.read-all` | Mark all vendor notifications read |
 | POST | `/vendor/notifications/{n}/read` | `vendor.notifications.read` | Mark vendor notification read |
 | GET | `/vendor/tenders` | `vendor.tenders.index` | Browse open tenders |
-| GET | `/vendor/tenders/{tender}` | `vendor.tenders.show` | View tender details |
+| GET | `/vendor/tenders/{tender}` | `vendor.tenders.show` | View tender details (published, in the vendor's categories, or already bid on) |
+| GET | `/vendor/tenders/{tender}/documents/{document}/download` | `vendor.tenders.documents.download` | Download a tender document (logged to `document_access_logs`) |
 | POST | `/vendor/tenders/{tender}/clarifications` | `vendor.tenders.clarifications.store` | Ask clarification |
 | GET | `/vendor/bids` | `vendor.bids.index` | List vendor's bids |
 | GET | `/vendor/bids/{bid}` | `vendor.bids.show` | View bid details |
@@ -167,6 +168,9 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | PUT | `/vendor/bids/{bid}` | `vendor.bids.update` | Update bid pricing |
 | POST | `/vendor/bids/{bid}/submit` | `vendor.bids.submit` | Submit (seal) bid |
 | POST | `/vendor/bids/{bid}/withdraw` | `vendor.bids.withdraw` | Withdraw bid |
+| POST | `/vendor/bids/{bid}/documents` | `vendor.bids.documents.store` | Attach a document to a draft bid (PDF only) |
+| DELETE | `/vendor/bids/{bid}/documents/{document}` | `vendor.bids.documents.destroy` | Remove a document from a draft bid |
+| GET | `/vendor/bids/{bid}/documents/{document}/download` | `vendor.bids.documents.download` | Download a document from the vendor's own bid |
 
 ## Vendor Management (admin, prefix: `/admin/vendors`)
 
