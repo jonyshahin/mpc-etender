@@ -127,7 +127,7 @@ test('ADMIN-05: cannot approve an already-approved / rejected / withdrawn reques
         ->assertSessionHasErrors('status');
 });
 
-test('ADMIN-06: evidence download requires review permission and returns redirect to signed URL', function () {
+test('ADMIN-06: evidence download requires review permission and streams the file', function () {
     $ev = VendorCategoryRequestEvidence::query()->create([
         'request_id' => $this->req->id,
         'path' => 'vendor-category-requests/'.$this->req->id.'/license.pdf',
@@ -144,8 +144,19 @@ test('ADMIN-06: evidence download requires review permission and returns redirec
         ->get(route('admin.vendor-category-requests.evidence.download', $ev))
         ->assertForbidden();
 
-    // Authorized admin → redirect away (signed/temporary URL from the fake s3 driver)
-    $r = $this->actingAs($this->reviewer, 'web')
-        ->get(route('admin.vendor-category-requests.evidence.download', $ev));
-    expect($r->status())->toBe(302);
+    // Authorised reviewer → the file itself. This assertion used to pin a 302
+    // to a signed bucket URL, which stayed valid for fifteen minutes after it
+    // left the app and recorded nothing — the behaviour, not just the test, was
+    // the thing CLAUDE.md's document-access rule forbids.
+    $this->actingAs($this->reviewer, 'web')
+        ->get(route('admin.vendor-category-requests.evidence.download', $ev))
+        ->assertOk()
+        ->assertDownload('license.pdf');
+
+    $this->assertDatabaseHas('document_access_logs', [
+        'user_id' => $this->reviewer->id,
+        'document_type' => VendorCategoryRequestEvidence::class,
+        'document_id' => $ev->id,
+        'action' => 'downloaded',
+    ]);
 });

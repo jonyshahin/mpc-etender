@@ -11,8 +11,10 @@ use App\Services\VendorCategoryRequestService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VendorCategoryRequestController extends Controller
 {
@@ -145,11 +147,27 @@ class VendorCategoryRequestController extends Controller
         return redirect()->route('admin.vendor-category-requests.show', $categoryRequest);
     }
 
-    public function downloadEvidence(Request $request, VendorCategoryRequestEvidence $evidence): RedirectResponse
+    /**
+     * Stream a piece of evidence to the reviewer.
+     *
+     * Was a redirect to a signed bucket URL that stayed valid for fifteen
+     * minutes after it left the app, with nothing recorded — the same pattern
+     * the vendor-side download had. The log names both the reviewing user and
+     * the vendor whose file it is.
+     */
+    public function downloadEvidence(Request $request, VendorCategoryRequestEvidence $evidence): StreamedResponse
     {
         $this->ensureCanReview($request);
 
-        return redirect()->away($this->files->getTemporaryUrl($evidence->path, 15));
+        $this->files->logAccess(
+            documentType: VendorCategoryRequestEvidence::class,
+            documentId: $evidence->id,
+            action: 'downloaded',
+            userId: $request->user()->id,
+            vendorId: $evidence->request?->vendor_id,
+        );
+
+        return Storage::disk('s3')->download($evidence->path, $evidence->original_name);
     }
 
     /**
