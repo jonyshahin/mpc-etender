@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,
     CalendarClock,
@@ -9,11 +9,11 @@ import {
     Timer,
     X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useDebouncedFilters } from '@/hooks/use-debounced-filters';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDeadline } from '@/lib/datetime';
 import { DEADLINE_TONE_CLASS, deadlineStatus } from '@/lib/deadline';
@@ -72,39 +72,10 @@ const WINDOWS = [
  */
 export default function Browse({ tenders, filters, summary }: Props) {
     const { t, locale } = useTranslation();
-    const [search, setSearch] = useState(filters.search ?? '');
-    const firstRender = useRef(true);
-
-    // Every navigation carries the whole filter set — rebuilding the query from
-    // the one key that changed drops the sort and direction.
-    const navigate = (next: Partial<Filters>) => {
-        router.get(
-            '/vendor/tenders',
-            {
-                search: search || undefined,
-                window: filters.window || undefined,
-                sort: filters.sort,
-                direction: filters.direction,
-                ...next,
-            },
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    };
-
-    // Debounced: searching used to need a button press, with nothing on screen
-    // to say that typing alone did nothing.
-    useEffect(() => {
-        if (firstRender.current) {
-            firstRender.current = false;
-
-            return;
-        }
-
-        const timer = setTimeout(() => navigate({ search: search || undefined }), 350);
-
-        return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
+    // One shared hook rather than a copy per page: every navigation has to
+    // carry the whole filter set, and typing has to search on its own after
+    // a pause. Three pages were getting both right independently.
+    const { search, setSearch, navigate } = useDebouncedFilters('/vendor/tenders', filters);
 
     const hasFilters = Boolean(filters.search || filters.window);
 

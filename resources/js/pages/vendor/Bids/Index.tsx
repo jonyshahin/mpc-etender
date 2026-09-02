@@ -1,11 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { CalendarClock, FileSignature, Gavel, PenLine, Search, ShieldCheck, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useDebouncedFilters } from '@/hooks/use-debounced-filters';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate, formatDeadline } from '@/lib/datetime';
 import { DEADLINE_TONE_CLASS, deadlineStatus } from '@/lib/deadline';
@@ -70,39 +70,10 @@ type Props = {
  */
 export default function Index({ bids, filters, statusCounts, summary, statusOptions }: Props) {
     const { t, locale } = useTranslation();
-    const [search, setSearch] = useState(filters.search ?? '');
-    const firstRender = useRef(true);
-
-    // Every navigation carries the whole filter set — rebuilding the query from
-    // the one key that changed drops the sort and direction.
-    const navigate = (next: Partial<Filters>) => {
-        router.get(
-            '/vendor/bids',
-            {
-                search: search || undefined,
-                status: filters.status || undefined,
-                sort: filters.sort,
-                direction: filters.direction,
-                ...next,
-            },
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    };
-
-    // Debounced: the page had no search at all, and the five sortable column
-    // headers it did render posted a sort the controller never read.
-    useEffect(() => {
-        if (firstRender.current) {
-            firstRender.current = false;
-
-            return;
-        }
-
-        const timer = setTimeout(() => navigate({ search: search || undefined }), 350);
-
-        return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
+    // One shared hook rather than a copy per page: every navigation has to
+    // carry the whole filter set, and typing has to search on its own after
+    // a pause. Three pages were getting both right independently.
+    const { search, setSearch, navigate } = useDebouncedFilters('/vendor/bids', filters);
 
     const tenderTitle = (row: BidRow) =>
         row.tender ? localized(locale, row.tender.title_en, row.tender.title_ar) : '—';

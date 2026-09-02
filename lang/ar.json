@@ -7,7 +7,6 @@
     "appearance.dark": "داكن",
     "appearance.light": "فاتح",
     "appearance.system": "النظام",
-
     "approval.all_states": "كل الحالات",
     "approval.approval_history": "سجل الموافقات",
     "approval.approve": "موافقة",
@@ -52,7 +51,6 @@
     "approval.within_48_hours": "خلال ٤٨ ساعة",
     "approval.your_decision": "قرارك",
     "approval.your_decision_description": "راجع التفاصيل واتخذ قرارك.",
-
     "audit.action.addendum_extends_deadline": "ملحق مدّد الموعد النهائي",
     "audit.action.approved": "تمت الموافقة",
     "audit.action.created": "تم الإنشاء",
@@ -115,7 +113,6 @@
     "audit.since_midnight": "منذ منتصف الليل بتوقيت :zone",
     "audit.today": "اليوم",
     "audit.try_clearing": "أزل أحد المرشحات أو وسّع النطاق الزمني.",
-
     "auth.auth_code_description": "أدخل الرمز المكون من 6 أرقام من تطبيق المصادقة.",
     "auth.authentication_code": "رمز المصادقة",
     "auth.click_resend_verification": "انقر لإعادة إرسال بريد التحقق.",
@@ -175,7 +172,6 @@
     "auth.vendor_portal": "بوابة المقاولين",
     "auth.vendor_register": "تسجيل مقاول جديد",
     "auth.verification_link_sent": "تم إرسال رابط التحقق.",
-
     "btn.add": "إضافة",
     "btn.add_category": "إضافة فئة",
     "btn.add_document": "إضافة مستند",
@@ -281,7 +277,6 @@
     "btn.withdraw_bid": "سحب العرض",
     "btn.withdraw_request": "سحب الطلب",
     "btn.withdrawing": "جاري السحب...",
-
     "common.actions": "إجراءات",
     "common.back": "رجوع",
     "common.cancel": "إلغاء",
@@ -303,13 +298,11 @@
     "common.upload": "رفع",
     "common.view": "عرض",
     "common.yes": "نعم",
-
     "confirm.cancel_tender_description": "هل أنت متأكد من إلغاء هذه المناقصة؟ لا يمكن التراجع عن هذا الإجراء.",
     "confirm.cancel_tender_title": "إلغاء المناقصة",
     "confirm.cannot_undo": "لا يمكن التراجع عن هذا الإجراء.",
     "confirm.publish_tender_description": "هل أنت متأكد من نشر هذه المناقصة؟ ستكون مرئية لجميع المقاولين المؤهلين.",
     "confirm.publish_tender_title": "نشر المناقصة",
-
     "confirmation.application_status": "حالة الطلب",
     "confirmation.footer_note": "تؤكد هذه الوثيقة أن البيانات أعلاه مسجلة في نظام MPC للمناقصات الإلكترونية. يتم تقييم التأهيل المسبق بشكل منفصل، والحالة الموضحة تعكس الطلب وقت الإصدار.",
     "confirmation.issued_on": "صدر بتاريخ",
@@ -377,7 +370,6 @@
     "dashboard.total_spend": "إجمالي الإنفاق",
     "dashboard.total_tenders": "إجمالي المناقصات",
     "dashboard.vendors": "المقاولون",
-
     "dialog.delete_document": "حذف المستند",
     "dialog.delete_document_desc": "سيؤدي هذا إلى حذف المستند والملف المخزن نهائيًا.",
     "dialog.reject_document": "رفض المستند",
@@ -385,7 +377,6 @@
     "dialog.upload_vendor_document": "رفع مستند",
     "dialog.upload_vendor_document_desc": "إيداع مستند قدمته :name. سيتم تسجيله كمستند موثق، مع تسجيل اسمك كمودع.",
     "draft": "مسودة",
-
     "empty.no_addenda": "لم يتم إصدار ملاحق لهذه المناقصة.",
     "empty.no_bids_for_scoring": "لا توجد عروض متاحة للتقييم.",
     "empty.no_bids_submitted": "لم يتم تقديم أي عروض.",
@@ -419,7 +410,6 @@
     "empty.no_tenders_for_project": "لا توجد مناقصات لهذا المشروع.",
     "empty.no_tenders_found": "لم يتم العثور على مناقصات.",
     "empty.no_users_assigned": "لم يتم تعيين مستخدمين لهذا المشروع.",
-
     "eval.bid_details": "تفاصيل العرض",
     "eval.bid_opening": "فتح العروض",
     "eval.bid_ranking": "ترتيب العروض",
@@ -457,9 +447,7 @@
     "eval.summary": "الملخص",
     "eval.technical": "فني",
     "eval.unknown_vendor": "مقاول غير معروف",
-
     "financial": "مالي",
-
     "form.action": "الإجراء",
     "form.active": "نشط",
     "form.address": "العنوان",
@@ -592,7 +580,6 @@
     "form.weight_pct": "الوزن %",
     "form.whatsapp": "واتساب",
     "form.whatsapp_number": "رقم الواتساب",
-
     "messages.publish_reason_deadline_past": "انقضى الموعد النهائي لتقديم العروض.",
     "messages.publish_reason_no_boq": "يجب إضافة قسم واحد على الأقل في جدول الكميات مع بنود.",
     "messages.publish_reason_no_criteria": "يجب إضافة معيار تقييم واحد على الأقل.",
@@ -623,7 +610,6 @@
     "messages.vendor_password_reset_sent": "تم إرسال رابط إعادة التعيين إلى :email.",
     "messages.vendor_password_reset_success": "تمت إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.",
     "messages.vendor_temp_password_set": "تم إنشاء كلمة مرور مؤقتة. الرجاء مشاركتها مع المورد بشكل آمن.",
-
     "messages.bid.tender_closed": "المناقصة غير مفتوحة لاستلام العروض.",
     "messages.bid.vendor_not_qualified": "المقاول غير مؤهل.",
     "messages.bid.vendor_not_active": "حساب المقاول غير نشط.",
@@ -669,7 +655,6 @@
     "vendor.pending_or_under_review": "قيد الانتظار أو المراجعة",
     "vendor.tender.continue_bid": "متابعة العرض",
     "vendor.tender.view_bid": "عرض العطاء",
-
     "bid.envelope.technical_title": "المظروف الفني",
     "bid.envelope.financial_title": "المظروف المالي",
     "bid.envelope.technical_description": "يتم تقييم المستندات أولاً. لا توجد أسعار في هذا المظروف.",
@@ -708,32 +693,27 @@
     "bid.sealed_notice": "تسعيرك مختوم ويبقى مشفّرًا حتى تاريخ الفتح.",
     "bid.tender_closed_banner": "أُغلقت هذه المناقصة. عرضك للقراءة فقط.",
     "bid.withdrawal_reason_label": "السبب المذكور",
-
     "alert.must_change_password_desc": "قام المسؤول بتعيين كلمة مرور مؤقتة لحسابك. الرجاء اختيار كلمة مرور جديدة قبل المتابعة.",
     "alert.must_change_password_title": "تغيير كلمة المرور مطلوب",
     "alert.temp_password_one_time": "لن تُعرض كلمة المرور هذه مرة أخرى. انسخها الآن.",
-
     "dialog.generate_temp_desc": "سيؤدي ذلك إلى استبدال كلمة المرور الحالية للمورد بكلمة عشوائية وإلزامه بتعيين كلمة مرور جديدة عند تسجيل الدخول التالي. ستُعرض كلمة المرور المؤقتة مرة واحدة فقط — انسخها قبل إغلاق النافذة.",
     "dialog.generate_temp_title": "إنشاء كلمة مرور مؤقتة؟",
     "dialog.send_reset_email_desc": "سنرسل رابط إعادة تعيين كلمة المرور إلى :email. تنتهي صلاحية الرابط خلال 60 دقيقة.",
     "dialog.send_reset_email_title": "إرسال بريد إعادة تعيين كلمة المرور؟",
     "dialog.temp_password_desc": "شارك كلمة المرور هذه مع المورد عبر قناة آمنة. سيُطلب منه تغييرها عند تسجيل الدخول التالي.",
     "dialog.temp_password_title": "كلمة المرور المؤقتة",
-
     "mail.vendor_reset_button": "إعادة تعيين كلمة المرور",
     "mail.vendor_reset_expiry": "ستنتهي صلاحية هذا الرابط خلال :minutes دقيقة.",
     "mail.vendor_reset_greeting": "مرحباً :name،",
     "mail.vendor_reset_ignore": "إذا لم تطلب إعادة تعيين كلمة المرور، فلا حاجة لاتخاذ أي إجراء.",
     "mail.vendor_reset_line1": "تلقيت هذا البريد لأننا استلمنا طلباً لإعادة تعيين كلمة المرور الخاصة بحساب المورد.",
     "mail.vendor_reset_subject": "نظام المناقصات الإلكتروني — إعادة تعيين كلمة المرور",
-
     "page.vendor_change_password_desc": "قم بتحديث كلمة المرور الخاصة بك. ستحتاج إلى كلمة المرور الحالية للتأكيد.",
     "page.vendor_change_password_title": "تغيير كلمة المرور",
     "page.vendor_forgot_password_desc": "أدخل البريد الإلكتروني الذي سجّلت به وسنرسل لك رابط إعادة التعيين.",
     "page.vendor_forgot_password_title": "نسيت كلمة المرور",
     "page.vendor_reset_password_desc": "اختر كلمة مرور قوية جديدة لحساب المورد الخاص بك.",
     "page.vendor_reset_password_title": "تعيين كلمة مرور جديدة",
-
     "nav.admin": "الإدارة",
     "nav.admin_dashboard": "لوحة تحكم الإدارة",
     "nav.approvals": "الموافقات",
@@ -756,18 +736,15 @@
     "nav.users": "المستخدمون",
     "nav.vendor_portal": "بوابة المقاولين",
     "nav.vendors": "المقاولون",
-
     "notifications.days_ago": "منذ أيام",
     "notifications.hours_ago": "منذ ساعات",
     "notifications.just_now": "الآن",
     "notifications.minutes_ago": "منذ دقائق",
     "notifications.unread": "غير مقروءة",
-
     "notification.mark_all_read": "تحديد الكل كمقروء",
     "notification.mark_read": "تحديد كمقروء",
     "notification.no_notifications": "لا توجد إشعارات.",
     "notification.title": "الإشعارات",
-
     "pages.admin.active_projects": "المشاريع النشطة",
     "pages.admin.active_tenders": "المناقصات النشطة",
     "pages.admin.appearance_settings": "إعدادات المظهر",
@@ -823,25 +800,19 @@
     "pages.admin.vendor_documents_description": "المستندات والشهادات المرفوعة.",
     "pages.admin.vendors": "المقاولون",
     "pages.admin.vendors_description": "مراجعة وإدارة تسجيلات المقاولين.",
-
     "pages.approvals.description": "قرارات الترسية التي تنتظر توقيعك.",
     "pages.approvals.title": "الموافقات",
-
     "pages.dashboard.title": "لوحة التحكم",
     "pages.eval.bid_opening": "فتح العروض",
     "pages.eval.bid_scoring": "تقييم العروض",
     "pages.eval.evaluation_committees": "لجان التقييم",
     "pages.eval.evaluation_report": "تقرير التقييم",
     "pages.eval.score_bid": "تقييم العرض",
-
     "pages.notifications.title": "الإشعارات",
-
     "pages.portfolio.title": "لوحة المحفظة",
-
     "pages.tender_create.title": "إنشاء مناقصة",
     "pages.tender_edit.title": "تعديل مناقصة",
     "pages.tenders.title": "المناقصات",
-
     "pages.vendor.bid_details": "تفاصيل العرض",
     "pages.vendor.browse_tenders": "تصفح المناقصات",
     "pages.vendor.browse_tenders_description": "المناقصات المنشورة المطابقة لفئات نشاطك.",
@@ -857,11 +828,8 @@
     "pages.vendor.my_bids": "عروضي",
     "pages.vendor.my_bids_description": "كل عرض بدأته أو قدّمته.",
     "pages.vendor.notifications": "الإشعارات",
-
     "published": "منشورة",
-
     "question": "سؤال",
-
     "settings.approval.expiry_days.description": "عدد الأيام قبل انتهاء صلاحية الموافقة المعلقة.",
     "settings.approval.expiry_days.label": "مدة انتهاء الموافقة (أيام)",
     "settings.approval.level1_threshold.description": "قيمة الترسية حتى هذا المبلغ تتطلب موافقة المستوى الأول.",
@@ -904,7 +872,6 @@
     "settings.security.bid_opening_dual_auth.label": "تفعيل المصادقة الثنائية لفتح العروض",
     "settings.security.session_timeout_minutes.description": "مهلة انتهاء الجلسة الخاملة بالدقائق.",
     "settings.security.session_timeout_minutes.label": "مهلة الجلسة (بالدقائق)",
-
     "status.accepted": "مقبول",
     "status.active": "نشط",
     "status.approved": "موافق عليه",
@@ -934,7 +901,6 @@
     "status.under_review": "قيد المراجعة",
     "status.unpublished": "غير منشورة",
     "status.withdrawn": "مسحوب",
-
     "table.action": "الإجراء",
     "table.actions": "الإجراءات",
     "table.bid_reference": "مرجع العرض",
@@ -997,9 +963,7 @@
     "table.version": "الإصدار",
     "table.weight": "الوزن",
     "table.weight_pct": "الوزن %",
-
     "technical": "فني",
-
     "tender.add_criterion": "إضافة معيار",
     "tender.add_section": "إضافة قسم",
     "tender.addenda": "الملاحق",
@@ -1138,10 +1102,8 @@
     "tender.type_open": "مفتوحة",
     "tender.type_restricted": "محدودة",
     "tender.upload_document": "رفع مستند",
-
     "ui.processing": "جاري المعالجة...",
     "ui.warning": "تحذير",
-
     "vendor.boq_pricing": "تسعير جدول الكميات",
     "vendor.categories_mpc_controlled": "الفئات يتم تحديدها من خلال عملية التأهيل المسبق في MPC. لتغيير فئاتك المعتمدة، قدّم طلباً وسيقوم فريقنا بمراجعته.",
     "vendor.categories_readonly_description": "فئات عملك المعتمدة. الفئات تحت إدارة MPC — لإضافة أو إزالة أي فئة، قدّم طلب تغيير مع الأدلة الداعمة.",
@@ -1214,7 +1176,6 @@
     "vendor.withdraw_bid_description": "هل أنت متأكد من سحب هذا العرض؟ لا يمكن التراجع عن هذا الإجراء.",
     "vendor.withdraw_bid_title": "سحب العرض",
     "vendor.withdraw_reason_placeholder": "أدخل سبب السحب...",
-
     "vendor.address": "العنوان",
     "vendor.approved": "تمت الموافقة على طلبكم.",
     "vendor.city": "المدينة",
@@ -1225,7 +1186,6 @@
     "vendor.under_review": "طلبكم قيد المراجعة.",
     "vendor.website": "الموقع الإلكتروني",
     "vendor.whatsapp": "واتساب",
-
     "welcome.brand_subtitle": "منصة المشتريات الرقمية",
     "welcome.brand_title": "MPC e-Tender",
     "welcome.card_approval_desc": "سلاسل موافقات متعددة المستويات حسب قيمة المناقصة مع التفويض والتصعيد التلقائي.",
@@ -1251,7 +1211,6 @@
     "welcome.system_online": "النظام متاح",
     "welcome.vendor_login": "دخول الموردين",
     "welcome.vendor_portal": "بوابة المقاولين",
-
     "admin.active_projects": "المشاريع النشطة",
     "admin.active_tenders": "المناقصات النشطة",
     "admin.add_user": "إضافة مستخدم",
@@ -1287,7 +1246,6 @@
     "admin.recent_activity": "النشاط الأخير",
     "admin.system_settings": "إعدادات النظام",
     "admin.total_users": "إجمالي المستخدمين",
-
     "bid.my_bids": "عروضي",
     "bid.reference": "مرجع العرض",
     "bid.save_draft": "حفظ كمسودة",
@@ -1395,7 +1353,6 @@
     "empty.no_ranking": "لا توجد درجات بعد",
     "empty.no_ranking_description": "يتم ترتيب العطاءات بعد أن تقيّمها لجان التقييم.",
     "eval.weights_do_not_total_100": "مجموع أوزان المعايير :total% وليس 100%. لن تكون المجاميع المرجّحة قابلة للمقارنة بين العطاءات حتى يصححها مالك المناقصة.",
-
     "btn.back_to_profile": "العودة إلى الملف الشخصي",
     "btn.view_all": "عرض الكل",
     "empty.no_bids_submitted_hint": "ستظهر هنا العطاءات التي تبدأها أو تقدّمها.",
@@ -1464,7 +1421,6 @@
     "vendor.welcome_name": "مرحباً، :name",
     "vendor.within_thirty_days": "خلال ٣٠ يوماً، أو منتهية بالفعل",
     "vendor.you_may_bid_in_these": "يمكنك تقديم عطاءات فيها",
-
     "Addendum issued.": "تم إصدار الملحق.",
     "Answer saved.": "تم حفظ الإجابة.",
     "Approval thresholds are set in :currency and this tender is in :actual. Convert the tender to :currency before requesting approval.": "حدود الموافقة محددة بعملة :currency وهذه المناقصة بعملة :actual. حوّل المناقصة إلى :currency قبل طلب الموافقة.",
@@ -1533,5 +1489,36 @@
     "Vendor approved successfully.": "تم اعتماد المقاول بنجاح.",
     "Vendor rejected.": "تم رفض المقاول.",
     "Vendor suspended.": "تم تعليق المقاول.",
-    "You cannot delete your own account.": "لا يمكنك حذف حسابك الخاص."
+    "You cannot delete your own account.": "لا يمكنك حذف حسابك الخاص.",
+    "form.all_documents": "الكل",
+    "form.language_en": "الإنجليزية",
+    "form.language_ar": "العربية",
+    "form.language_ku": "الكردية",
+    "vendor.doc_expired": "منتهية الصلاحية",
+    "vendor.doc_expires_soon": "تنتهي قريبًا",
+    "vendor.doc_expires_on": "تنتهي في :date",
+    "vendor.doc_expired_on": "انتهت في :date",
+    "vendor.doc_no_expiry": "بلا تاريخ انتهاء",
+    "vendor.doc_needs_attention": "تحتاج إلى إجراء",
+    "vendor.doc_awaiting_review": "بانتظار المراجعة",
+    "vendor.doc_valid": "سارية",
+    "vendor.doc_on_file": "في الملف",
+    "vendor.doc_uploaded_or_filed": "مرفوعة منك أو مودعة من MPC",
+    "vendor.doc_with_mpc": "لدى MPC للمراجعة",
+    "vendor.doc_in_date": "معتمدة وسارية",
+    "vendor.doc_expiring_or_rejected": "تنتهي أو منتهية أو مرفوضة",
+    "vendor.doc_review_note": "ملاحظة المراجع",
+    "vendor.doc_no_matches": "لا توجد مستندات تطابق هذه المرشّحات",
+    "vendor.doc_none_yet": "لا توجد مستندات في الملف بعد",
+    "vendor.doc_try_clearing": "أزل المرشّحات لعرض بقية مستنداتك.",
+    "vendor.doc_upload_first": "ارفع أول مستند لك باستخدام النموذج أعلاه.",
+    "vendor.doc_uploaded_on": "رُفع في :date",
+    "vendor.standing_title": "التأهيل المسبق",
+    "vendor.standing_can_bid": "يمكنك تقديم عروض على المناقصات ضمن فئاتك.",
+    "vendor.standing_cannot_bid": "لا يمكنك تقديم عروض ما دام حسابك في هذه الحالة.",
+    "vendor.standing_qualified_on": "تم التأهيل في :date",
+    "vendor.standing_reason": "السبب المقدَّم من MPC",
+    "vendor.standing_contact_mpc": "تواصل مع MPC إذا كنت ترى أن هذا غير صحيح.",
+    "pages.vendor.company_profile_description": "بيانات شركتك كما تحتفظ بها MPC.",
+    "pages.vendor.documents_description": "الأوراق التي تحتفظ بها MPC في ملف شركتك."
 }

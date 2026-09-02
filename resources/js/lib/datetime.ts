@@ -243,3 +243,40 @@ export function projectZoneToday(): string {
 
     return `${p.year}-${p.month}-${p.day}`;
 }
+
+/**
+ * A DATE column, formatted without any timezone conversion.
+ *
+ * A `date` cast serialises as `2026-08-18T00:00:00.000000Z` — midnight UTC
+ * standing in for a day with no time attached. Running that through
+ * {@link formatDate} applies the project zone to it, which is harmless while
+ * that zone is ahead of UTC and wrong the moment it is not: at UTC-5, every
+ * document expiry would render a day early.
+ *
+ * `toDateInput` already refuses to convert for the same reason on the way in;
+ * this is its read-side counterpart. Values that are already bare
+ * `YYYY-MM-DD` pass through unchanged.
+ */
+export function formatDateOnly(
+    value: string | null | undefined,
+    locale?: string,
+    options: Intl.DateTimeFormatOptions = DEFAULT_DATE,
+): string {
+    const bare = toDateInput(value);
+
+    if (!bare) {
+        return '—';
+    }
+
+    const [year, month, day] = bare.split('-').map(Number);
+
+    if (!year || !month || !day) {
+        return '—';
+    }
+
+    // Built as a UTC instant and read back in UTC, so the calendar fields that
+    // go in are exactly the ones that come out.
+    return new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...options }).format(
+        new Date(Date.UTC(year, month - 1, day)),
+    );
+}
