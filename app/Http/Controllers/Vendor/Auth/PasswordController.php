@@ -8,6 +8,7 @@ use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,7 +35,16 @@ class PasswordController extends Controller
         $vendor->forceFill([
             'password' => Hash::make($request->input('password')),
             'must_change_password' => false,
+            // Rotated exactly as NewPasswordController does on a reset. This
+            // path did not, so a remember-me cookie taken before the change
+            // kept working after it — the one thing changing your password is
+            // supposed to stop.
+            'remember_token' => Str::random(60),
         ])->save();
+
+        // Re-issues the session id the caller holds, so the credentials they
+        // just replaced cannot be replayed against this session either.
+        $request->session()->regenerate();
 
         AuditLog::create([
             'user_id' => null,

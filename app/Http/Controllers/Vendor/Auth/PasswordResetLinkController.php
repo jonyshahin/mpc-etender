@@ -8,6 +8,8 @@ use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,11 +20,36 @@ class PasswordResetLinkController extends Controller
         return Inertia::render('vendor/ForgotPassword');
     }
 
+    /**
+     * Reset requests allowed from one IP before it locks.
+     *
+     * The broker already throttles one token per address per minute
+     * (config/auth.php), which covers an attacker hammering a single address.
+     * Nothing covered one walking a list — every match sends real mail.
+     */
+    private const MAX_ATTEMPTS = 6;
+
+    private const DECAY_SECONDS = 60;
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
         ]);
+
+        $key = 'vendor-password-reset|'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
+            // Thrown before the lookup, so a locked requester learns nothing
+            // about the address they just submitted either.
+            throw ValidationException::withMessages([
+                'email' => __('auth.vendor_reset_throttled', [
+                    'seconds' => RateLimiter::availableIn($key),
+                ]),
+            ]);
+        }
+
+        RateLimiter::hit($key, self::DECAY_SECONDS);
 
         // Non-enumerable: always respond with the same success toast even when
         // the email doesn't belong to a vendor, so attackers can't probe for

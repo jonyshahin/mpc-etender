@@ -53,9 +53,28 @@ class Vendor extends Authenticatable implements CanResetPasswordContract
         'must_change_password',
     ];
 
+    /**
+     * Never serialised. Reveal deliberately, never by default.
+     *
+     * `qualified_by` names the MPC user who signed this vendor off — internal
+     * staffing, not the vendor's own record — and it was reaching them: the
+     * profile page passed the whole model into Inertia, so every column bar
+     * the password went over the wire.
+     *
+     * This hides the raw column only. The `qualifiedBy` relation still
+     * serialises under the same `qualified_by` key, because relations are
+     * filtered by their own name before being snake_cased — which is what lets
+     * the admin vendor page keep rendering the reviewer's name. VendorTest
+     * pins both halves of that.
+     *
+     * The vendor's other account state — prequalification_status, is_active,
+     * last_login_at — is genuinely theirs, so it stays serialisable and the
+     * profile controller projects the parts it means to show.
+     */
     protected $hidden = [
         'password',
         'remember_token',
+        'qualified_by',
     ];
 
     protected function casts(): array
@@ -68,6 +87,27 @@ class Vendor extends Authenticatable implements CanResetPasswordContract
             'last_login_at' => 'datetime',
             'must_change_password' => 'boolean',
         ];
+    }
+
+    /**
+     * Whether this vendor may hold a portal session at all.
+     *
+     * Wider than eligibility to bid, deliberately: a pending or rejected vendor
+     * signs in perfectly well — the portal is where they read their standing,
+     * see the reason and upload the paperwork that changes it. A suspended or
+     * blacklisted one is under sanction and gets nothing. Whether they may then
+     * bid is BidPolicy::create's question, not this one's.
+     *
+     * Suspension already sets is_active false, so the status list is belt and
+     * braces against a row where the two disagree.
+     */
+    public function mayAccessPortal(): bool
+    {
+        return $this->is_active
+            && ! in_array($this->prequalification_status, [
+                VendorStatus::Suspended,
+                VendorStatus::Blacklisted,
+            ], true);
     }
 
     public function sendPasswordResetNotification($token): void
