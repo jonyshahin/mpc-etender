@@ -1,7 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, ChevronDown, ChevronRight, FileText, Send, Upload, X } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { CategoryName } from '@/components/CategoryName';
+import { FileSize } from '@/components/FileSize';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +42,7 @@ export default function Create({ availableCategories, currentlyApprovedIds }: Pr
         const parents = availableCategories.filter((c) => c.parent_id === null);
         const childrenOf = (parentId: string) =>
             availableCategories.filter((c) => c.parent_id === parentId);
+
         return { parents, childrenOf };
     }, [availableCategories]);
 
@@ -81,14 +84,19 @@ export default function Create({ availableCategories, currentlyApprovedIds }: Pr
 
         if (form.data.add_categories.length === 0 && form.data.remove_categories.length === 0) {
             toast.error(t('vendor.category_requests.select_at_least_one'));
+
             return;
         }
+
         if (form.data.justification.trim().length < 20) {
             toast.error(t('vendor.category_requests.justification_too_short'));
+
             return;
         }
+
         if (form.data.evidence.length === 0) {
             toast.error(t('vendor.category_requests.evidence_required'));
+
             return;
         }
 
@@ -164,17 +172,15 @@ export default function Create({ availableCategories, currentlyApprovedIds }: Pr
                                                         : 'cursor-pointer font-medium'
                                                 }
                                             >
-                                                {parent.name_en}
-                                                {parent.name_ar && (
-                                                    <span className="ms-2 text-muted-foreground">
-                                                        ({parent.name_ar})
-                                                    </span>
-                                                )}
-                                                {parentApproved && (
-                                                    <span className="ms-2 text-xs text-muted-foreground">
-                                                        ({t('vendor.category_requests.already_approved')})
-                                                    </span>
-                                                )}
+                                                <CategoryName
+                                                    name_en={parent.name_en}
+                                                    name_ar={parent.name_ar}
+                                                    note={
+                                                        parentApproved
+                                                            ? t('vendor.category_requests.already_approved')
+                                                            : null
+                                                    }
+                                                />
                                             </Label>
                                         </div>
 
@@ -183,6 +189,7 @@ export default function Create({ availableCategories, currentlyApprovedIds }: Pr
                                                 {children.map((child) => {
                                                     const childApproved = approvedSet.has(child.id);
                                                     const childChecked = form.data.add_categories.includes(child.id);
+
                                                     return (
                                                         <div key={child.id} className="flex items-center gap-3">
                                                             <Checkbox
@@ -199,17 +206,15 @@ export default function Create({ availableCategories, currentlyApprovedIds }: Pr
                                                                         : 'cursor-pointer'
                                                                 }
                                                             >
-                                                                {child.name_en}
-                                                                {child.name_ar && (
-                                                                    <span className="ms-2 text-muted-foreground">
-                                                                        ({child.name_ar})
-                                                                    </span>
-                                                                )}
-                                                                {childApproved && (
-                                                                    <span className="ms-2 text-xs text-muted-foreground">
-                                                                        ({t('vendor.category_requests.already_approved')})
-                                                                    </span>
-                                                                )}
+                                                                <CategoryName
+                                                                    name_en={child.name_en}
+                                                                    name_ar={child.name_ar}
+                                                                    note={
+                                                                        childApproved
+                                                                            ? t('vendor.category_requests.already_approved')
+                                                                            : null
+                                                                    }
+                                                                />
                                                             </Label>
                                                         </div>
                                                     );
@@ -261,12 +266,10 @@ export default function Create({ availableCategories, currentlyApprovedIds }: Pr
                                                 htmlFor={`remove-${cat.id}`}
                                                 className="cursor-pointer"
                                             >
-                                                {cat.name_en}
-                                                {cat.name_ar && (
-                                                    <span className="ms-2 text-muted-foreground">
-                                                        ({cat.name_ar})
-                                                    </span>
-                                                )}
+                                                <CategoryName
+                                                    name_en={cat.name_en}
+                                                    name_ar={cat.name_ar}
+                                                />
                                             </Label>
                                         </div>
                                     ))}
@@ -391,10 +394,14 @@ function EvidenceDropzone({
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleFiles = (fileList: FileList | null) => {
-        if (!fileList || fileList.length === 0) return;
+        if (!fileList || fileList.length === 0) {
+return;
+}
+
         const newFiles = Array.from(fileList);
 
         const oversized = newFiles.filter((f) => f.size > maxUploadBytes());
+
         if (oversized.length > 0) {
             toast.error(
                 t('vendor.category_requests.file_too_large', {
@@ -402,11 +409,13 @@ function EvidenceDropzone({
                     size: maxUploadLabel(),
                 }),
             );
+
             return;
         }
 
         if (files.length + newFiles.length > MAX_FILES) {
             toast.error(t('vendor.category_requests.too_many_files'));
+
             return;
         }
 
@@ -450,8 +459,11 @@ function EvidenceDropzone({
                 className="hidden"
                 onChange={(e) => {
                     handleFiles(e.target.files);
+
                     // Reset value so picking the same file twice still fires change.
-                    if (inputRef.current) inputRef.current.value = '';
+                    if (inputRef.current) {
+inputRef.current.value = '';
+}
                 }}
             />
 
@@ -466,7 +478,7 @@ function EvidenceDropzone({
                                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <span className="truncate text-sm">{f.name}</span>
                                 <span className="shrink-0 text-xs text-muted-foreground">
-                                    {(f.size / (1024 * 1024)).toFixed(1)} MB
+                                    <FileSize bytes={f.size} />
                                 </span>
                             </div>
                             <Button

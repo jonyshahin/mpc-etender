@@ -1,6 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Clock, Download, FileText, Minus, Plus, UserCheck, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import { CategoryName } from '@/components/CategoryName';
+import { FileSize } from '@/components/FileSize';
 import Heading from '@/components/heading';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatDate as formatDateInZone } from '@/lib/datetime';
+import { formatDate } from '@/lib/datetime';
 
 type CategoryItem = {
     category_id: string;
@@ -57,17 +59,6 @@ type Props = {
     request: CategoryRequestDetail;
 };
 
-function formatDate(value: string | null): string {
-    if (!value) return '—';
-    return formatDateInZone(value);
-}
-
-function formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
 function CategoryList({
     items,
     operation,
@@ -83,13 +74,11 @@ function CategoryList({
         <ul className="space-y-2">
             {items.map((cat) => (
                 <li key={cat.category_id} className="flex items-start gap-2 text-sm">
-                    <Icon className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${iconClass}`} />
-                    <span>
-                        {cat.name_en ?? '—'}
-                        {cat.name_ar && (
-                            <span className="ms-2 text-muted-foreground">({cat.name_ar})</span>
-                        )}
-                    </span>
+                    <Icon
+                        className={`mt-0.5 size-3.5 shrink-0 ${iconClass}`}
+                        aria-hidden="true"
+                    />
+                    <CategoryName name_en={cat.name_en} name_ar={cat.name_ar} />
                 </li>
             ))}
         </ul>
@@ -97,7 +86,11 @@ function CategoryList({
 }
 
 export default function Show({ request }: Props) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
+
+    // formatDate defaults to the *browser* locale when none is passed, so an
+    // Arabic UI on an English-locale machine rendered English dates.
+    const date = (value: string | null) => (value ? formatDate(value, locale) : '—');
 
     const canWithdraw = request.status === 'pending' || request.status === 'under_review';
     const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -114,17 +107,17 @@ export default function Show({ request }: Props) {
     };
 
     const timelineSubmitted = t('vendor.category_requests.timeline_submitted', {
-        date: formatDate(request.created_at),
+        date: date(request.created_at),
     });
     const timelineReviewed = request.reviewed_at && request.reviewer
         ? t('vendor.category_requests.timeline_reviewed_by', {
-              date: formatDate(request.reviewed_at),
+              date: date(request.reviewed_at),
               name: request.reviewer.name,
           })
         : null;
     const timelineWithdrawn = request.status === 'withdrawn'
         ? t('vendor.category_requests.timeline_withdrawn', {
-              date: formatDate(request.updated_at),
+              date: date(request.updated_at),
           })
         : null;
 
@@ -144,7 +137,7 @@ export default function Show({ request }: Props) {
                     <Heading
                         title={t('vendor.category_requests.show_title')}
                         description={t('vendor.category_requests.timeline_submitted', {
-                            date: formatDate(request.created_at),
+                            date: date(request.created_at),
                         })}
                     />
                     {canWithdraw && (
@@ -227,7 +220,7 @@ export default function Show({ request }: Props) {
                                                             {e.original_name}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">
-                                                            {formatFileSize(e.size)}
+                                                            <FileSize bytes={e.size} />
                                                         </div>
                                                     </div>
                                                 </div>

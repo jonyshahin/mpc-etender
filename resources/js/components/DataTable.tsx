@@ -70,7 +70,7 @@ export function DataTable<T = any>({
     data,
     filters = {},
     searchable = false,
-    searchPlaceholder = 'Search...',
+    searchPlaceholder,
     onSearch,
     actions,
 }: DataTableProps<T>) {
@@ -120,7 +120,7 @@ export function DataTable<T = any>({
                 <div className="flex items-center">
                     <Input
                         type="text"
-                        placeholder={searchPlaceholder}
+                        placeholder={searchPlaceholder ?? t('btn.search')}
                         value={searchValue}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="max-w-sm"
@@ -136,7 +136,11 @@ export function DataTable<T = any>({
                                 <th
                                     key={column.key}
                                     className={cn(
-                                        'px-4 py-3 text-left font-medium text-muted-foreground',
+                                        // text-start, not text-left: under
+                                        // dir="rtl" every header was pinned to
+                                        // the left of its own column while the
+                                        // cells beneath it read from the right.
+                                        'px-4 py-3 text-start font-medium text-muted-foreground',
                                         column.sortable && 'cursor-pointer select-none',
                                     )}
                                     onClick={
@@ -154,8 +158,8 @@ export function DataTable<T = any>({
                                 </th>
                             ))}
                             {actions && (
-                                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                                    Actions
+                                <th className="px-4 py-3 text-start font-medium text-muted-foreground">
+                                    {t('table.actions')}
                                 </th>
                             )}
                         </tr>
@@ -198,10 +202,15 @@ export function DataTable<T = any>({
 
             {lastPage > 1 && (
                 <div className="flex items-center justify-between">
+                    {/* <bdi>: the summary mixes translated words with a digit
+                        range, and the surrounding paragraph direction would
+                        otherwise be free to reorder the two around each other. */}
                     <p className="text-sm text-muted-foreground">
-                        {from !== null && to !== null
-                            ? `Showing ${from} to ${to} of ${total} results`
-                            : `${total} results`}
+                        <bdi>
+                            {from !== null && to !== null
+                                ? t('table.showing_range', { from, to, total })
+                                : t('table.showing_total', { total })}
+                        </bdi>
                     </p>
 
                     <div className="flex items-center gap-1">
@@ -217,11 +226,11 @@ export function DataTable<T = any>({
                                     >
                                         {link.url ? (
                                             <Link href={link.url} preserveState>
-                                                <ChevronLeft className="h-4 w-4" />
+                                                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
                                             </Link>
                                         ) : (
                                             <span>
-                                                <ChevronLeft className="h-4 w-4" />
+                                                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
                                             </span>
                                         )}
                                     </Button>
@@ -239,11 +248,11 @@ export function DataTable<T = any>({
                                     >
                                         {link.url ? (
                                             <Link href={link.url} preserveState>
-                                                <ChevronRight className="h-4 w-4" />
+                                                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
                                             </Link>
                                         ) : (
                                             <span>
-                                                <ChevronRight className="h-4 w-4" />
+                                                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
                                             </span>
                                         )}
                                     </Button>

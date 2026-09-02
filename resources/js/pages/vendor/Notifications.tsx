@@ -1,21 +1,22 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { Bell, CheckCheck } from 'lucide-react';
-import Heading from '@/components/heading';
+import { Head, router } from '@inertiajs/react';
+import { BellOff, CheckCheck } from 'lucide-react';
+import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { useNow } from '@/hooks/use-now';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDateTime } from '@/lib/datetime';
+import { relativeTime } from '@/lib/relative-time';
+import { cn } from '@/lib/utils';
 
 type Notif = {
     id: string;
+    notification_type: string;
     title_en: string;
     title_ar: string | null;
     body_en: string;
     body_ar: string | null;
-    notification_type: string;
     read_at: string | null;
     created_at: string;
-    data: Record<string, any> | null;
 };
 
 type PaginatedData<T> = {
@@ -29,90 +30,192 @@ type PaginatedData<T> = {
 type Props = {
     notifications: PaginatedData<Notif>;
     unreadCount: number;
+    filters: { unread: boolean };
 };
 
-function timeAgo(date: string): string {
-    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-}
-
-export default function Notifications({ notifications, unreadCount }: Props) {
-    const { t } = useTranslation();
-    const { locale } = usePage().props as any;
+export default function Notifications({ notifications, unreadCount, filters }: Props) {
+    const { t, locale } = useTranslation();
     const isAr = locale === 'ar';
 
-    function markRead(id: string) {
+    // One instant for the whole list: sampling per row lets two notifications
+    // written in the same second report different ages.
+    const now = useNow(60_000);
+
+    const markRead = (id: string) =>
         router.post(`/vendor/notifications/${id}/read`, {}, { preserveScroll: true });
-    }
+
+    const markAllRead = () =>
+        router.post('/vendor/notifications/read-all', {}, { preserveScroll: true });
+
+    const setFilter = (unread: boolean) =>
+        router.get(
+            '/vendor/notifications',
+            unread ? { unread: 1 } : {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
 
     return (
         <>
             <Head title={t('pages.vendor.notifications')} />
-            <div className="space-y-6 p-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Heading title={t('pages.vendor.notifications')} />
-                        {unreadCount > 0 && (
-                            <Badge variant="destructive">{unreadCount}</Badge>
-                        )}
+
+            <div className="space-y-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            {t('pages.vendor.notifications')}
+                        </h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            {unreadCount > 0
+                                ? t('vendor.unread_notifications', { count: unreadCount })
+                                : t('vendor.all_caught_up')}
+                        </p>
                     </div>
+                    {unreadCount > 0 && (
+                        <Button variant="outline" onClick={markAllRead}>
+                            <CheckCheck className="me-2 size-4" aria-hidden="true" />
+                            {t('btn.mark_all_read')}
+                        </Button>
+                    )}
+                </div>
+
+                <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+                    <FilterTab
+                        label={t('btn.filter_all')}
+                        count={notifications.total}
+                        active={!filters.unread}
+                        onSelect={() => setFilter(false)}
+                    />
+                    <FilterTab
+                        label={t('notifications.unread')}
+                        count={unreadCount}
+                        active={filters.unread}
+                        onSelect={() => setFilter(true)}
+                    />
                 </div>
 
                 {notifications.data.length === 0 ? (
-                    <Card>
-                        <CardContent className="flex flex-col items-center justify-center py-12">
-                            <Bell className="mb-4 h-12 w-12 text-muted-foreground" />
-                            <p className="text-muted-foreground">{t('empty.no_notifications')}</p>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="space-y-2">
-                        {notifications.data.map((notif) => (
-                            <Card
-                                key={notif.id}
-                                className={`transition-colors ${!notif.read_at ? 'border-l-4 border-l-blue-500' : ''}`}
+                    <div className="rounded-xl border border-dashed py-16 text-center">
+                        <BellOff
+                            className="mx-auto size-8 text-muted-foreground"
+                            aria-hidden="true"
+                        />
+                        <p className="mt-3 font-medium">
+                            {filters.unread
+                                ? t('vendor.all_caught_up')
+                                : t('empty.no_notifications')}
+                        </p>
+                        <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                            {filters.unread
+                                ? t('vendor.no_unread_hint')
+                                : t('empty.no_notifications_hint')}
+                        </p>
+                        {filters.unread && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-4"
+                                onClick={() => setFilter(false)}
                             >
-                                <CardContent className="flex items-start justify-between gap-4 py-4">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-medium">
-                                            {isAr ? (notif.title_ar || notif.title_en) : notif.title_en}
-                                        </p>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            {isAr ? (notif.body_ar || notif.body_en) : notif.body_en}
-                                        </p>
-                                        <p className="mt-2 text-xs text-muted-foreground">
-                                            {timeAgo(notif.created_at)}
-                                        </p>
-                                    </div>
-                                    {!notif.read_at && (
-                                        <Button variant="ghost" size="sm" onClick={() => markRead(notif.id)}>
-                                            <CheckCheck className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        ))}
+                                {t('btn.filter_all')}
+                            </Button>
+                        )}
                     </div>
+                ) : (
+                    <ul className="space-y-2">
+                        {notifications.data.map((notif) => {
+                            const unread = !notif.read_at;
+
+                            return (
+                                <li
+                                    key={notif.id}
+                                    className={cn(
+                                        // border-s, not border-l: under dir="rtl"
+                                        // the unread marker belonged on the
+                                        // right and sat on the left.
+                                        'rounded-xl border bg-card p-4 transition-colors',
+                                        unread && 'border-s-4 border-s-primary bg-primary/[0.03]',
+                                    )}
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <p
+                                                className={cn(
+                                                    'text-sm',
+                                                    unread ? 'font-semibold' : 'font-medium',
+                                                )}
+                                            >
+                                                {(isAr && notif.title_ar) || notif.title_en}
+                                            </p>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {(isAr && notif.body_ar) || notif.body_en}
+                                            </p>
+                                            <p className="mt-2 text-xs text-muted-foreground">
+                                                {/* Absolute date as the title so
+                                                    "3 days ago" is checkable. */}
+                                                <time
+                                                    dateTime={notif.created_at}
+                                                    title={formatDateTime(notif.created_at, locale)}
+                                                >
+                                                    {relativeTime(notif.created_at, now, t)}
+                                                </time>
+                                            </p>
+                                        </div>
+                                        {unread && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                aria-label={t('btn.mark_read')}
+                                                title={t('btn.mark_read')}
+                                                onClick={() => markRead(notif.id)}
+                                            >
+                                                <CheckCheck className="size-4" aria-hidden="true" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 )}
 
-                {notifications.last_page > 1 && (
-                    <div className="flex justify-center gap-1">
-                        {notifications.links.map((link, idx) => (
-                            <Button
-                                key={idx}
-                                variant={link.active ? 'default' : 'outline'}
-                                size="sm"
-                                disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
-                    </div>
-                )}
+                <Pagination links={notifications.links} />
             </div>
         </>
+    );
+}
+
+function FilterTab({
+    label,
+    count,
+    active,
+    onSelect,
+}: {
+    label: string;
+    count: number;
+    active: boolean;
+    onSelect: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onSelect}
+            aria-pressed={active}
+            className={cn(
+                'inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
+                active
+                    ? 'border-transparent bg-primary text-primary-foreground'
+                    : 'hover:bg-accent',
+            )}
+        >
+            {label}
+            <span
+                className={cn(
+                    'rounded-full px-1.5 text-xs tabular-nums',
+                    active ? 'bg-primary-foreground/20' : 'bg-muted',
+                )}
+            >
+                {count}
+            </span>
+        </button>
     );
 }

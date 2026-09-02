@@ -142,12 +142,21 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | GET | `/vendor/dashboard` | `vendor.dashboard` | Vendor dashboard |
 | GET | `/vendor/profile` | `vendor.profile.edit` | Edit vendor profile |
 | PUT | `/vendor/profile` | `vendor.profile.update` | Update vendor profile |
+| GET | `/vendor/password/change` | `vendor.password.change.show` | Change-password form |
+| PUT | `/vendor/password/change` | `vendor.password.change` | Change own password |
 | GET | `/vendor/documents` | `vendor.documents.index` | List vendor documents |
 | POST | `/vendor/documents` | `vendor.documents.store` | Upload document |
+| GET | `/vendor/documents/{document}/download` | `vendor.documents.download` | Download own document (logged to `document_access_logs`) |
 | DELETE | `/vendor/documents/{document}` | `vendor.documents.destroy` | Delete pending document |
-| GET | `/vendor/categories` | `vendor.categories.index` | View/select categories |
-| PUT | `/vendor/categories` | `vendor.categories.update` | Update category selections |
-| GET | `/vendor/notifications` | `vendor.notifications.index` | Vendor notifications |
+| GET | `/vendor/categories` | `vendor.categories.index` | View approved categories (read-only) |
+| GET | `/vendor/category-requests` | `vendor.category-requests.index` | List own category change requests |
+| GET | `/vendor/category-requests/create` | `vendor.category-requests.create` | New category change request |
+| POST | `/vendor/category-requests` | `vendor.category-requests.store` | Submit category change request |
+| GET | `/vendor/category-requests/{r}` | `vendor.category-requests.show` | View own request |
+| GET | `/vendor/category-requests/{r}/evidence/{e}/download` | `vendor.category-requests.evidence.download` | Download own evidence (logged to `document_access_logs`) |
+| DELETE | `/vendor/category-requests/{r}` | `vendor.category-requests.destroy` | Withdraw an open request |
+| GET | `/vendor/notifications` | `vendor.notifications.index` | Vendor notifications (`?unread=1` filters) |
+| POST | `/vendor/notifications/read-all` | `vendor.notifications.read-all` | Mark all vendor notifications read |
 | POST | `/vendor/notifications/{n}/read` | `vendor.notifications.read` | Mark vendor notification read |
 | GET | `/vendor/tenders` | `vendor.tenders.index` | Browse open tenders |
 | GET | `/vendor/tenders/{tender}` | `vendor.tenders.show` | View tender details |

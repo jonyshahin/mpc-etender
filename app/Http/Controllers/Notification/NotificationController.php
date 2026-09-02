@@ -75,18 +75,37 @@ class NotificationController extends Controller
 
     /**
      * Vendor notification list.
+     *
+     * The payload is named field by field. Paginating the models whole shipped
+     * notifiable_type — a fully-qualified PHP class name — along with the
+     * internal user_id/vendor_id addressing, none of which the page renders.
      */
     public function vendorIndex(Request $request): Response
     {
         $vendor = $request->user('vendor');
 
+        $unreadOnly = $request->boolean('unread');
+
         $notifications = Notification::where('vendor_id', $vendor->id)
+            ->when($unreadOnly, fn ($q) => $q->unread())
             ->orderByDesc('created_at')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString()
+            ->through(fn (Notification $n) => [
+                'id' => $n->id,
+                'notification_type' => $n->notification_type,
+                'title_en' => $n->title_en,
+                'title_ar' => $n->title_ar,
+                'body_en' => $n->body_en,
+                'body_ar' => $n->body_ar,
+                'read_at' => $n->read_at?->toIso8601String(),
+                'created_at' => $n->created_at?->toIso8601String(),
+            ]);
 
         return Inertia::render('vendor/Notifications', [
             'notifications' => $notifications,
             'unreadCount' => Notification::where('vendor_id', $vendor->id)->unread()->count(),
+            'filters' => ['unread' => $unreadOnly],
         ]);
     }
 
@@ -97,6 +116,22 @@ class NotificationController extends Controller
         }
 
         $notification->update(['read_at' => now()]);
+
+        return back();
+    }
+
+    /**
+     * Clear the vendor's whole inbox.
+     *
+     * MPC users have had markAllRead since the feature landed; vendors reading
+     * the same table through the same component did not, and had to open every
+     * notification individually to clear the sidebar badge.
+     */
+    public function vendorMarkAllRead(Request $request): RedirectResponse
+    {
+        Notification::where('vendor_id', $request->user('vendor')->id)
+            ->unread()
+            ->update(['read_at' => now()]);
 
         return back();
     }
