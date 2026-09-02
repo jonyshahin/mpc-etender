@@ -7,7 +7,6 @@ import {
     Ban,
     Copy,
     Download,
-    ExternalLink,
     FileText,
     Globe,
     MoreHorizontal,
@@ -68,15 +67,20 @@ import type {Category as FormCategory} from './Form';
 type VendorDocument = {
     id: string;
     document_type: string;
+    document_type_label_key: string;
     title: string;
-    file_path: string;
     file_size: number;
-    mime_type: string;
     issue_date: string | null;
     expiry_date: string | null;
     status: string;
+    status_label_key: string;
     review_notes: string | null;
     created_at: string;
+    /**
+     * A route through the app. The page used to receive a pre-signed S3 URL per
+     * document, minted on page load whether or not anyone opened one.
+     */
+    download_url: string;
     /** Null when the vendor uploaded it themselves through the portal. */
     uploader?: { id: string; name: string } | null;
 };
@@ -105,7 +109,6 @@ type Vendor = {
 
 type Props = {
     vendor: Vendor;
-    documentUrls: Record<string, string>;
     /** Backed by the vendors.review_docs permission. */
     canReviewDocuments: boolean;
     documentTypes: Array<{ value: string; labelKey: string }>;
@@ -116,27 +119,34 @@ type Props = {
 };
 
 function formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+return '0 B';
+}
+
     const units = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
+
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
 }
 
-function formatDate(value: string | null): string {
-    if (!value) return '--';
-    return formatDateInZone(value, 'en-US');
+/** The app's locale, not the browser's — this was pinned to 'en-US'. */
+function formatDate(value: string | null, locale: string): string {
+    if (!value) {
+        return '--';
+    }
+
+    return formatDateInZone(value, locale);
 }
 
 export default function Show({
     vendor,
-    documentUrls,
     canReviewDocuments,
     documentTypes,
     canUpdate,
     categories,
     vendorCategoryIds,
 }: Props) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const page = usePage();
     const temporaryPassword = (page.props as { flash?: { temporary_password?: string } }).flash?.temporary_password;
 
@@ -149,7 +159,9 @@ export default function Show({
     // Flash prop arrives once on the request following forceTemporaryPassword();
     // openingness is driven off it so a refresh does NOT re-open the modal.
     useEffect(() => {
-        if (temporaryPassword) setTempModalOpen(true);
+        if (temporaryPassword) {
+setTempModalOpen(true);
+}
     }, [temporaryPassword]);
 
     const rejectForm = useForm({ reason: '' });
@@ -187,7 +199,10 @@ export default function Show({
     };
 
     const submitDocReject = () => {
-        if (!rejectDocId) return;
+        if (!rejectDocId) {
+return;
+}
+
         docRejectForm.put(`/admin/vendors/${vendor.id}/documents/${rejectDocId}/reject`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -198,7 +213,10 @@ export default function Show({
     };
 
     const deleteDoc = () => {
-        if (!deleteDocId) return;
+        if (!deleteDocId) {
+return;
+}
+
         router.delete(`/admin/vendors/${vendor.id}/documents/${deleteDocId}`, {
             preserveScroll: true,
             onFinish: () => setDeleteDocId(null),
@@ -221,7 +239,10 @@ export default function Show({
     }
 
     async function copyTempPassword() {
-        if (!temporaryPassword) return;
+        if (!temporaryPassword) {
+return;
+}
+
         await navigator.clipboard.writeText(temporaryPassword);
         toast.success(t('messages.temp_password_copied'));
     }
@@ -269,7 +290,7 @@ export default function Show({
                             description={
                                 vendor.company_name_ar
                                     ? vendor.company_name_ar
-                                    : `Registered ${formatDate(vendor.created_at)}`
+                                    : `Registered ${formatDate(vendor.created_at, locale)}`
                             }
                         />
                         <StatusBadge status={vendor.prequalification_status} />
@@ -430,7 +451,7 @@ export default function Show({
                             {vendor.qualified_at && (
                                 <div>
                                     <Label className="text-muted-foreground">{t('form.qualified_at')}</Label>
-                                    <p className="font-medium">{formatDate(vendor.qualified_at)}</p>
+                                    <p className="font-medium">{formatDate(vendor.qualified_at, locale)}</p>
                                 </div>
                             )}
                             {vendor.qualified_by && (
@@ -523,33 +544,29 @@ export default function Show({
                                                     )}
                                                 </td>
                                                 <td className="py-3 pr-4 capitalize">
-                                                    {doc.document_type.replace(/_/g, ' ')}
+                                                    {t(doc.document_type_label_key)}
                                                 </td>
                                                 <td className="py-3 pr-4">
                                                     <StatusBadge status={doc.status} />
                                                 </td>
                                                 <td className="py-3 pr-4">
-                                                    {formatDate(doc.issue_date)}
+                                                    {formatDate(doc.issue_date, locale)}
                                                 </td>
                                                 <td className="py-3 pr-4">
-                                                    {formatDate(doc.expiry_date)}
+                                                    {formatDate(doc.expiry_date, locale)}
                                                 </td>
                                                 <td className="py-3 pr-4 text-muted-foreground">
                                                     {formatFileSize(doc.file_size)}
                                                 </td>
                                                 <td className="py-3">
                                                     <div className="flex items-center gap-2">
-                                                        {documentUrls[doc.id] && (
-                                                            <a
-                                                                href={documentUrls[doc.id]}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 text-primary hover:underline"
-                                                            >
-                                                                <ExternalLink className="h-3.5 w-3.5" />
-                                                                {t('btn.view')}
-                                                            </a>
-                                                        )}
+                                                        <a
+                                                            href={doc.download_url}
+                                                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                                                        >
+                                                            <Download className="size-3.5" aria-hidden="true" />
+                                                            {t('btn.download')}
+                                                        </a>
                                                         {canReviewDocuments && (
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>

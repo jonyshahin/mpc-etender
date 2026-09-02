@@ -191,6 +191,7 @@ There is no vendor self-registration. Vendors are onboarded by admins via
 | POST | `/admin/vendors/{vendor}/documents` | `admin.vendors.documents.store` | File a prequalification document on the vendor's behalf (requires `vendors.review_docs`) |
 | PUT | `/admin/vendors/{vendor}/documents/{document}/approve` | `admin.vendors.documents.approve` | Accept a document the vendor uploaded (requires `vendors.review_docs`) |
 | PUT | `/admin/vendors/{vendor}/documents/{document}/reject` | `admin.vendors.documents.reject` | Reject a document; `reason` required and shown to the vendor (requires `vendors.review_docs`) |
+| GET | `/admin/vendors/{vendor}/documents/{document}/download` | `admin.vendors.documents.download` | Stream a vendor document (requires `vendors.view`, logged to `document_access_logs`) |
 | DELETE | `/admin/vendors/{vendor}/documents/{document}` | `admin.vendors.documents.destroy` | Remove a document and its stored file (requires `vendors.review_docs`) |
 
 `confirmation` renders `admin/Vendors/Confirmation` — a layout-less printable

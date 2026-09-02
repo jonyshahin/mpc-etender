@@ -246,6 +246,9 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin
     // Prequalification documents. Vendors are onboarded by admins, so most
     // paperwork arrives by hand and never passes through the vendor portal.
     Route::post('vendors/{vendor}/documents', [Admin\VendorDocumentController::class, 'store'])->name('vendors.documents.store');
+    // Replaces the pre-signed S3 URLs the vendor page used to mint for every
+    // document on load: the bucket URL stays server-side and the access is logged.
+    Route::get('vendors/{vendor}/documents/{document}/download', [Admin\VendorDocumentController::class, 'download'])->name('vendors.documents.download');
     Route::put('vendors/{vendor}/documents/{document}/approve', [Admin\VendorDocumentController::class, 'approve'])->name('vendors.documents.approve');
     Route::put('vendors/{vendor}/documents/{document}/reject', [Admin\VendorDocumentController::class, 'reject'])->name('vendors.documents.reject');
     Route::delete('vendors/{vendor}/documents/{document}', [Admin\VendorDocumentController::class, 'destroy'])->name('vendors.documents.destroy');

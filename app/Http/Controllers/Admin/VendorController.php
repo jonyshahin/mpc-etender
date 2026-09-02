@@ -13,7 +13,7 @@ use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\SystemSetting;
 use App\Models\Vendor;
-use App\Services\FileUploadService;
+use App\Models\VendorDocument;
 use App\Services\PrintAssetService;
 use App\Services\QrCodeService;
 use App\Services\VendorService;
@@ -33,7 +33,6 @@ class VendorController extends Controller
 {
     public function __construct(
         private VendorService $vendorService,
-        private FileUploadService $fileUploadService,
         private QrCodeService $qrCodeService,
         private PrintAssetService $printAssetService,
     ) {}
@@ -195,20 +194,43 @@ class VendorController extends Controller
 
     public function show(Request $request, Vendor $vendor): Response
     {
+        // The only read method on this controller that did not authorize.
+        // confirmation() and confirmationPdf() below both do, and they disclose
+        // strictly less than this page — so an admin-role user without
+        // vendors.view was refused the confirmation sheet and handed the whole
+        // record here.
+        $this->authorize('view', $vendor);
+
         $vendor->load([
             'documents' => fn ($q) => $q->with('uploader:id,name')->orderByDesc('created_at'),
             'categories:id,name_en,name_ar',
             'qualifiedBy:id,name',
         ]);
 
-        $documentUrls = [];
-        foreach ($vendor->documents as $doc) {
-            $documentUrls[$doc->id] = $this->fileUploadService->getTemporaryUrl($doc->file_path);
-        }
+        // No file_path, and no pre-signed URLs. The page used to receive a
+        // temporary S3 link for every document on the file, minted on load
+        // whether or not anyone opened one and recorded nowhere; file_path rode
+        // along beside them, typed on the React side and never rendered. Both
+        // are replaced by a route that streams and logs.
+        $vendor->setRelation('documents', $vendor->documents->map(fn (VendorDocument $doc) => [
+            'id' => $doc->id,
+            'title' => $doc->title,
+            'document_type' => $doc->document_type->value,
+            'document_type_label_key' => $doc->document_type->labelKey(),
+            'status' => $doc->status->value,
+            'status_label_key' => $doc->status->labelKey(),
+            'file_size' => $doc->file_size,
+            'issue_date' => $doc->issue_date?->toDateString(),
+            'expiry_date' => $doc->expiry_date?->toDateString(),
+            'review_notes' => $doc->review_notes,
+            'reviewed_at' => $doc->reviewed_at,
+            'created_at' => $doc->created_at,
+            'uploader' => $doc->uploader ? ['id' => $doc->uploader->id, 'name' => $doc->uploader->name] : null,
+            'download_url' => route('admin.vendors.documents.download', [$vendor, $doc]),
+        ]));
 
         return Inertia::render('admin/Vendors/Show', [
             'vendor' => $vendor,
-            'documentUrls' => $documentUrls,
             // Gates the upload form and the approve/reject controls.
             'canReviewDocuments' => $request->user()->can('reviewDocuments', Vendor::class),
             'documentTypes' => DocumentType::options(),
