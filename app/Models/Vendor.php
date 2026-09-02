@@ -97,6 +97,26 @@ class Vendor extends Authenticatable implements CanResetPasswordContract
      * what the dashboard and profile both report, so the two cannot disagree
      * about whether the vendor is in business.
      */
+    /**
+     * Whether this vendor may hold a portal session at all.
+     *
+     * Distinct from {@see canBid()}: a pending or rejected vendor signs in
+     * perfectly well — the portal is where they read their standing, see the
+     * reason and upload the paperwork that changes it. A suspended or
+     * blacklisted one is under sanction and gets nothing.
+     *
+     * Suspension already sets is_active false, so the status list is belt and
+     * braces against a row where the two disagree.
+     */
+    public function mayAccessPortal(): bool
+    {
+        return $this->is_active
+            && ! in_array($this->prequalification_status, [
+                VendorStatus::Suspended,
+                VendorStatus::Blacklisted,
+            ], true);
+    }
+
     public function canBid(): bool
     {
         return $this->prequalification_status === VendorStatus::Qualified

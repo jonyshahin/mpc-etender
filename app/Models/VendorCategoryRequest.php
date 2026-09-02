@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\VendorCategoryRequestStatus;
 use Database\Factories\VendorCategoryRequestFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,9 @@ class VendorCategoryRequest extends Model
     protected function casts(): array
     {
         return [
+            // The column has always been an enum in the migration; casting it
+            // is what lets the scopes and the service stop writing literals.
+            'status' => VendorCategoryRequestStatus::class,
             'reviewed_at' => 'datetime',
         ];
     }
@@ -53,11 +57,11 @@ class VendorCategoryRequest extends Model
 
     public function scopePending($q)
     {
-        return $q->where('status', 'pending');
+        return $q->where('status', VendorCategoryRequestStatus::Pending);
     }
 
     public function scopeOpen($q)
     {
-        return $q->whereIn('status', ['pending', 'under_review']);
+        return $q->whereIn('status', VendorCategoryRequestStatus::open());
     }
 }

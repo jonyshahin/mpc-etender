@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\VendorCategoryRequestStatus;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Vendor;
@@ -70,7 +71,7 @@ class VendorCategoryRequestService
         return DB::transaction(function () use ($vendor, $justification, $addCategoryIds, $removeCategoryIds, $evidenceFiles) {
             $req = $vendor->categoryRequests()->create([
                 'justification' => $justification,
-                'status' => 'pending',
+                'status' => VendorCategoryRequestStatus::Pending,
             ]);
 
             foreach ($addCategoryIds as $id) {
@@ -119,12 +120,12 @@ class VendorCategoryRequestService
      */
     public function startReview(VendorCategoryRequest $req, User $reviewer): VendorCategoryRequest
     {
-        if ($req->status !== 'pending') {
+        if ($req->status !== VendorCategoryRequestStatus::Pending) {
             return $req;
         }
 
         $req->update([
-            'status' => 'under_review',
+            'status' => VendorCategoryRequestStatus::UnderReview,
             'reviewed_by' => $reviewer->id,
         ]);
 
@@ -133,8 +134,8 @@ class VendorCategoryRequestService
             'auditable_type' => VendorCategoryRequest::class,
             'auditable_id' => $req->id,
             'action' => 'vendor_category_request_review_started',
-            'old_values' => ['status' => 'pending'],
-            'new_values' => ['status' => 'under_review'],
+            'old_values' => ['status' => VendorCategoryRequestStatus::Pending->value],
+            'new_values' => ['status' => VendorCategoryRequestStatus::UnderReview->value],
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'created_at' => now(),
@@ -182,7 +183,7 @@ class VendorCategoryRequestService
             }
 
             $req->update([
-                'status' => 'approved',
+                'status' => VendorCategoryRequestStatus::Approved,
                 'reviewed_by' => $reviewer->id,
                 'reviewed_at' => now(),
                 'reviewer_comments' => $comments,
@@ -220,7 +221,7 @@ class VendorCategoryRequestService
         }
 
         $req->update([
-            'status' => 'rejected',
+            'status' => VendorCategoryRequestStatus::Rejected,
             'reviewed_by' => $reviewer->id,
             'reviewed_at' => now(),
             'reviewer_comments' => $comments,
@@ -256,7 +257,7 @@ class VendorCategoryRequestService
         $this->assertOpen($req);
 
         $req->update([
-            'status' => 'withdrawn',
+            'status' => VendorCategoryRequestStatus::Withdrawn,
             'withdraw_reason' => $reason,
         ]);
 
@@ -281,7 +282,7 @@ class VendorCategoryRequestService
      */
     private function assertOpen(VendorCategoryRequest $req): void
     {
-        if (! in_array($req->status, ['pending', 'under_review'], true)) {
+        if (! $req->status->isOpen()) {
             throw ValidationException::withMessages([
                 'status' => __('validation.vendor_category_request.invalid_state'),
             ]);

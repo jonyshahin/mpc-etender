@@ -69,11 +69,17 @@ class NewPasswordController extends Controller
             return redirect()->route('vendor.login');
         }
 
+        // One message for every failure. Returning the broker status verbatim
+        // meant an invalid token said "invalid token" and an unknown address
+        // said "We can't find a user with that email address" — so the step the
+        // forgot-password page carefully refuses to leak was given away here.
         Inertia::flash('toast', [
             'type' => 'error',
             'message' => __('messages.vendor_password_reset_failed'),
         ]);
 
-        return back()->withErrors(['email' => __($status)]);
+        return back()->withErrors([
+            'email' => __('messages.vendor_password_reset_failed_generic'),
+        ]);
     }
 }

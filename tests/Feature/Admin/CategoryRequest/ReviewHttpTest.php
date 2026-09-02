@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\VendorCategoryRequestStatus;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Permission;
@@ -79,7 +80,7 @@ test('ADMIN-03: approving mutates pivot + fires notification', function () {
         ])
         ->assertRedirect();
 
-    expect($this->req->fresh()->status)->toBe('approved');
+    expect($this->req->fresh()->status)->toBe(VendorCategoryRequestStatus::Approved);
     expect($this->vendor->fresh()->categories()->pluck('categories.id')->all())->toContain($this->addCat->id);
 
     Notification::assertSentTo($this->vendor, VendorCategoryRequestApproved::class);
@@ -99,7 +100,7 @@ test('ADMIN-04: rejecting requires comments and fires notification; pivot unchan
         ])
         ->assertSessionHasErrors('comments');
 
-    expect($this->req->fresh()->status)->toBe('pending');
+    expect($this->req->fresh()->status)->toBe(VendorCategoryRequestStatus::Pending);
 
     // With comments → rejected
     $this->actingAs($this->reviewer, 'web')
@@ -109,7 +110,7 @@ test('ADMIN-04: rejecting requires comments and fires notification; pivot unchan
         ])
         ->assertRedirect();
 
-    expect($this->req->fresh()->status)->toBe('rejected');
+    expect($this->req->fresh()->status)->toBe(VendorCategoryRequestStatus::Rejected);
     expect($this->vendor->fresh()->categories()->count())->toBe(0); // pivot unchanged
     Notification::assertSentTo($this->vendor, VendorCategoryRequestRejected::class);
 });

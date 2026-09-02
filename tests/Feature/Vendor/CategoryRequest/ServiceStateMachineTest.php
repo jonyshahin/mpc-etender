@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\VendorCategoryRequestStatus;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\User;
@@ -43,7 +44,7 @@ test('submit happy path creates request + items + evidence + audit row', functio
         evidenceFiles: [fakeEvidence('license.pdf'), fakeEvidence('equipment.pdf')],
     );
 
-    expect($req->status)->toBe('pending');
+    expect($req->status)->toBe(VendorCategoryRequestStatus::Pending);
     expect($req->items()->where('operation', 'add')->count())->toBe(2);
     expect($req->items()->where('operation', 'remove')->count())->toBe(1);
     expect($req->evidence()->count())->toBe(2);
@@ -127,7 +128,7 @@ test('approve mutates pivot + fires notification + writes audit', function () {
 
     $approved = $this->service->approve($req, $this->reviewer, 'Looks good.');
 
-    expect($approved->status)->toBe('approved');
+    expect($approved->status)->toBe(VendorCategoryRequestStatus::Approved);
     expect($approved->reviewed_by)->toBe($this->reviewer->id);
     expect($approved->reviewer_comments)->toBe('Looks good.');
 
@@ -186,7 +187,7 @@ test('reject leaves pivot unchanged + fires notification + requires non-empty co
     // Valid rejection
     $rejected = $this->service->reject($req->fresh(), $this->reviewer, 'Evidence insufficient — please re-submit with ISO cert.');
 
-    expect($rejected->status)->toBe('rejected');
+    expect($rejected->status)->toBe(VendorCategoryRequestStatus::Rejected);
     expect($rejected->reviewer_comments)->toContain('ISO cert');
 
     // Pivot unchanged
@@ -216,7 +217,7 @@ test('withdraw: owner-only and only from open states; optional reason captured',
 
     // Owner withdraws with reason
     $withdrawn = $this->service->withdraw($req, $this->vendor, 'Missing ISO cert — will resubmit later.');
-    expect($withdrawn->status)->toBe('withdrawn');
+    expect($withdrawn->status)->toBe(VendorCategoryRequestStatus::Withdrawn);
     expect($withdrawn->withdraw_reason)->toContain('ISO cert');
 
     // Cannot withdraw again (terminal state)

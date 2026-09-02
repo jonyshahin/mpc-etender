@@ -30,14 +30,11 @@ export default function Login() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {form.errors && Object.keys(form.errors).length > 0 && (
-                        <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                            {Object.values(form.errors).map((error, i) => (
-                                <p key={i}>{error}</p>
-                            ))}
-                        </div>
-                    )}
-
+                    {/* The summary block this replaces listed every error, and
+                        the fields below repeated each one — so a failed sign-in
+                        said the same sentence twice. The server puts the
+                        credential failure on `email`, which is where the reader
+                        is looking. */}
                     <div className="space-y-2">
                         <Label htmlFor="email">{t('form.email')}</Label>
                         <Input
@@ -87,7 +84,7 @@ export default function Login() {
                     </div>
 
                     <Button type="submit" className="w-full" disabled={form.processing}>
-                        <LogIn className="me-2 h-4 w-4" />
+                        <LogIn className="me-2 size-4" />
                         {form.processing ? t('auth.signing_in') : t('auth.sign_in')}
                     </Button>
                 </form>

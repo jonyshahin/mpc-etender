@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\VendorCategoryRequestStatus;
 use App\Models\Category;
 use App\Models\Vendor;
 use App\Models\VendorCategoryRequest;
@@ -73,7 +74,7 @@ test('VENDOR-05: vendor can withdraw own pending request; cannot withdraw approv
         ->delete(route('vendor.category-requests.destroy', $req), ['reason' => 'Missing cert.'])
         ->assertRedirect(route('vendor.category-requests.index'));
 
-    expect($req->fresh()->status)->toBe('withdrawn');
+    expect($req->fresh()->status)->toBe(VendorCategoryRequestStatus::Withdrawn);
     expect($req->fresh()->withdraw_reason)->toBe('Missing cert.');
 
     // Now simulate a different approved request and try to withdraw it
@@ -87,5 +88,5 @@ test('VENDOR-05: vendor can withdraw own pending request; cannot withdraw approv
         ->delete(route('vendor.category-requests.destroy', $approved))
         ->assertSessionHasErrors('status');
 
-    expect($approved->fresh()->status)->toBe('approved');
+    expect($approved->fresh()->status)->toBe(VendorCategoryRequestStatus::Approved);
 });
