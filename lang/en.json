@@ -1358,7 +1358,6 @@
     "notifications.hours_ago_count": ":count hr ago",
     "notifications.minutes_ago_count": ":count min ago",
     "pages.vendor.dashboard": "Dashboard",
-    "status.expired": "Expired",
     "ui.pagination": "Pagination",
     "unit.bytes": "B",
     "unit.gb": "GB",
