@@ -66,6 +66,9 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
 
     Route::get('documents', [Vendor\DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [Vendor\DocumentController::class, 'store'])->name('documents.store');
+    // A vendor had no way to retrieve a document they had uploaded. Reads go
+    // through FileUploadService so they reach document_access_logs.
+    Route::get('documents/{document}/download', [Vendor\DocumentController::class, 'download'])->name('documents.download');
     Route::delete('documents/{document}', [Vendor\DocumentController::class, 'destroy'])->name('documents.destroy');
 
     Route::get('categories', [Vendor\CategoryController::class, 'index'])->name('categories.index');
@@ -82,6 +85,7 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
 
     // Notifications
     Route::get('notifications', [Notification\NotificationController::class, 'vendorIndex'])->name('notifications.index');
+    Route::post('notifications/read-all', [Notification\NotificationController::class, 'vendorMarkAllRead'])->name('notifications.read-all');
     Route::post('notifications/{notification}/read', [Notification\NotificationController::class, 'vendorMarkRead'])->name('notifications.read');
 
     // Tender browsing

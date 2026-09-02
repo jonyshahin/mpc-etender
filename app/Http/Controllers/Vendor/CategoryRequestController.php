@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Vendor;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Vendor\StoreCategoryChangeRequest;
 use App\Models\Category;
+use App\Models\Vendor;
 use App\Models\VendorCategoryRequest;
 use App\Models\VendorCategoryRequestEvidence;
 use App\Services\FileUploadService;
@@ -21,9 +22,26 @@ class CategoryRequestController extends Controller
         private FileUploadService $files,
     ) {}
 
+    /**
+     * Columns the list may be ordered by.
+     *
+     * A whitelist because orderBy() does not check the column: Laravel
+     * validates the direction and throws on anything but asc/desc, but hands
+     * the column straight to the query grammar.
+     */
+    private const SORTABLE = ['created_at', 'status', 'reviewed_at'];
+
     public function index(Request $request): Response
     {
         $vendor = $request->user('vendor');
+
+        // The table marked three columns sortable and navigated with
+        // ?sort=&direction=; this method hardcoded orderByDesc('created_at')
+        // and read neither, so clicking a header reloaded the same order.
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
         $requests = $vendor->categoryRequests()
             ->withCount([
@@ -31,13 +49,38 @@ class CategoryRequestController extends Controller
                 'items as removes_count' => fn ($q) => $q->where('operation', 'remove'),
                 'evidence as evidence_count',
             ])
-            ->orderByDesc('created_at')
+            ->orderBy($sort, $direction)
             ->paginate(15)
             ->withQueryString();
 
         return Inertia::render('vendor/CategoryRequests/Index', [
             'requests' => $requests,
+            'filters' => [
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'summary' => $this->summary($vendor),
         ]);
+    }
+
+    /**
+     * Counts per state, every state present.
+     *
+     * @return array<string, int>
+     */
+    private function summary(Vendor $vendor): array
+    {
+        $byStatus = $vendor->categoryRequests()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return [
+            'total' => (int) $byStatus->sum(),
+            'open' => (int) (($byStatus['pending'] ?? 0) + ($byStatus['under_review'] ?? 0)),
+            'approved' => (int) ($byStatus['approved'] ?? 0),
+            'rejected' => (int) ($byStatus['rejected'] ?? 0),
+        ];
     }
 
     public function create(Request $request): Response|RedirectResponse
@@ -160,6 +203,17 @@ class CategoryRequestController extends Controller
 
         abort_unless($categoryRequest->vendor_id === $vendor->id, 403);
         abort_unless($evidence->request_id === $categoryRequest->id, 404);
+
+        // CLAUDE.md holds every document read to document_access_logs. This
+        // one handed out a presigned S3 URL and recorded nothing, so evidence
+        // a vendor filed could be fetched repeatedly with no trace — the one
+        // document path in the portal that was not logged.
+        $this->files->logAccess(
+            documentType: VendorCategoryRequestEvidence::class,
+            documentId: $evidence->id,
+            action: 'downloaded',
+            vendorId: $vendor->id,
+        );
 
         return redirect()->away($this->files->getTemporaryUrl($evidence->path, 10));
     }
