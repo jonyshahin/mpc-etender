@@ -211,6 +211,12 @@ class TenderController extends Controller
 
         $tender->loadCount('bids');
 
+        // Tender hides the employer's own figures by default so no surface
+        // leaks one by omission — the vendor browse pages were shipping them
+        // to bidders. This page is an internal one behind view(), and it
+        // displays all three, so it asks for them explicitly.
+        $tender->makeVisible(['estimated_value', 'technical_pass_score', 'cancelled_reason']);
+
         return Inertia::render('tender/Show', [
             'tender' => $tender,
             'canEdit' => $request->user()->can('update', $tender),
@@ -243,6 +249,9 @@ class TenderController extends Controller
             'documents' => fn ($q) => $q->where('is_current', true),
             'evaluationCriteria' => fn ($q) => $q->orderBy('sort_order'),
         ]);
+
+        // Both are editable fields on this form, so they have to reach it.
+        $tender->makeVisible(['estimated_value', 'technical_pass_score']);
 
         return Inertia::render('tender/Edit', [
             'tender' => $tender,

@@ -91,6 +91,10 @@ Route::middleware(['auth:vendor', 'vendor.password.required'])->prefix('vendor')
     // Tender browsing
     Route::get('tenders', [Vendor\TenderBrowseController::class, 'index'])->name('tenders.index');
     Route::get('tenders/{tender}', [Vendor\TenderBrowseController::class, 'show'])->name('tenders.show');
+    // The Show page has rendered a Download button pointing here all along;
+    // the route was never declared, so every one of them was a 404 and a
+    // vendor could not obtain the documents they must bid against.
+    Route::get('tenders/{tender}/documents/{document}/download', [Vendor\TenderBrowseController::class, 'downloadDocument'])->name('tenders.documents.download');
 
     // Clarifications (vendor asking)
     Route::post('tenders/{tender}/clarifications', [Tender\ClarificationController::class, 'store'])->name('tenders.clarifications.store');
@@ -242,6 +246,9 @@ Route::middleware(['auth', 'verified', 'role:admin,super_admin'])->prefix('admin
     // Prequalification documents. Vendors are onboarded by admins, so most
     // paperwork arrives by hand and never passes through the vendor portal.
     Route::post('vendors/{vendor}/documents', [Admin\VendorDocumentController::class, 'store'])->name('vendors.documents.store');
+    // Replaces the pre-signed S3 URLs the vendor page used to mint for every
+    // document on load: the bucket URL stays server-side and the access is logged.
+    Route::get('vendors/{vendor}/documents/{document}/download', [Admin\VendorDocumentController::class, 'download'])->name('vendors.documents.download');
     Route::put('vendors/{vendor}/documents/{document}/approve', [Admin\VendorDocumentController::class, 'approve'])->name('vendors.documents.approve');
     Route::put('vendors/{vendor}/documents/{document}/reject', [Admin\VendorDocumentController::class, 'reject'])->name('vendors.documents.reject');
     Route::delete('vendors/{vendor}/documents/{document}', [Admin\VendorDocumentController::class, 'destroy'])->name('vendors.documents.destroy');

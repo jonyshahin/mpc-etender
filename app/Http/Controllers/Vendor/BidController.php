@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Vendor;
 
 use App\Enums\BidDocType;
 use App\Enums\BidStatus;
+use App\Enums\EnvelopeType;
+use App\Enums\TenderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Vendor\BidDocumentRequest;
 use App\Http\Requests\Vendor\BidSubmissionRequest;
@@ -12,9 +14,11 @@ use App\Models\BidDocument;
 use App\Models\Tender;
 use App\Services\BidService;
 use App\Services\FileUploadService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -29,26 +33,129 @@ class BidController extends Controller
     ) {}
 
     /**
-     * Show vendor's bid list.
+     * Columns the bid list may be ordered by.
+     *
+     * A whitelist because orderBy() does not check the column: Laravel
+     * validates the direction and hands the column straight to the grammar,
+     * so `?sort=submission_ip` was a 500 waiting to happen. The five columns
+     * the table renders as sortable are exactly these.
+     */
+    private const SORTABLE = [
+        'bid_reference',
+        'status',
+        'total_amount',
+        'submitted_at',
+        'created_at',
+    ];
+
+    /**
+     * The vendor's own bids.
+     *
+     * Hand-projected rather than passing the models: a Bid row carries
+     * submission_ip, submission_user_agent and opened_by, none of which this
+     * five-column list has ever displayed.
      */
     public function index(Request $request): Response
     {
         $vendor = $request->user('vendor');
 
-        $bids = Bid::where('vendor_id', $vendor->id)
-            ->with(['tender:id,title_en,title_ar,reference_number,submission_deadline,status'])
-            ->latest()
-            ->paginate(15);
+        $search = trim((string) $request->input('search'));
+        $status = $request->input('status');
+
+        // Everything bar the status filter, so the tab counts come off the
+        // same scope the rows do.
+        $base = fn () => Bid::query()
+            ->where('bids.vendor_id', $vendor->id)
+            ->when($search !== '', fn ($q) => $q->where(function ($inner) use ($search) {
+                $inner->where('bid_reference', 'like', "%{$search}%")
+                    ->orWhereHas('tender', fn ($t) => $t
+                        ->where('title_en', 'like', "%{$search}%")
+                        ->orWhere('title_ar', 'like', "%{$search}%")
+                        ->orWhere('reference_number', 'like', "%{$search}%"));
+            }));
+
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'submitted_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+
+        $bids = $base()
+            ->select(
+                'bids.id',
+                'bids.tender_id',
+                'bids.bid_reference',
+                'bids.status',
+                'bids.total_amount',
+                'bids.currency',
+                'bids.submitted_at',
+                'bids.created_at',
+            )
+            ->when($status, fn ($q) => $q->where('bids.status', $status))
+            ->with(['tender:id,title_en,title_ar,reference_number,submission_deadline,opening_date,currency,status'])
+            // A draft has no submitted_at, so sorting by it alone leaves every
+            // draft in whatever order the engine felt like. created_at breaks
+            // the tie so the order is stable between requests.
+            ->orderBy($sort, $direction)
+            ->orderByDesc('bids.created_at')
+            ->paginate(15)
+            ->withQueryString();
 
         // Bid hides total_amount by default so no screen leaks a price by
-        // omission. A vendor looking at their own bids is the clearest case for
-        // revealing it: the query is already scoped to their vendor_id, and it
-        // is their own number.
+        // omission. A vendor looking at their own bids is the clearest case
+        // for revealing it: the query is already scoped to their vendor_id,
+        // and it is their own number.
         $bids->through(fn (Bid $bid) => $bid->makeVisible('total_amount'));
 
         return Inertia::render('vendor/Bids/Index', [
             'bids' => $bids,
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'statusCounts' => $this->bidStatusCounts($base()),
+            'summary' => $this->bidSummary($base()),
+            'statusOptions' => BidStatus::options(),
         ]);
+    }
+
+    /**
+     * How many bids sit at each status, every status present.
+     *
+     * @return array<string, int>
+     */
+    private function bidStatusCounts(Builder $query): array
+    {
+        $counts = $query->select('bids.status', DB::raw('COUNT(*) as count'))
+            ->groupBy('bids.status')
+            ->pluck('count', 'status');
+
+        return collect(BidStatus::cases())
+            ->mapWithKeys(fn (BidStatus $case) => [$case->value => (int) ($counts[$case->value] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * Headline figures, on the same scope as the rows beneath them.
+     *
+     * @return array<string, int>
+     */
+    private function bidSummary(Builder $query): array
+    {
+        return [
+            'total' => (clone $query)->count(),
+            'drafts' => (clone $query)->where('bids.status', BidStatus::Draft)->count(),
+            'submitted' => (clone $query)->where('bids.status', BidStatus::Submitted)->count(),
+            // A draft on a tender that is still open is the only thing on this
+            // page the vendor can still lose by not acting on.
+            'awaiting_deadline' => (clone $query)
+                ->where('bids.status', BidStatus::Draft)
+                ->whereHas('tender', fn ($t) => $t
+                    ->where('status', TenderStatus::Published)
+                    ->where('submission_deadline', '>', now()))
+                ->count(),
+        ];
     }
 
     /**
@@ -222,12 +329,19 @@ class BidController extends Controller
                 'id' => $bid->id,
                 'bid_reference' => $bid->bid_reference,
                 'status' => $bid->status->value,
+                'status_label_key' => $bid->status->labelKey(),
+                // Reading the attribute never consults $hidden — that governs
+                // serialisation — so this payload is explicit about including
+                // the price. It is the vendor's own, on a page behind
+                // BidPolicy::view.
                 'total_amount' => $bid->total_amount,
                 'currency' => $bid->currency,
                 'technical_notes' => $bid->technical_notes,
                 'submitted_at' => $bid->submitted_at,
-                'is_sealed' => $bid->is_sealed,
+                'is_sealed' => (bool) $bid->is_sealed,
                 'withdrawal_reason' => $bid->withdrawal_reason,
+                'is_withdrawn' => $bid->status === BidStatus::Withdrawn,
+                'is_rejected' => in_array($bid->status, [BidStatus::Rejected, BidStatus::Disqualified], true),
             ],
             'tender' => [
                 'id' => $tender->id,
@@ -274,6 +388,14 @@ class BidController extends Controller
             'canSubmit' => $canEdit,
             'canManageDocuments' => $canEdit,
             'canWithdraw' => $canWithdraw,
+            // The page kept three hardcoded copies of these lists, one per
+            // envelope picker, which BidDocumentRequest's validation had no way
+            // to stay in step with. One source now feeds both.
+            'docTypes' => [
+                'single' => BidDocType::optionsFor(EnvelopeType::Single),
+                'technical' => BidDocType::optionsFor(EnvelopeType::Technical),
+                'financial' => BidDocType::optionsFor(EnvelopeType::Financial),
+            ],
         ]);
     }
 

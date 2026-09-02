@@ -50,6 +50,28 @@ class Tender extends Model
         'cancelled_reason',
     ];
 
+    /**
+     * Never serialised. Reveal deliberately, never by default.
+     *
+     * `estimated_value` is the employer's own budget figure and
+     * `notes_internal` the commentary behind it. Both were reaching bidders:
+     * Vendor\TenderBrowseController passed whole Tender models into Inertia on
+     * both the browse list and the detail page, and the detail page rendered
+     * the estimate under an "Estimated Value" heading. A bidder who knows the
+     * employer's number prices to it.
+     *
+     * `technical_pass_score` is the bar a technical envelope must clear, and
+     * `cancelled_reason` is internal too. Where an MPC user is entitled to
+     * these the controller calls ->makeVisible() explicitly, so a surface that
+     * forgets shows nothing rather than leaking.
+     */
+    protected $hidden = [
+        'estimated_value',
+        'notes_internal',
+        'technical_pass_score',
+        'cancelled_reason',
+    ];
+
     protected function casts(): array
     {
         return [
