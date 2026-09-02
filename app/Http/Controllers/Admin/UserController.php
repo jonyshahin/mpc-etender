@@ -8,6 +8,8 @@ use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -17,6 +19,30 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    /**
+     * Columns the user list may be ordered by.
+     *
+     * A whitelist because orderBy() does not check the column: Laravel
+     * validates the direction and throws on anything but asc/desc, but hands
+     * the column straight to the grammar, so `?sort=nope` was a 500.
+     */
+    private const SORTABLE = [
+        'name',
+        'email',
+        'is_active',
+        'last_login_at',
+        'created_at',
+    ];
+
+    /**
+     * The two states an account can be in.
+     *
+     * `is_active` is a boolean column rather than an enum, so there is no case
+     * in App\Enums to read this from. The tabs, the filter and the counts all
+     * come off this one list so they cannot drift apart.
+     */
+    private const STATUSES = ['active', 'inactive'];
+
     /**
      * The roles this actor is allowed to hand out.
      *
@@ -58,33 +84,143 @@ class UserController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = User::with('role:id,name,slug')
-            ->select('id', 'name', 'email', 'role_id', 'is_active', 'last_login_at', 'created_at');
+        $search = trim((string) $request->input('search'));
+        $roleId = $request->input('role_id') ?: null;
+        // Tri-state, and only ever one of the two names the tabs use. The old
+        // filter read `$request->has('is_active')` and coerced with boolean(),
+        // so an empty `?is_active=` — which is what a cleared select submits —
+        // narrowed the list to the deactivated accounts.
+        $status = in_array($request->input('status'), self::STATUSES, true)
+            ? $request->input('status')
+            : null;
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        // Everything bar the active/inactive filter, so the tab counts come off
+        // the same scope the rows do.
+        $base = fn () => User::query()
+            ->when($search !== '', fn ($q) => $q->where(function ($inner) use ($search) {
+                $inner->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            }))
+            ->when($roleId, fn ($q) => $q->where('role_id', $roleId));
 
-        if ($roleId = $request->input('role_id')) {
-            $query->where('role_id', $roleId);
-        }
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
+        $can = $this->capabilityChecker($request->user());
 
-        $sortField = $request->input('sort', 'created_at');
-        $sortDir = $request->input('direction', 'desc');
-        $query->orderBy($sortField, $sortDir);
+        $users = $base()
+            ->with('role:id,name,slug')
+            // select() before withCount(): select() replaces the select list,
+            // so calling it afterwards drops the count subquery and every row
+            // arrives with no projects_count at all.
+            ->select('id', 'name', 'email', 'role_id', 'is_active', 'is_2fa_enabled', 'last_login_at', 'created_at')
+            ->withCount('projects')
+            ->when($status !== null, fn ($q) => $q->where('is_active', $status === 'active'))
+            ->orderBy($sort, $direction)
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_active' => $user->is_active,
+                'is_2fa_enabled' => $user->is_2fa_enabled,
+                'last_login_at' => $user->last_login_at,
+                'created_at' => $user->created_at,
+                'projects_count' => $user->projects_count,
+                'role' => $user->role?->only('id', 'name', 'slug'),
+                // The list offered Edit and Delete on every row, including the
+                // super admins a plain admin may not administer and the actor's
+                // own account. The policy refuses both, so the only feedback
+                // was a 403 on a button that looked available.
+                'can_edit' => $can('update', $user),
+                'can_deactivate' => $user->is_active && $can('deactivate', $user),
+            ]);
 
         return Inertia::render('admin/Users/Index', [
-            'users' => $query->paginate(15)->withQueryString(),
+            'users' => $users,
             'roles' => Role::select('id', 'name', 'slug')->orderBy('name')->get(),
-            'filters' => $request->only('search', 'role_id', 'is_active', 'sort', 'direction'),
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'role_id' => $roleId,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'statusCounts' => $this->userStatusCounts($base()),
+            'summary' => $this->userSummary($base()),
+            'statusOptions' => array_map(
+                fn (string $value) => ['value' => $value, 'labelKey' => "status.{$value}"],
+                self::STATUSES,
+            ),
         ]);
+    }
+
+    /**
+     * Whether this actor may edit or deactivate a given row.
+     *
+     * The policy is asked once per distinct case rather than once per row: its
+     * answers turn on two facts about the target — whether it is a super admin
+     * and whether it is the actor's own account — while hasPermission() runs a
+     * query on every call. Per row that was thirty queries on a fifteen-row
+     * page to arrive at four different answers.
+     *
+     * @return Closure(string, User): bool
+     */
+    private function capabilityChecker(User $actor): Closure
+    {
+        $decided = [];
+
+        return function (string $ability, User $target) use ($actor, &$decided): bool {
+            $key = implode(':', [
+                $ability,
+                $target->isSuperAdmin() ? 'super' : 'standard',
+                $target->id === $actor->id ? 'self' : 'other',
+            ]);
+
+            return $decided[$key] ??= $actor->can($ability, $target);
+        };
+    }
+
+    /**
+     * How many accounts are active and how many are not.
+     *
+     * Two counts rather than one grouped query: a boolean column groups as 1/0
+     * on MySQL and SQLite but as true/false on Postgres, and an array keyed off
+     * that difference reads back empty on the database it was not written for.
+     *
+     * @return array<string, int>
+     */
+    private function userStatusCounts(Builder $query): array
+    {
+        return [
+            'active' => (clone $query)->where('is_active', true)->count(),
+            'inactive' => (clone $query)->where('is_active', false)->count(),
+        ];
+    }
+
+    /**
+     * Headline figures, on the same scope as the rows beneath them.
+     *
+     * @return array<string, int>
+     */
+    private function userSummary(Builder $query): array
+    {
+        $active = fn () => (clone $query)->where('is_active', true);
+
+        return [
+            'total' => (clone $query)->count(),
+            'active' => $active()->count(),
+            // An account nobody has ever signed in to is either a handover that
+            // never happened or a credential still sitting in someone's inbox.
+            'never_signed_in' => $active()->whereNull('last_login_at')->count(),
+            // 2FA is mandatory for internal staff, so an active account without
+            // it is a standing exception rather than a preference.
+            'without_2fa' => $active()->where('is_2fa_enabled', false)->count(),
+        ];
     }
 
     public function store(StoreUserRequest $request): RedirectResponse

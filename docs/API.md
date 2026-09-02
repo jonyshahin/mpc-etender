@@ -378,7 +378,7 @@ All routes require `auth` + `verified` middleware. Permission checks via Form Re
 | Method | URI | Name | Description |
 |--------|-----|------|-------------|
 | GET | `/admin/dashboard` | `admin.dashboard` | Admin dashboard with stats |
-| GET | `/admin/users` | `admin.users.index` | List users |
+| GET | `/admin/users` | `admin.users.index` | List users. Accepts `search` (name, email, phone), `role_id`, `status` (`active` or `inactive`), `sort` (one of `name`, `email`, `is_active`, `last_login_at`, `created_at`) and `direction`; anything else falls back to `created_at desc`. `status` replaces the earlier `is_active`, which read an empty value as false and so narrowed the list to deactivated accounts |
 | POST | `/admin/users` | `admin.users.store` | Create user |
 | GET | `/admin/users/{user}/edit` | `admin.users.edit` | Edit user form |
 | PUT | `/admin/users/{user}` | `admin.users.update` | Update user |

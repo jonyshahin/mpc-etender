@@ -21,6 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { roleLabel } from '@/lib/roles';
 
 type Props = {
     user?: {
@@ -147,9 +148,11 @@ function UserForm({ user, userProjectIds, roles, canChangeRole = true, projects,
                         <SelectValue placeholder={t('form.select_role')} />
                     </SelectTrigger>
                     <SelectContent>
+                        {/* role.name is the English-only column in the roles
+                            table; the slug carries the translation. */}
                         {roles.map((role) => (
                             <SelectItem key={role.id} value={role.id}>
-                                {role.name}
+                                {roleLabel(t, role)}
                             </SelectItem>
                         ))}
                     </SelectContent>
