@@ -211,3 +211,35 @@ export function formatDeadline(value: DateLike, locale?: string): string {
         timeZoneName: 'short',
     });
 }
+/**
+ * A logged instant, to the second, with the zone named — '2 Sep 2026,
+ * 14:03:22 GMT+3'.
+ *
+ * Audit rows are evidence: the reader is reconstructing an order of events and
+ * may not be sitting on the project's clock, so neither the seconds nor the
+ * zone are decoration. Same shape as {@link formatDeadline}, one field longer.
+ */
+export function formatTimestamp(value: DateLike, locale?: string): string {
+    return formatDateTime(value, locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+    });
+}
+
+/**
+ * Today's date in the project zone, as `<input type="date">` wants it.
+ *
+ * `new Date().toISOString().slice(0, 10)` is the usual shorthand and it is the
+ * UTC day — between midnight and 03:00 in Baghdad it names yesterday, which as
+ * the `max` on a date filter makes today unselectable.
+ */
+export function projectZoneToday(): string {
+    const p = zonedParts(new Date(), projectTimeZone());
+
+    return `${p.year}-${p.month}-${p.day}`;
+}
