@@ -53,52 +53,76 @@ function pdfFontMetrics(): FontMetrics
 }
 
 /**
- * Every font face the PDF templates can put on the page.
+ * Whether a PDF template can put Arabic on the page.
+ *
+ * Two ways it can: shaping a value through ArabicTextService — the `$rtl`
+ * helper both current templates define — or carrying Arabic in its own markup.
+ * A template that does neither is Latin-only, and may italicise as it likes:
+ * DejaVu's oblique faces are complete for Latin, and only lose the Arabic
+ * blocks.
+ *
+ * The boundary worth knowing: this recognises shaping done *in the template*,
+ * which is the house pattern. A template handed already-shaped Arabic by its
+ * controller would read as Latin-only here and go unguarded.
+ */
+function templateCarriesArabic(string $source): bool
+{
+    return str_contains($source, 'ArabicTextService')
+        || preg_match('/[\x{0600}-\x{06FF}\x{FE70}-\x{FEFF}]/u', $source) === 1;
+}
+
+/**
+ * Every font face a PDF template can put on the page, per template.
  *
  * Read out of the templates rather than listed here, so a face becomes covered
  * the day it is declared. Only the first family in each declaration is taken —
  * the rest are the generic fallbacks, which dompdf only reaches if DejaVu has
  * gone missing entirely.
  *
- * @return array<int, array{family: string, style: string}>
+ * Per template rather than pooled across all of them, so one Latin-only
+ * template's italics cannot fail the Arabic-bearing one beside it.
+ *
+ * @return array<string, array<int, array{family: string, style: string}>>
  */
-function pdfTemplateFontFaces(): array
+function arabicPdfTemplateFontFaces(): array
 {
-    $families = [];
-    $styles = ['normal'];
+    $byTemplate = [];
 
     foreach (glob(resource_path('views/pdf/*.blade.php')) as $template) {
         $source = file_get_contents($template);
 
-        preg_match_all('/font-family:\s*([^;}"\']+)/i', $source, $familyMatches);
-
-        foreach ($familyMatches[1] as $declaration) {
-            $families[] = trim(explode(',', $declaration)[0]);
+        if (! templateCarriesArabic($source)) {
+            continue;
         }
 
+        preg_match_all('/font-family:\s*([^;}"\']+)/i', $source, $familyMatches);
+        $families = array_map(fn ($declaration) => trim(explode(',', $declaration)[0]), $familyMatches[1]);
+
         preg_match_all('/font-style:\s*([a-z-]+)/i', $source, $styleMatches);
-        $styles = array_merge($styles, array_map('strtolower', $styleMatches[1]));
+        $styles = array_merge(['normal'], array_map('strtolower', $styleMatches[1]));
 
         // <em> and <i> italicise through the user-agent stylesheet, with no
         // declaration of their own for the pattern above to find.
         if (preg_match('/<(em|i)[\s>]/i', $source)) {
             $styles[] = 'italic';
         }
-    }
 
-    $faces = [];
+        $faces = [];
 
-    foreach (array_unique($families) as $family) {
-        foreach (array_unique($styles) as $style) {
-            // Both weights, always: `.value` carries the Arabic fields and is
-            // styled bold, so bold is reachable wherever normal is.
-            foreach (['normal', 'bold'] as $weight) {
-                $faces[] = ['family' => $family, 'style' => trim("{$weight} {$style}")];
+        foreach (array_unique($families) as $family) {
+            foreach (array_unique($styles) as $style) {
+                // Both weights, always: `.value` carries the Arabic fields and
+                // is styled bold, so bold is reachable wherever normal is.
+                foreach (['normal', 'bold'] as $weight) {
+                    $faces[] = ['family' => $family, 'style' => trim("{$weight} {$style}")];
+                }
             }
         }
+
+        $byTemplate[basename($template)] = $faces;
     }
 
-    return $faces;
+    return $byTemplate;
 }
 
 test('it converts Arabic to the joined forms dompdf can draw', function () {
@@ -136,31 +160,43 @@ test('it converts Arabic to the joined forms dompdf can draw', function () {
  * italic", so it also catches a family swapped for one with narrower coverage,
  * and an <em> that italicises through the user-agent stylesheet with no
  * declaration of its own.
+ *
+ * Scoped to the templates that actually carry Arabic, so a Latin-only PDF stays
+ * free to italicise — the obliques are complete for Latin, and a guard that
+ * fired on correct code would get weakened or deleted rather than heeded.
  */
-test('every face the PDF templates can select can draw shaped Arabic', function () {
+test('every face an Arabic PDF template can select can draw shaped Arabic', function () {
     $shaped = app(ArabicTextService::class)->forPdf('اربيل / موصل');
-    $faces = pdfTemplateFontFaces();
+    $templates = arabicPdfTemplateFontFaces();
 
-    // A regex that quietly matched nothing would make everything below vacuous.
-    expect($faces)->not->toBeEmpty();
+    // Detection that quietly matched nothing would make everything below
+    // vacuous — a green test that has stopped looking at anything.
+    expect($templates)->not->toBeEmpty(
+        'No PDF template was read as carrying Arabic, so nothing was checked.',
+    );
 
-    foreach ($faces as $face) {
-        $subtype = pdfFontMetrics()->getType($face['style']);
-        $path = pdfFontMetrics()->getFont($face['family'], $subtype);
-        $where = "{$face['family']} ({$subtype})";
+    foreach ($templates as $template => $faces) {
+        expect($faces)->not->toBeEmpty("No font face was found in {$template}.");
 
-        expect($path)->not->toBeNull("dompdf cannot resolve a font for {$where}");
-        // A core font resolves to .afm metrics with no TrueType file behind it,
-        // and carries no Arabic whatsoever.
-        expect(file_exists($path.'.ttf'))->toBeTrue("{$where} resolves to {$path}, which is not a TrueType file");
+        foreach ($faces as $face) {
+            $subtype = pdfFontMetrics()->getType($face['style']);
+            $path = pdfFontMetrics()->getFont($face['family'], $subtype);
+            $selects = "{$template} selects {$face['family']} ({$subtype})";
 
-        $map = fontCharMap($path);
+            expect($path)->not->toBeNull("{$selects}, which dompdf cannot resolve to any font.");
+            // A core font resolves to .afm metrics with no TrueType file behind
+            // it, and carries no Arabic whatsoever.
+            expect(file_exists($path.'.ttf'))->toBeTrue("{$selects}, which resolves to {$path} — not a TrueType file.");
 
-        foreach (codepoints($shaped) as $cp) {
-            expect(isset($map[$cp]))->toBeTrue(
-                "{$where} resolves to ".basename($path).', which has no glyph for U+'
-                .strtoupper(dechex($cp)).'. Arabic drawn in this face renders as empty boxes.',
-            );
+            $map = fontCharMap($path);
+
+            foreach (codepoints($shaped) as $cp) {
+                expect(isset($map[$cp]))->toBeTrue(
+                    "{$template} draws {$face['family']} ({$subtype}) with ".basename($path)
+                    .', which has no glyph for U+'.strtoupper(dechex($cp))
+                    .'. Arabic in this face renders as empty boxes.',
+                );
+            }
         }
     }
 });
