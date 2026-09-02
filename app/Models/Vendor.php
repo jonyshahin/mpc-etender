@@ -89,6 +89,20 @@ class Vendor extends Authenticatable implements CanResetPasswordContract
         ];
     }
 
+    /**
+     * Whether this vendor may bid at all.
+     *
+     * The tender-level checks — category match, deadline, no existing bid —
+     * live in BidPolicy::create. This is the account-level half, and it is
+     * what the dashboard and profile both report, so the two cannot disagree
+     * about whether the vendor is in business.
+     */
+    public function canBid(): bool
+    {
+        return $this->prequalification_status === VendorStatus::Qualified
+            && $this->is_active;
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new VendorResetPasswordNotification($token));
