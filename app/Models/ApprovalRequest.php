@@ -29,6 +29,7 @@ class ApprovalRequest extends Model
         'tender_id',
         'report_id',
         'requested_by',
+        'delegated_to',
         'approval_type',
         'value_threshold',
         'approval_level',
@@ -67,5 +68,11 @@ class ApprovalRequest extends Model
     public function decisions(): HasMany
     {
         return $this->hasMany(ApprovalDecision::class, 'request_id');
+    }
+
+    /** Whoever this request has been handed to, if anyone. */
+    public function delegatedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'delegated_to');
     }
 }

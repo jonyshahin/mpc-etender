@@ -44,6 +44,14 @@ class ApprovalRequestPolicy
             return false;
         }
 
+        // The person it was handed to may sign it, whether or not they hold
+        // the level themselves — that is what delegation is for, and the
+        // delegator could only pass on authority they held. Scoped to this
+        // one request: it confers nothing anywhere else.
+        if ($request->delegated_to === $user->id) {
+            return true;
+        }
+
         return $user->hasPermission("approvals.level{$request->approval_level}");
     }
 

@@ -14,6 +14,7 @@ use App\Models\SystemSetting;
 use App\Models\Tender;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ApprovalService
@@ -71,13 +72,56 @@ class ApprovalService
     }
 
     /**
+     * Run $work on the request, once, with nobody else inside.
+     *
+     * assertPending() alone read the status off the caller's in-memory model.
+     * Two requests that each loaded the record while it was still pending both
+     * passed it — which is precisely what a double-clicked Approve button, or
+     * two approvers acting at once, produces. At the final level that wrote a
+     * second decision and a SECOND AWARD for the same tender; at an
+     * intermediate level it forked the chain into two competing next-level
+     * requests. There is no unique constraint on awards.tender_id to catch it.
+     *
+     * Re-reading inside the transaction is what closes it: the second caller
+     * sees the row as it now stands rather than as it was when they loaded it.
+     * lockForUpdate() adds real serialisation on MySQL, where two callers can
+     * genuinely be inside at the same instant.
+     *
+     * Same shape as BidOpeningRequestService::confirm(), which claims its row
+     * for the same reason.
+     *
+     * @param  callable(ApprovalRequest): void  $work
+     */
+    private function decideOnce(ApprovalRequest $request, callable $work): void
+    {
+        DB::transaction(function () use ($request, $work) {
+            $fresh = ApprovalRequest::whereKey($request->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->assertPending($fresh);
+
+            $work($fresh);
+
+            // The caller's copy is now stale in exactly the way that caused
+            // this, so bring it back in step.
+            $request->setRawAttributes($fresh->fresh()->getAttributes(), true);
+        });
+    }
+
+    /**
      * Approve at current level. If more levels needed, creates next-level request.
      * If final level, triggers award creation.
      */
     public function approve(ApprovalRequest $request, User $approver, string $comments): void
     {
-        $this->assertPending($request);
+        $this->decideOnce($request, function (ApprovalRequest $request) use ($approver, $comments) {
+            $this->applyApproval($request, $approver, $comments);
+        });
+    }
 
+    private function applyApproval(ApprovalRequest $request, User $approver, string $comments): void
+    {
         ApprovalDecision::create([
             'request_id' => $request->id,
             'approver_id' => $approver->id,
@@ -119,18 +163,18 @@ class ApprovalService
      */
     public function reject(ApprovalRequest $request, User $approver, string $comments): void
     {
-        $this->assertPending($request);
+        $this->decideOnce($request, function (ApprovalRequest $request) use ($approver, $comments) {
+            ApprovalDecision::create([
+                'request_id' => $request->id,
+                'approver_id' => $approver->id,
+                'decision' => 'rejected',
+                'comments' => $comments,
+                'decided_at' => now(),
+            ]);
 
-        ApprovalDecision::create([
-            'request_id' => $request->id,
-            'approver_id' => $approver->id,
-            'decision' => 'rejected',
-            'comments' => $comments,
-            'decided_at' => now(),
-        ]);
-
-        $request->update(['status' => ApprovalStatus::Rejected]);
-        $request->tender->update(['status' => TenderStatus::UnderEvaluation]);
+            $request->update(['status' => ApprovalStatus::Rejected]);
+            $request->tender->update(['status' => TenderStatus::UnderEvaluation]);
+        });
     }
 
     /**
@@ -138,16 +182,36 @@ class ApprovalService
      */
     public function delegate(ApprovalRequest $request, User $delegator, User $delegatee): void
     {
-        $this->assertPending($request);
+        $this->decideOnce($request, function (ApprovalRequest $request) use ($delegator, $delegatee) {
+            if ($delegatee->id === $delegator->id) {
+                throw ValidationException::withMessages([
+                    'delegatee_id' => __('Choose someone other than yourself.'),
+                ]);
+            }
 
-        ApprovalDecision::create([
-            'request_id' => $request->id,
-            'approver_id' => $delegatee->id,
-            'decision' => 'delegated',
-            'comments' => "Delegated by {$delegator->name}",
-            'delegated_from' => $delegator->id,
-            'decided_at' => now(),
-        ]);
+            // Project isolation still applies: handing an approval to
+            // someone outside the project would show them the award value
+            // and the recommended vendor for work they have no part in.
+            if (! $delegatee->isAssignedToProject($request->tender->project_id)) {
+                throw ValidationException::withMessages([
+                    'delegatee_id' => __('That user is not assigned to this project.'),
+                ]);
+            }
+
+            // The assignment, which is the part that was missing. Without
+            // it delegate() wrote a history row, changed nothing about who
+            // could sign, and reported success.
+            $request->update(['delegated_to' => $delegatee->id]);
+
+            ApprovalDecision::create([
+                'request_id' => $request->id,
+                'approver_id' => $delegatee->id,
+                'decision' => 'delegated',
+                'comments' => "Delegated by {$delegator->name}",
+                'delegated_from' => $delegator->id,
+                'decided_at' => now(),
+            ]);
+        });
     }
 
     /**
@@ -192,6 +256,19 @@ class ApprovalService
     {
         $report = $request->report;
         $winningBid = $report->recommendedBid;
+
+        // recommended_bid_id is nullable, and generateReport() leaves it null
+        // whenever the ranking comes back empty — every bid withdrawn or
+        // disqualified. awardValue() already tolerates that, so a chain can
+        // be raised on such a report and run all the way here, where three
+        // unconditional dereferences turned the final approval into an
+        // uncaught Error. The controller catches only ValidationException,
+        // so it surfaced as a 500 rather than anything a user could act on.
+        if ($winningBid === null) {
+            throw ValidationException::withMessages([
+                'report' => __('This evaluation report recommends no bid, so there is nothing to award. Regenerate it once the bids have been scored.'),
+            ]);
+        }
 
         $tender->update(['status' => TenderStatus::Awarded]);
 

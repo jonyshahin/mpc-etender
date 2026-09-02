@@ -239,13 +239,33 @@ class ApprovalController extends Controller
         $approval->load([
             'tender',
             'report.recommendedBid.vendor',
-            'decisions.approver',
+            'decisions.approver:id,name',
+            'decisions.delegatedFrom:id,name',
             // Same undefined relation as index() — a 500 on every open.
-            'requestedBy',
+            'requestedBy:id,name',
+            'delegatedTo:id,name',
         ]);
+
+        // An approver is deciding the award against the employer's estimate,
+        // so this screen asks for it. Tender hides it by default.
+        $approval->tender?->makeVisible('estimated_value');
 
         return Inertia::render('approval/Show', [
             'approval' => $approval,
+            // The delegate picker calls projectUsers.map() unconditionally —
+            // JSX props evaluate when the element is built, so a missing prop
+            // threw during render whether or not the dialog was open. This
+            // screen is the only place Approve, Reject and Delegate live, so
+            // it took the whole decision flow down with it.
+            //
+            // Only who they are and what to call them: the previous payload
+            // shipped whole User models, carrying email, phone, last_login_at
+            // and two-factor columns to a screen that shows a name.
+            'projectUsers' => $approval->tender?->project?->users()
+                ->where('users.id', '!=', $approval->requested_by)
+                ->select('users.id', 'users.name')
+                ->orderBy('users.name')
+                ->get() ?? collect(),
         ]);
     }
 
@@ -333,10 +353,15 @@ class ApprovalController extends Controller
      */
     public function requestApproval(Request $request, Tender $tender): RedirectResponse
     {
-        // This method had no authorize() of any kind: any verified user could
-        // raise an approval request on any tender, and the chain it starts is
-        // what an award is made from.
+        // Two checks, because they answer different questions. view() is the
+        // project scope — you cannot raise a chain on a tender you cannot
+        // see. create() is the entitlement: ApprovalRequestPolicy::create
+        // requires evaluations.finalize_reports, and was registered and never
+        // called, so authorizing on view() alone let any project member start
+        // an award chain. That was my own narrowing when I added the missing
+        // check; this is the ability that was meant to guard it.
         $this->authorize('view', $tender);
+        $this->authorize('create', ApprovalRequest::class);
 
         // reports(), not evaluationReports(): the latter does not exist on Tender,
         // so this endpoint raised BadMethodCallException — a 500 on every attempt

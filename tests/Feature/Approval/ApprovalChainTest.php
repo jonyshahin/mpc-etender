@@ -5,6 +5,8 @@ use App\Models\ApprovalRequest;
 use App\Models\Award;
 use App\Models\Bid;
 use App\Models\EvaluationReport;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\SystemSetting;
 use App\Models\Tender;
 use App\Models\User;
@@ -201,7 +203,19 @@ test('the currency refusal reaches the user as an error toast', function () {
     // On the project: requestApproval now gates on TenderPolicy::view, so an
     // unassigned user would be refused before reaching the currency check and
     // this would pass without testing anything.
-    $requester = User::factory()->create();
+    // Holds evaluations.finalize_reports as well as the project assignment:
+    // requestApproval now authorizes both, so a bare project member would be
+    // refused before reaching the currency check and this would pass without
+    // testing anything.
+    $role = Role::firstOrCreate(['slug' => 'finaliser'], ['name' => 'Finaliser', 'is_system' => true]);
+    $role->permissions()->syncWithoutDetaching([
+        Permission::firstOrCreate(
+            ['slug' => 'evaluations.finalize_reports'],
+            ['name' => 'Finalize Reports', 'module' => 'evaluations'],
+        )->id,
+    ]);
+
+    $requester = User::factory()->create(['role_id' => $role->id]);
     $requester->projects()->attach($tender->project_id, [
         'id' => (string) Str::uuid(),
         'project_role' => 'viewer',
