@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -67,6 +68,14 @@ class UserController extends Controller
      * Every other rule here assumes a super admin exists to apply it —
      * they alone can grant the role back, so losing the last one is not
      * recoverable from inside the app.
+     *
+     * Must be called inside the transaction that performs the write. The check
+     * was a bare read followed by an unrelated update: two concurrent
+     * demotions of two different super admins each saw the other as the one
+     * still remaining, both passed, and the system was left with none. Taking
+     * a lock over every super-admin row — the target included, so the two
+     * requests always overlap — serialises them, and the second then reads the
+     * first's write rather than the state that preceded it.
      */
     private function assertNotLastSuperAdmin(User $user): void
     {
@@ -74,9 +83,13 @@ class UserController extends Controller
             return;
         }
 
-        $remaining = User::where('is_active', true)
+        $superAdmins = fn () => User::whereHas('role', fn ($q) => $q->where('slug', Role::SUPER_ADMIN));
+
+        $superAdmins()->lockForUpdate()->pluck('users.id');
+
+        $remaining = $superAdmins()
+            ->where('is_active', true)
             ->where('id', '!=', $user->id)
-            ->whereHas('role', fn ($q) => $q->where('slug', Role::SUPER_ADMIN))
             ->exists();
 
         abort_if(! $remaining, 422, __('This is the last active super admin.'));
@@ -143,6 +156,16 @@ class UserController extends Controller
         return Inertia::render('admin/Users/Index', [
             'users' => $users,
             'roles' => Role::select('id', 'name', 'slug')->orderBy('name')->get(),
+            // The create dialog was handed the full list while store()
+            // authorizes assignRole, so a plain admin was offered Super Admin
+            // and got a 403 after filling the form in. The filter dropdown
+            // above still gets every role — searching for super admins is not
+            // the same as being able to make one.
+            'assignableRoles' => $this->assignableRoles($request->user()),
+            // The route group gates on the admin *role*; StoreUserRequest gates
+            // on the `admin.users` *permission*. A role holding one without the
+            // other reached this page and saw a button that 403s on submit.
+            'canCreate' => $request->user()->hasPermission('admin.users'),
             'filters' => [
                 'search' => $search !== '' ? $search : null,
                 'role_id' => $roleId,
@@ -272,11 +295,6 @@ class UserController extends Controller
 
         $data = $request->validated();
 
-        if ($data['role_id'] !== $user->role_id) {
-            $this->authorize('changeOwnRole', $user);
-            $this->authorize('assignRole', [User::class, $this->roleFrom($data['role_id'])]);
-            $this->assertNotLastSuperAdmin($user);
-        }
         $projectIds = $data['project_ids'] ?? [];
         unset($data['project_ids']);
 
@@ -286,12 +304,32 @@ class UserController extends Controller
             $data['password'] = Hash::make($data['password']);
         }
 
-        $user->update($data);
+        // `is_active` is a required field on this form and reaches the same
+        // column destroy() guards, but every check here used to sit inside the
+        // role branch — so a request that changed only the checkbox skipped all
+        // of them. Deactivating through the edit form answers to the same two
+        // rules as deactivating through the row action.
+        $isDeactivating = $user->is_active && ! $data['is_active'];
 
-        $pivotData = collect($projectIds)->mapWithKeys(fn ($id) => [
-            $id => ['project_role' => 'member', 'assigned_at' => now(), 'assigned_by' => $request->user()->id],
-        ])->all();
-        $user->projects()->sync($pivotData);
+        DB::transaction(function () use ($request, $user, $data, $projectIds, $isDeactivating) {
+            if ($data['role_id'] !== $user->role_id) {
+                $this->authorize('changeOwnRole', $user);
+                $this->authorize('assignRole', [User::class, $this->roleFrom($data['role_id'])]);
+                $this->assertNotLastSuperAdmin($user);
+            }
+
+            if ($isDeactivating) {
+                $this->authorize('deactivate', $user);
+                $this->assertNotLastSuperAdmin($user);
+            }
+
+            $user->update($data);
+
+            $pivotData = collect($projectIds)->mapWithKeys(fn ($id) => [
+                $id => ['project_role' => 'member', 'assigned_at' => now(), 'assigned_by' => $request->user()->id],
+            ])->all();
+            $user->projects()->sync($pivotData);
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated successfully.')]);
 
@@ -309,9 +347,14 @@ class UserController extends Controller
         // Previously only self-deletion was blocked, so an admin could
         // deactivate every super admin and leave nobody able to undo it.
         $this->authorize('deactivate', $user);
-        $this->assertNotLastSuperAdmin($user);
 
-        $user->update(['is_active' => false]);
+        // One transaction with the check, so the row lock it takes still holds
+        // when the write lands.
+        DB::transaction(function () use ($user) {
+            $this->assertNotLastSuperAdmin($user);
+
+            $user->update(['is_active' => false]);
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User deactivated successfully.')]);
 

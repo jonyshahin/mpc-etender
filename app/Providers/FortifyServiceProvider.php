@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -40,6 +42,33 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+        $this->configureAuthentication();
+    }
+
+    /**
+     * Credentials, and then whether the account is still allowed to be used.
+     *
+     * Fortify was left on its default credential check, which knows about
+     * nothing but the password. `is_active` is set by the admin user screen,
+     * counted on its dashboard and filtered on in its list, but no code path
+     * read it to decide anything — so a deactivated account signed in normally
+     * and kept every permission its role carried. Deactivation was decorative.
+     *
+     * Returning null produces Fortify's ordinary failed-login response, so the
+     * form gives the same answer as a wrong password: whether an address
+     * belongs to a deactivated account is not something it should confirm.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('email', $request->input('email'))->first();
+
+            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
+                return null;
+            }
+
+            return $user->is_active ? $user : null;
+        });
     }
 
     /**

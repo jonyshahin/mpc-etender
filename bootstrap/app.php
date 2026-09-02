@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureProjectAccess;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ForceVendorPasswordChange;
@@ -26,6 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            // Ahead of everything that reads the current user, so a withdrawn
+            // account is turned out before any of it runs.
+            EnsureAccountIsActive::class,
             HandleAppearance::class,
             SetLocale::class,
             HandleInertiaRequests::class,

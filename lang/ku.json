@@ -168,6 +168,7 @@
     "auth.two_factor_enabled_description": "[en] Two-factor authentication is enabled.",
     "auth.update_password": "نوێکردنەوەی وشەی نهێنی",
     "auth.update_password_description": "[en] Ensure your account is using a long, random password to stay secure.",
+    "auth.account_inactive": "[en] Your account is no longer active. Contact your administrator.",
     "auth.vendor_login": "چوونەژوورەوەی دابینکەر",
     "auth.vendor_portal": "دەروازەی دابینکەران",
     "auth.vendor_failed": "[en] Those details do not match an account that can sign in.",

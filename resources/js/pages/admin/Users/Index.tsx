@@ -67,7 +67,16 @@ type Filters = {
 
 type Props = {
     users: PaginatedData<UserRow>;
+    /** Every role, for the filter dropdown. */
     roles: Role[];
+    /**
+     * Only the roles this actor may hand out. The create dialog was given
+     * `roles` and so offered Super Admin to a plain admin, who then got a 403
+     * from store() after filling the form in.
+     */
+    assignableRoles: Role[];
+    /** Whether submitting the create form would actually be allowed. */
+    canCreate: boolean;
     filters: Filters;
     statusCounts: Record<string, number>;
     summary: {
@@ -89,6 +98,8 @@ const ANY_ROLE = 'all';
 export default function Index({
     users,
     roles,
+    assignableRoles,
+    canCreate,
     filters,
     statusCounts,
     summary,
@@ -226,10 +237,12 @@ export default function Index({
                             {t('pages.admin.users_description')}
                         </p>
                     </div>
-                    <Button onClick={() => setShowCreateDialog(true)}>
-                        <Plus className="me-2 size-4" />
-                        {t('btn.add_user')}
-                    </Button>
+                    {canCreate && (
+                        <Button onClick={() => setShowCreateDialog(true)}>
+                            <Plus className="me-2 size-4" />
+                            {t('btn.add_user')}
+                        </Button>
+                    )}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -405,7 +418,7 @@ export default function Index({
                 screen, so importing it as UserFormDialog rendered a second form
                 inline beneath the table instead of opening a dialog. */}
             <UserFormDialog
-                roles={roles}
+                roles={assignableRoles}
                 open={showCreateDialog}
                 onClose={() => setShowCreateDialog(false)}
             />
