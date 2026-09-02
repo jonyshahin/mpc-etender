@@ -48,11 +48,36 @@ class ApprovalService
     }
 
     /**
+     * Refuse a request that has already been decided.
+     *
+     * approve() writes a decision, moves the status, and at the final level
+     * creates the Award; reject() writes a decision and moves the tender back
+     * to under evaluation. None of it was guarded by state, so a second call on
+     * an approved request wrote a second decision and a *second Award for the
+     * same tender*, and a call on a rejected one flipped it to approved and
+     * awarded it.
+     *
+     * Nothing could reach these paths while the decision endpoints were 403 for
+     * everyone. Opening them is what makes this guard load-bearing, which is
+     * why it lands with that fix rather than after it.
+     */
+    private function assertPending(ApprovalRequest $request): void
+    {
+        if ($request->status !== ApprovalStatus::Pending) {
+            throw ValidationException::withMessages([
+                'status' => __('This approval request has already been decided.'),
+            ]);
+        }
+    }
+
+    /**
      * Approve at current level. If more levels needed, creates next-level request.
      * If final level, triggers award creation.
      */
     public function approve(ApprovalRequest $request, User $approver, string $comments): void
     {
+        $this->assertPending($request);
+
         ApprovalDecision::create([
             'request_id' => $request->id,
             'approver_id' => $approver->id,
@@ -94,6 +119,8 @@ class ApprovalService
      */
     public function reject(ApprovalRequest $request, User $approver, string $comments): void
     {
+        $this->assertPending($request);
+
         ApprovalDecision::create([
             'request_id' => $request->id,
             'approver_id' => $approver->id,
@@ -111,6 +138,8 @@ class ApprovalService
      */
     public function delegate(ApprovalRequest $request, User $delegator, User $delegatee): void
     {
+        $this->assertPending($request);
+
         ApprovalDecision::create([
             'request_id' => $request->id,
             'approver_id' => $delegatee->id,

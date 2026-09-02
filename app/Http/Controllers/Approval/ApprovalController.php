@@ -254,13 +254,34 @@ class ApprovalController extends Controller
      */
     public function approve(ApprovalDecisionRequest $request, ApprovalRequest $approval): RedirectResponse
     {
-        $this->approvalService->approve(
-            $approval,
-            $request->user(),
-            $request->validated('comments'),
-        );
+        // Who may sign, and at what level, is settled by ApprovalDecisionRequest
+        // through ApprovalRequestPolicy::approve — before validation runs.
+        try {
+            $this->approvalService->approve(
+                $approval,
+                $request->user(),
+                $request->validated('comments'),
+            );
+        } catch (ValidationException $e) {
+            return $this->refuse($e);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval submitted successfully.')]);
+
+        return redirect()->back();
+    }
+
+    /**
+     * Surface a service refusal as a toast.
+     *
+     * As a toast rather than the thrown error bag: the service refuses on
+     * `status`, and the decision screen renders only `comments` and
+     * `delegatee_id` errors, so the refusal would otherwise be invisible — the
+     * same reasoning requestApproval() already applies.
+     */
+    private function refuse(ValidationException $e): RedirectResponse
+    {
+        Inertia::flash('toast', ['type' => 'error', 'message' => $e->validator->errors()->first()]);
 
         return redirect()->back();
     }
@@ -270,11 +291,15 @@ class ApprovalController extends Controller
      */
     public function reject(ApprovalDecisionRequest $request, ApprovalRequest $approval): RedirectResponse
     {
-        $this->approvalService->reject(
-            $approval,
-            $request->user(),
-            $request->validated('comments'),
-        );
+        try {
+            $this->approvalService->reject(
+                $approval,
+                $request->user(),
+                $request->validated('comments'),
+            );
+        } catch (ValidationException $e) {
+            return $this->refuse($e);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval rejected.')]);
 
@@ -288,11 +313,15 @@ class ApprovalController extends Controller
     {
         $delegatee = User::findOrFail($request->validated('delegatee_id'));
 
-        $this->approvalService->delegate(
-            $approval,
-            $request->user(),
-            $delegatee,
-        );
+        try {
+            $this->approvalService->delegate(
+                $approval,
+                $request->user(),
+                $delegatee,
+            );
+        } catch (ValidationException $e) {
+            return $this->refuse($e);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Approval delegated successfully.')]);
 

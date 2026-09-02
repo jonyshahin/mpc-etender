@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Approval;
 
+use App\Models\ApprovalRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -9,14 +10,18 @@ class DelegateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * Same bare-slug mistake as ApprovalDecisionRequest, with the same effect:
+     * `can('approvals.level1')` is not an ability Gate knows, so delegation was
+     * refused for everyone. Asked of the policy now, against this approval —
+     * you cannot pass on an authority you do not hold.
      */
     public function authorize(): bool
     {
-        $user = $this->user();
+        $approval = $this->route('approval');
 
-        return $user->can('approvals.level1')
-            || $user->can('approvals.level2')
-            || $user->can('approvals.level3');
+        return $approval instanceof ApprovalRequest
+            && $this->user()->can('delegate', $approval);
     }
 
     /**
