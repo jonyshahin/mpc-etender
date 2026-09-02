@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Approval;
 
+use App\Enums\ApprovalStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Approval\ApprovalDecisionRequest;
 use App\Http\Requests\Approval\DelegateRequest;
@@ -9,48 +10,219 @@ use App\Models\ApprovalRequest;
 use App\Models\Tender;
 use App\Models\User;
 use App\Services\ApprovalService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ApprovalController extends Controller
 {
+    /**
+     * Columns the queue may be ordered by.
+     *
+     * A whitelist because orderBy() does not check the column: Laravel
+     * validates the direction and throws on anything but asc/desc, but hands
+     * the column straight to the grammar. This list never read `sort` at all,
+     * so the 500 the tender, vendor and project lists carried was not reachable
+     * here — the whitelist arrives with the sortable headers, before there is
+     * anything to exploit rather than after.
+     */
+    private const SORTABLE = [
+        'requested_at',
+        'deadline',
+        'approval_level',
+        'value_threshold',
+        'status',
+    ];
+
+    /** The tab that shows every state rather than one of them. */
+    private const ANY_STATUS = 'all';
+
     public function __construct(
         private readonly ApprovalService $approvalService,
     ) {}
 
     /**
-     * List pending approvals for current user.
-     * Filters by user's approval level permission (level1/level2/level3).
+     * The approvals waiting on this user.
      */
     public function index(Request $request): Response
     {
         $user = $request->user();
 
-        $query = ApprovalRequest::with(['tender', 'report', 'requestedByUser'])
-            ->where('status', 'pending');
+        // hasPermission(), not can(). `can('approvals.level1')` names neither a
+        // registered gate nor a policy ability — AppServiceProvider defines only
+        // viewPulse and the model policies — so Gate fell through to its default
+        // deny for every user, $levels came back empty, and
+        // `whereIn('approval_level', [])` matched nothing. Nobody could see an
+        // approval. DashboardService has always used hasPermission() for the
+        // same check, which is why its "pending approvals" tile counted rows
+        // this page then refused to show.
+        $levels = array_values(array_filter(
+            [1, 2, 3],
+            fn (int $level) => $user->hasPermission("approvals.level{$level}"),
+        ));
 
-        // Filter by user's approval level permissions
-        $levels = [];
-        if ($user->can('approvals.level1')) {
-            $levels[] = 1;
-        }
-        if ($user->can('approvals.level2')) {
-            $levels[] = 2;
-        }
-        if ($user->can('approvals.level3')) {
-            $levels[] = 3;
-        }
+        // Visibility is the project assignment, exactly as it is for tenders.
+        // There was no project scope here at all, so the queue listed every
+        // pending approval in the system — reference, title, and the award
+        // value it is for — including projects the reader is not assigned to
+        // and whose rows ApprovalRequestPolicy::view would refuse to open.
+        $projectIds = $user->projects()->pluck('projects.id');
 
-        $approvals = $query->whereIn('approval_level', $levels)
-            ->latest('requested_at')
-            ->paginate(15);
+        $search = trim((string) $request->input('search'));
+        $status = $this->statusFilter($request->input('status'));
+
+        // Everything bar the status filter, so the tab counts come off the same
+        // scope the rows do.
+        $base = fn () => ApprovalRequest::query()
+            ->whereIn('approval_level', $levels)
+            ->whereHas('tender', fn (Builder $t) => $t->whereIn('project_id', $projectIds))
+            ->when($search !== '', fn (Builder $q) => $q->whereHas('tender', fn (Builder $t) => $t
+                ->where('reference_number', 'like', "%{$search}%")
+                ->orWhere('title_en', 'like', "%{$search}%")
+                ->orWhere('title_ar', 'like', "%{$search}%")));
+
+        $sort = in_array($request->input('sort'), self::SORTABLE, true)
+            ? $request->input('sort')
+            : 'deadline';
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+
+        $approvals = $base()
+            ->when($status !== self::ANY_STATUS, fn (Builder $q) => $q->where('status', $status))
+            ->with([
+                'tender:id,project_id,reference_number,title_en,title_ar',
+                // requestedBy, not requestedByUser. ApprovalRequest declares no
+                // relation by that name, and Eloquent throws
+                // BadMethodCallException for an undefined one, so this page was
+                // a 500 on every single request — as was show(), below.
+                'requestedBy:id,name',
+                'report:id,recommended_bid_id',
+                'report.recommendedBid:id,vendor_id',
+                'report.recommendedBid.vendor:id,company_name',
+            ])
+            ->orderBy($sort, $direction)
+            // Approvals raised by one escalation run share a timestamp to the
+            // second, and an unbroken tie makes page 2 a reshuffle of page 1.
+            ->orderBy('id')
+            ->paginate(15)
+            ->withQueryString()
+            // Explicit rows rather than the models: what the queue renders, and
+            // nothing else the record happens to carry.
+            ->through(fn (ApprovalRequest $approval) => $this->row($approval));
 
         return Inertia::render('approval/Index', [
             'approvals' => $approvals,
+            // Complete, because DataTable-style sorting merges this set into
+            // every request. A partial echo sorts with the filters wiped.
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'statusCounts' => $this->statusCounts($base()),
+            'summary' => $this->summary($base()),
+            'statusOptions' => ApprovalStatus::options(),
+            'anyStatus' => self::ANY_STATUS,
+            // The instant the counts above were taken at. The page marks a row
+            // overdue by comparing against this rather than the browser's
+            // clock, so "3 overdue" in the tile is the same three rows that
+            // render red — and rendering stays a pure function of its props.
+            'now' => now()->toJSON(),
         ]);
+    }
+
+    /**
+     * A requested status, or the queue's default.
+     *
+     * Defaults to pending rather than everything: this screen is a work queue,
+     * and opening it on years of decided history would bury the rows that still
+     * need a signature.
+     */
+    private function statusFilter(mixed $value): string
+    {
+        if ($value === self::ANY_STATUS) {
+            return self::ANY_STATUS;
+        }
+
+        $valid = array_column(ApprovalStatus::cases(), 'value');
+
+        return is_string($value) && in_array($value, $valid, true)
+            ? $value
+            : ApprovalStatus::Pending->value;
+    }
+
+    /**
+     * How many approvals sit at each status, every status present.
+     *
+     * @return array<string, int>
+     */
+    private function statusCounts(Builder $query): array
+    {
+        $counts = $query->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        return collect(ApprovalStatus::cases())
+            ->mapWithKeys(fn (ApprovalStatus $case) => [$case->value => (int) ($counts[$case->value] ?? 0)])
+            ->all();
+    }
+
+    /**
+     * Headline figures, on the same scope as the rows beneath them.
+     *
+     * @return array<string, int|string|null>
+     */
+    private function summary(Builder $query): array
+    {
+        $pending = fn () => (clone $query)->where('status', ApprovalStatus::Pending);
+
+        return [
+            'pending' => $pending()->count(),
+            // Past its deadline and still unsigned. escalateExpired() moves
+            // these on when the scheduler runs; until it does they are the
+            // rows that actually need someone.
+            'overdue' => $pending()->whereNotNull('deadline')->where('deadline', '<', now())->count(),
+            'due_soon' => $pending()
+                ->whereNotNull('deadline')
+                ->whereBetween('deadline', [now(), now()->addHours(48)])
+                ->count(),
+            // value_threshold is the award value frozen when the chain was
+            // raised, denominated in USD by ApprovalService. Summed rather
+            // than the tender's estimated_value: the estimate is what the
+            // employer guessed beforehand, not what is being signed for.
+            'value' => (string) ($pending()->sum('value_threshold') ?? 0),
+        ];
+    }
+
+    /**
+     * One row, as the queue consumes it.
+     *
+     * @return array<string, mixed>
+     */
+    private function row(ApprovalRequest $approval): array
+    {
+        return [
+            'id' => $approval->id,
+            'level' => (int) $approval->approval_level,
+            'required_level' => (int) $approval->required_level,
+            'status' => $approval->status?->value,
+            'type' => $approval->approval_type?->value,
+            'value' => $approval->value_threshold,
+            'requested_at' => $approval->requested_at?->toJSON(),
+            'deadline' => $approval->deadline?->toJSON(),
+            'requested_by' => $approval->requestedBy?->name,
+            'tender' => [
+                'id' => $approval->tender?->id,
+                'reference_number' => $approval->tender?->reference_number,
+                'title_en' => $approval->tender?->title_en,
+                'title_ar' => $approval->tender?->title_ar,
+            ],
+            'recommended_vendor' => $approval->report?->recommendedBid?->vendor?->company_name,
+        ];
     }
 
     /**
@@ -58,11 +230,18 @@ class ApprovalController extends Controller
      */
     public function show(ApprovalRequest $approval): Response
     {
+        // There was no authorization here of any kind, so any verified user
+        // could open any approval by id — including one on a project they are
+        // not assigned to. The policy this calls is the same rule the queue
+        // now scopes by, so a row that lists is a row that opens.
+        $this->authorize('view', $approval);
+
         $approval->load([
             'tender',
             'report.recommendedBid.vendor',
             'decisions.approver',
-            'requestedByUser',
+            // Same undefined relation as index() — a 500 on every open.
+            'requestedBy',
         ]);
 
         return Inertia::render('approval/Show', [

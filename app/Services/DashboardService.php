@@ -170,6 +170,15 @@ class DashboardService
                 'key' => 'approvals',
                 'count' => ApprovalRequest::where('status', 'pending')
                     ->whereIn('approval_level', $levels)
+                    // Scoped to the reader's projects, like the queue this
+                    // links to. Unscoped it counted every pending approval in
+                    // the system, so the tile promised rows the queue does not
+                    // show — the "list of dead ends" this method exists to
+                    // avoid, one level up.
+                    ->whereHas('tender', fn ($t) => $t->whereIn(
+                        'project_id',
+                        $user->projects()->select('projects.id'),
+                    ))
                     ->count(),
                 'href' => '/approvals',
                 'tone' => 'critical',
