@@ -6,6 +6,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\ArabicTextService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use FontLib\Font;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -21,6 +23,35 @@ function hasPresentationForms(string $text): bool
     return (bool) preg_match('/[\x{FE70}-\x{FEFF}]/u', $text);
 }
 
+/**
+ * The codepoints one DejaVu Sans face carries, read from the shipped .ttf.
+ *
+ * This used to read `vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ufm.json`, a
+ * file dompdf generates rather than ships: Cpdf::openFont() writes it, only
+ * once something has actually been rendered, and only into the configured
+ * `font_cache` — storage/fonts here, never vendor. Nothing has ever created
+ * that path, so the coverage assertion below could pass only where a stale file
+ * happened to sit, and failed on every fresh checkout.
+ *
+ * The font's own cmap carries the same information with no generated state
+ * behind it, and dompdf's own resolution finds the file, so this follows
+ * config('dompdf') rather than a hardcoded vendor path.
+ *
+ * @return array<int, int> codepoint => glyph index
+ */
+function dejaVuSansCharMap(string $subtype): array
+{
+    static $maps = [];
+
+    if (! isset($maps[$subtype])) {
+        // getFont() returns the path without an extension.
+        $path = Pdf::getDomPDF()->getFontMetrics()->getFont('DejaVu Sans', $subtype);
+        $maps[$subtype] = Font::load($path.'.ttf')->getUnicodeCharMap();
+    }
+
+    return $maps[$subtype];
+}
+
 test('it converts Arabic to the joined forms dompdf can draw', function () {
     $shaped = app(ArabicTextService::class)->forPdf('اربيل / موصل');
 
@@ -29,12 +60,17 @@ test('it converts Arabic to the joined forms dompdf can draw', function () {
     expect(hasPresentationForms($shaped))->toBeTrue()
         ->and($shaped)->not->toBe('اربيل / موصل');
 
-    // Every glyph produced must exist in the font the templates use, or dompdf
-    // draws an empty box.
-    $font = json_decode(file_get_contents(base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ufm.json')), true);
+    // Every glyph produced must exist in the face that draws it, or dompdf
+    // renders an empty box. Both faces, not just the regular one: the Arabic
+    // fields sit in `.value`, which the letter styles bold.
+    foreach (['normal', 'bold'] as $subtype) {
+        $map = dejaVuSansCharMap($subtype);
 
-    foreach (codepoints($shaped) as $cp) {
-        expect(isset($font['C'][$cp]))->toBeTrue('DejaVu Sans has no glyph for U+'.strtoupper(dechex($cp)));
+        foreach (codepoints($shaped) as $cp) {
+            expect(isset($map[$cp]))->toBeTrue(
+                "DejaVu Sans {$subtype} has no glyph for U+".strtoupper(dechex($cp)),
+            );
+        }
     }
 });
 
