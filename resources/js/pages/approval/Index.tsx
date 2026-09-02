@@ -12,10 +12,12 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
+import { Pagination } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/use-translation';
+import { approvalDeadlineState } from '@/lib/approval';
 import { formatDeadline } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 
@@ -153,7 +155,9 @@ export default function Index({
             key: 'deadline',
             label: t('approval.deadline'),
             sortable: true,
-            render: (value: string | null) => <DeadlineCell deadline={value} nowMs={nowMs} />,
+            render: (value: string | null, row: ApprovalRow) => (
+                <DeadlineCell deadline={value} status={row.status} nowMs={nowMs} />
+            ),
         },
         {
             key: 'tender.reference_number',
@@ -344,7 +348,7 @@ export default function Index({
                                             </span>
                                         </div>
                                         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                            <DeadlineCell deadline={row.deadline} nowMs={nowMs} compact />
+                                            <DeadlineCell deadline={row.deadline} status={row.status} nowMs={nowMs} compact />
                                             <span className="tabular-nums">{money(row.value)}</span>
                                             {row.recommended_vendor && (
                                                 <span className="truncate">
@@ -379,6 +383,11 @@ export default function Index({
                                 <PagerLink href={approvals.next_page_url} label={t('btn.next')} />
                             </nav>
                         )}
+
+                        {/* DataTable carries its own pager, but it is hidden at this
+                            width — without this the card view of a list longer than
+                            one page was stranded on the first fifteen rows. */}
+                        <Pagination className="md:hidden" links={approvals.links ?? []} />
 
                         <div className="hidden md:block">
                             <DataTable
@@ -435,29 +444,46 @@ function formatMoney(value: string | null, locale: string, compact = false): str
  */
 function DeadlineCell({
     deadline,
+    status,
     nowMs,
     compact = false,
 }: {
     deadline: string | null;
+    status: string;
     nowMs: number;
     compact?: boolean;
 }) {
     const { t, locale } = useTranslation();
 
-    if (!deadline) {
+    const state = approvalDeadlineState(deadline, status, nowMs, DUE_SOON_MS);
+
+    if (state.kind === 'none') {
         return <span className="text-sm text-muted-foreground">{t('approval.no_deadline')}</span>;
     }
 
-    const msLeft = new Date(deadline).getTime() - nowMs;
-    const overdue = msLeft < 0;
-    const dueSoon = !overdue && msLeft < DUE_SOON_MS;
+    // Decided, lapsed or escalated: the date is a record of when it was due,
+    // not a countdown. No alarm colour and no "Overdue" — the status badge in
+    // the next column already says what became of it.
+    if (state.kind === 'settled') {
+        return (
+            <span
+                className={cn(
+                    'block whitespace-nowrap tabular-nums text-muted-foreground',
+                    compact ? 'text-xs' : 'text-sm',
+                )}
+            >
+                {formatDeadline(deadline, locale)}
+            </span>
+        );
+    }
 
-    const hours = Math.max(0, Math.round(Math.abs(msLeft) / 3_600_000));
+    const { overdue, dueSoon, hours } = state;
+
     // Hours under two days, days beyond — and a bare unit suffix rather than a
     // word, because t() does plain substitution with no plural forms and Arabic
     // has six of them.
     const remaining =
-        Math.abs(msLeft) < DUE_SOON_MS
+        hours * 3_600_000 < DUE_SOON_MS
             ? `${hours}${t('approval.hours_short')}`
             : `${Math.round(hours / 24)}${t('approval.days_short')}`;
 

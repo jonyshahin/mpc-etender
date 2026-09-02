@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Approval;
 
+use App\Concerns\FiltersLists;
 use App\Enums\ApprovalStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Approval\ApprovalDecisionRequest;
@@ -20,6 +21,8 @@ use Inertia\Response;
 
 class ApprovalController extends Controller
 {
+    use FiltersLists;
+
     /**
      * Columns the queue may be ordered by.
      *
@@ -72,8 +75,8 @@ class ApprovalController extends Controller
         // and whose rows ApprovalRequestPolicy::view would refuse to open.
         $projectIds = $user->projects()->pluck('projects.id');
 
-        $search = trim((string) $request->input('search'));
-        $status = $this->statusFilter($request->input('status'));
+        $search = $this->searchTerm($request);
+        $status = $this->statusFilter($this->filterValue($request, 'status'));
 
         // Everything bar the status filter, so the tab counts come off the same
         // scope the rows do.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\FiltersLists;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -22,6 +23,8 @@ use Inertia\Response;
  */
 class AuditLogController extends Controller
 {
+    use FiltersLists;
+
     /**
      * Columns the list may be ordered by.
      *
@@ -71,8 +74,8 @@ class AuditLogController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $userId = $request->input('user_id');
+        $search = $this->searchTerm($request);
+        $userId = $this->filterValue($request, 'user_id');
         $action = $request->input('action');
         $entityType = $request->input('entity_type');
 

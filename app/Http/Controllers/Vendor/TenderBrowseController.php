@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Concerns\FiltersLists;
 use App\Enums\TenderStatus;
 use App\Enums\VendorStatus;
 use App\Http\Controllers\Controller;
@@ -18,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TenderBrowseController extends Controller
 {
+    use FiltersLists;
+
     /**
      * Columns the browse list may be ordered by.
      *
@@ -40,7 +43,7 @@ class TenderBrowseController extends Controller
     {
         $vendor = $request->user('vendor');
 
-        $search = trim((string) $request->input('search'));
+        $search = $this->searchTerm($request);
         $window = $request->input('window');
 
         // Everything bar the window filter, so the tab counts come off the

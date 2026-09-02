@@ -3,6 +3,7 @@ import { Building2, CheckCircle2, FileText, Plus, Search, Users, X } from 'lucid
 import { useEffect, useRef, useState } from 'react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
+import { Pagination } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -357,6 +358,11 @@ export default function Index({
                                 </li>
                             ))}
                         </ul>
+
+                        {/* DataTable carries its own pager, but it is hidden at this
+                            width — without this the card view of a list longer than
+                            one page was stranded on the first fifteen rows. */}
+                        <Pagination className="md:hidden" links={vendors.links ?? []} />
 
                         <div className="hidden md:block">
                             <DataTable

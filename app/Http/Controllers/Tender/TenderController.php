@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tender;
 
+use App\Concerns\FiltersLists;
 use App\Enums\TenderStatus;
 use App\Exceptions\TenderPublishException;
 use App\Http\Controllers\Controller;
@@ -21,6 +22,8 @@ use Inertia\Response;
 
 class TenderController extends Controller
 {
+    use FiltersLists;
+
     public function __construct(
         private TenderService $tenderService,
     ) {}
@@ -47,8 +50,8 @@ class TenderController extends Controller
         // projects they are on, so this scope comes before every other filter.
         $projectIds = $request->user()->projects()->pluck('projects.id');
 
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
+        $search = $this->searchTerm($request);
+        $status = $this->filterValue($request, 'status');
 
         $base = fn () => Tender::query()
             ->whereIn('project_id', $projectIds)

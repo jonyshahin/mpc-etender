@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\FiltersLists;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
@@ -20,6 +21,8 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    use FiltersLists;
+
     /**
      * Columns the user list may be ordered by.
      *
@@ -97,8 +100,8 @@ class UserController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $roleId = $request->input('role_id') ?: null;
+        $search = $this->searchTerm($request);
+        $roleId = $this->filterValue($request, 'role_id');
         // Tri-state, and only ever one of the two names the tabs use. The old
         // filter read `$request->has('is_active')` and coerced with boolean(),
         // so an empty `?is_active=` — which is what a cleared select submits —

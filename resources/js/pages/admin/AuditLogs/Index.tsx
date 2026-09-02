@@ -16,6 +16,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
+import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -493,6 +494,11 @@ export default function Index({
                                 />
                             </nav>
                         )}
+
+                        {/* DataTable carries its own pager, but it is hidden at this
+                            width — without this the card view of a list longer than
+                            one page was stranded on the first fifteen rows. */}
+                        <Pagination className="md:hidden" links={logs.links ?? []} />
 
                         <div className="hidden md:block">
                             <DataTable

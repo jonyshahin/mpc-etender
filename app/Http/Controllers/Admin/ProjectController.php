@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\FiltersLists;
 use App\Enums\ProjectStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignProjectUsersRequest;
@@ -19,6 +20,8 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
+    use FiltersLists;
+
     /**
      * Columns the list may be ordered by.
      *
@@ -38,8 +41,8 @@ class ProjectController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
+        $search = $this->searchTerm($request);
+        $status = $this->filterValue($request, 'status');
 
         // Everything bar the status filter, so the tab counts can come off the
         // same scope the rows do.

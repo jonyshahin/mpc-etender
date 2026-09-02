@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
+import { Pagination } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -359,6 +360,11 @@ export default function Index({
                                 </li>
                             ))}
                         </ul>
+
+                        {/* DataTable carries its own pager, but it is hidden at this
+                            width — without this the card view of a list longer than
+                            one page was stranded on the first fifteen rows. */}
+                        <Pagination className="md:hidden" links={users.links ?? []} />
 
                         <div className="hidden md:block">
                             <DataTable

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\FiltersLists;
 use App\Enums\DocumentType;
 use App\Enums\VendorDocStatus;
 use App\Enums\VendorStatus;
@@ -31,6 +32,8 @@ use Inertia\Response;
 
 class VendorController extends Controller
 {
+    use FiltersLists;
+
     public function __construct(
         private VendorService $vendorService,
         private QrCodeService $qrCodeService,
@@ -54,9 +57,9 @@ class VendorController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
-        $categoryId = $request->input('category_id');
+        $search = $this->searchTerm($request);
+        $status = $this->filterValue($request, 'status');
+        $categoryId = $this->filterValue($request, 'category_id');
 
         // Everything except the status filter, so the status counts can be
         // taken from the same scope the rows are drawn from.

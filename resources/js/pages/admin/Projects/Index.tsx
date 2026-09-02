@@ -3,6 +3,7 @@ import { Briefcase, CalendarRange, FileText, Play, Plus, Search, UserX, Users, X
 import { useEffect, useRef, useState } from 'react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
+import { Pagination } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -367,6 +368,11 @@ export default function Index({ projects, filters, statusCounts, summary, status
                                 </li>
                             ))}
                         </ul>
+
+                        {/* DataTable carries its own pager, but it is hidden at this
+                            width — without this the card view of a list longer than
+                            one page was stranded on the first fifteen rows. */}
+                        <Pagination className="md:hidden" links={projects.links ?? []} />
 
                         <div className="hidden md:block">
                             <DataTable

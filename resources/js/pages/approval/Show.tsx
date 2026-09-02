@@ -1,7 +1,15 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    CheckCircle,
+    XCircle,
+    Forward,
+    Clock,
+    User,
+    MessageSquare,
+} from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
-import { useTranslation } from '@/hooks/use-translation';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,23 +29,19 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/datetime';
-import {
-    ArrowLeft,
-    CheckCircle,
-    XCircle,
-    Forward,
-    Clock,
-    User,
-    MessageSquare,
-} from 'lucide-react';
 
 type Decision = {
     id: string;
     approver_id: string;
     decision: string;
     comments: string;
-    delegated_from: string | null;
+    /**
+     * The person who delegated, not their id: `decisions.delegatedFrom` is
+     * eager-loaded and serialises over the raw column of the same name.
+     */
+    delegated_from: { id: string; name: string } | null;
     decided_at: string;
     approver?: { id: string; name: string };
 };
@@ -79,9 +83,16 @@ type Props = {
 };
 
 function formatCurrency(value: string | null | undefined, currency: string): string {
-    if (!value) return '—';
+    if (!value) {
+return '—';
+}
+
     const num = parseFloat(value);
-    if (isNaN(num)) return '—';
+
+    if (isNaN(num)) {
+return '—';
+}
+
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency || 'USD',
@@ -255,19 +266,19 @@ export default function Show({ approval, projectUsers }: Props) {
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="border-b">
-                                                <th className="px-3 py-2 text-left font-medium">
+                                                <th className="px-3 py-2 text-start font-medium">
                                                     {t('table.rank')}
                                                 </th>
-                                                <th className="px-3 py-2 text-left font-medium">
+                                                <th className="px-3 py-2 text-start font-medium">
                                                     {t('table.vendor')}
                                                 </th>
-                                                <th className="px-3 py-2 text-right font-medium">
+                                                <th className="px-3 py-2 text-end font-medium">
                                                     {t('table.technical_score')}
                                                 </th>
-                                                <th className="px-3 py-2 text-right font-medium">
+                                                <th className="px-3 py-2 text-end font-medium">
                                                     {t('table.financial_score')}
                                                 </th>
-                                                <th className="px-3 py-2 text-right font-medium">
+                                                <th className="px-3 py-2 text-end font-medium">
                                                     {t('table.final_score')}
                                                 </th>
                                             </tr>
@@ -278,6 +289,7 @@ export default function Show({ approval, projectUsers }: Props) {
                                                 .map((row) => {
                                                     const isRecommended =
                                                         row.bid_id === recommendedBidId;
+
                                                     return (
                                                         <tr
                                                             key={row.bid_id}
@@ -298,13 +310,13 @@ export default function Show({ approval, projectUsers }: Props) {
                                                             <td className="px-3 py-2">
                                                                 {row.vendor_name}
                                                             </td>
-                                                            <td className="px-3 py-2 text-right">
+                                                            <td className="px-3 py-2 text-end">
                                                                 {row.technical_score.toFixed(2)}
                                                             </td>
-                                                            <td className="px-3 py-2 text-right">
+                                                            <td className="px-3 py-2 text-end">
                                                                 {row.financial_score.toFixed(2)}
                                                             </td>
-                                                            <td className="px-3 py-2 text-right">
+                                                            <td className="px-3 py-2 text-end">
                                                                 {row.final_score.toFixed(2)}
                                                             </td>
                                                         </tr>
@@ -346,7 +358,7 @@ export default function Show({ approval, projectUsers }: Props) {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="flex items-center gap-1 font-medium">
                                                     <User className="h-3.5 w-3.5" />
-                                                    {decision.approver?.name ?? 'Unknown'}
+                                                    {decision.approver?.name ?? t('pages.admin.unknown_user')}
                                                 </span>
                                                 <Badge
                                                     variant={getStatusVariant(decision.decision)}
@@ -356,7 +368,8 @@ export default function Show({ approval, projectUsers }: Props) {
                                                 </Badge>
                                                 {decision.delegated_from && (
                                                     <span className="text-muted-foreground text-xs">
-                                                        ({t('approval.delegated_from')} {decision.delegated_from})
+                                                        ({t('approval.delegated_from')}{' '}
+                                                        {decision.delegated_from.name})
                                                     </span>
                                                 )}
                                             </div>
@@ -393,21 +406,21 @@ export default function Show({ approval, projectUsers }: Props) {
                                     className="bg-green-600 hover:bg-green-700"
                                     onClick={() => setApproveOpen(true)}
                                 >
-                                    <CheckCircle className="mr-1.5 h-4 w-4" />
+                                    <CheckCircle className="me-1.5 h-4 w-4" />
                                     {t('btn.approve')}
                                 </Button>
                                 <Button
                                     variant="destructive"
                                     onClick={() => setRejectOpen(true)}
                                 >
-                                    <XCircle className="mr-1.5 h-4 w-4" />
+                                    <XCircle className="me-1.5 h-4 w-4" />
                                     {t('btn.reject')}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => setDelegateOpen(true)}
                                 >
-                                    <Forward className="mr-1.5 h-4 w-4" />
+                                    <Forward className="me-1.5 h-4 w-4" />
                                     {t('btn.delegate')}
                                 </Button>
                             </div>

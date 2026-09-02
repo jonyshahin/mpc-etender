@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Concerns\FiltersLists;
 use App\Enums\BidDocType;
 use App\Enums\BidStatus;
 use App\Enums\EnvelopeType;
@@ -27,6 +28,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BidController extends Controller
 {
+    use FiltersLists;
+
     public function __construct(
         private BidService $bidService,
         private FileUploadService $fileUploadService,
@@ -59,8 +62,8 @@ class BidController extends Controller
     {
         $vendor = $request->user('vendor');
 
-        $search = trim((string) $request->input('search'));
-        $status = $request->input('status');
+        $search = $this->searchTerm($request);
+        $status = $this->filterValue($request, 'status');
 
         // Everything bar the status filter, so the tab counts come off the
         // same scope the rows do.

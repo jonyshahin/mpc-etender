@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { CalendarClock, FileSignature, Gavel, PenLine, Search, ShieldCheck, X } from 'lucide-react';
 import { StatTile } from '@/components/dashboard/StatTile';
 import { DataTable } from '@/components/DataTable';
+import { Pagination } from '@/components/Pagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -302,6 +303,11 @@ export default function Index({ bids, filters, statusCounts, summary, statusOpti
                                 </li>
                             ))}
                         </ul>
+
+                        {/* DataTable carries its own pager, but it is hidden at this
+                            width — without this the card view of a list longer than
+                            one page was stranded on the first fifteen rows. */}
+                        <Pagination className="md:hidden" links={bids.links ?? []} />
 
                         <div className="hidden md:block">
                             <DataTable
