@@ -65,11 +65,19 @@ class DashboardService
      */
     public function kpiMetrics(): array
     {
-        // Average cycle time: days from publish to award
-        $avgCycleTime = Tender::where('status', TenderStatus::Awarded)
+        // Average cycle time: days from publish to award.
+        //
+        // Computed in PHP rather than with AVG(DATEDIFF(...)): DATEDIFF is
+        // MySQL-only and does not exist in SQLite, so this line threw the
+        // moment anything but MySQL was behind it — including the test
+        // suite, which is why nothing here was covered.
+        $awarded = Tender::where('status', TenderStatus::Awarded)
             ->whereNotNull('publish_date')
-            ->selectRaw('AVG(DATEDIFF(updated_at, publish_date)) as avg_days')
-            ->value('avg_days');
+            ->get(['publish_date', 'updated_at']);
+
+        $avgCycleTime = $awarded->isEmpty()
+            ? 0
+            : $awarded->avg(fn (Tender $tender) => $tender->publish_date->diffInDays($tender->updated_at));
 
         // Participation rate: average bids per tender
         $avgBidsPerTender = Tender::where('status', '!=', TenderStatus::Draft)
@@ -235,9 +243,13 @@ class DashboardService
     /**
      * Award value per month for the last 12 months, gap-filled.
      *
-     * Grouped in PHP rather than SQL on purpose: the existing monthlySpend()
-     * uses DATE_FORMAT, which is MySQL-only and throws under the SQLite test
-     * suite. The row count here is small enough that portability wins.
+     * Grouped in PHP rather than SQL on purpose: DATE_FORMAT is MySQL-only and
+     * throws under the SQLite test suite, and grouping on the UTC month puts an
+     * award made at 02:00 Baghdad on the 1st into the previous one. The row
+     * count here is small enough that portability and correct boundaries win.
+     *
+     * monthlySpend() now delegates here rather than keeping its own
+     * DATE_FORMAT copy of the same question.
      *
      * @return array<int, array{month: string, label: string, total: float}>
      */
@@ -333,17 +345,21 @@ class DashboardService
 
     /**
      * Monthly spend trend (last 12 months).
+     *
+     * Delegates to awardTrend(), which already answers exactly this
+     * question and answers it better. This method grouped with
+     * DATE_FORMAT — MySQL-only — and grouped on the UTC month, so an award
+     * made at 02:00 Baghdad on the 1st landed in the previous month. It
+     * also skipped months with no awards, leaving the chart to imply a
+     * continuous series across a gap.
+     *
+     * The returned rows carry an extra 'label' key the portfolio page does
+     * not read; month and total are unchanged.
+     *
+     * @return array<int, array{month: string, label: string, total: float}>
      */
     private function monthlySpend(): array
     {
-        return Award::where('awarded_at', '>=', now()->subYear())
-            ->select(
-                DB::raw("DATE_FORMAT(awarded_at, '%Y-%m') as month"),
-                DB::raw('SUM(award_amount) as total')
-            )
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get()
-            ->toArray();
+        return $this->awardTrend();
     }
 }
