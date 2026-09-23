@@ -68,3 +68,29 @@ test('no page a guest can reach discloses the staff sign-in path', function () {
         expect($this->get($url)->getContent())->not->toContain('/staff/login');
     }
 });
+
+/**
+ * A vendor who is already signed in and opens the sign-in page.
+ *
+ * guest:vendor sends authenticated users to Laravel's default home, which is
+ * route('dashboard') — the *staff* dashboard. That refused a vendor and, before
+ * redirectGuestsTo was guard-aware, forwarded him to the staff form: the
+ * production trail shows a vendor submitting the vendor form and landing on the
+ * staff one four seconds later. With guests now sent to the portal, the same
+ * path became /vendor/login → /dashboard → /vendor/login, a loop.
+ */
+test('a signed-in vendor opening the sign-in page goes to the vendor dashboard', function () {
+    $vendor = Vendor::factory()->create(['is_active' => true]);
+
+    $this->actingAs($vendor, 'vendor')
+        ->get(route('vendor.login'))
+        ->assertRedirect(route('vendor.dashboard'));
+});
+
+test('a signed-in vendor re-submitting the sign-in form goes to the vendor dashboard', function () {
+    $vendor = Vendor::factory()->create(['is_active' => true]);
+
+    $this->actingAs($vendor, 'vendor')
+        ->post(route('vendor.login.store'), ['email' => $vendor->email, 'password' => 'irrelevant'])
+        ->assertRedirect(route('vendor.dashboard'));
+});
