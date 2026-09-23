@@ -384,7 +384,10 @@ test('the detail screen opens for an assigned reader and refuses everyone else',
 });
 
 test('a signed-out visitor is turned away', function () {
-    $this->get(route('approvals.index'))->assertRedirect('/login');
+    // The portal, not the staff form: staff sign-in sits behind
+    // STAFF_AUTH_PREFIX and redirecting guests to it would publish the
+    // path to anyone who opened a staff URL. See GuestRedirectTest.
+    $this->get(route('approvals.index'))->assertRedirect(route('vendor.login'));
 });
 
 /**

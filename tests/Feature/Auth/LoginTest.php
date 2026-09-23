@@ -33,7 +33,7 @@ test('vendor can login via vendor guard', function () {
 test('unauthenticated user is redirected to login', function () {
     $response = $this->get(route('dashboard'));
 
-    $response->assertRedirect(route('login'));
+    $response->assertRedirect(route('vendor.login'));
 });
 
 test('user with wrong password cannot login', function () {

@@ -37,6 +37,18 @@ return Application::configure(basePath: dirname(__DIR__))
             LogAuditTrail::class,
         ]);
 
+        // Laravel's Authenticate middleware sends every guest to route('login')
+        // without knowing which guard turned them away, so the vendor portal
+        // asked vendors for MPC staff credentials — on logout with a lapsed
+        // session, and on any vendor page opened after one ended.
+        //
+        // Staff routes lead there too rather than to route('login'). The staff
+        // sign-in sits behind STAFF_AUTH_PREFIX to keep it off the public site,
+        // and redirecting guests to it would hand the path to anyone who opened
+        // a single staff URL. The trade is that staff whose session lapses land
+        // on the vendor form and go to their own bookmark.
+        $middleware->redirectGuestsTo(fn () => route('vendor.login'));
+
         $middleware->alias([
             'project.access' => EnsureProjectAccess::class,
             'role' => EnsureUserHasRole::class,

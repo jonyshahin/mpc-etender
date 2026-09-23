@@ -16,8 +16,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/hooks/use-translation';
-import { LOCALES, LOCALE_BY_CODE, type LocaleCode } from '@/lib/locales';
-import { dashboard, login } from '@/routes';
+import { LOCALES, LOCALE_BY_CODE  } from '@/lib/locales';
+import type {LocaleCode} from '@/lib/locales';
+import { dashboard } from '@/routes';
 
 export default function Welcome() {
     const { t } = useTranslation();
@@ -27,7 +28,10 @@ export default function Welcome() {
     const currentLabel = LOCALE_BY_CODE[locale]?.label ?? 'English';
 
     const switchLocale = (target: LocaleCode) => {
-        if (target === locale) return;
+        if (target === locale) {
+return;
+}
+
         router.put(
             '/user/language',
             { language: target },
@@ -92,20 +96,12 @@ export default function Welcome() {
                                     {t('welcome.cta_go_to_dashboard')}
                                 </Link>
                             ) : (
-                                <>
-                                    <Link
-                                        href={login()}
-                                        className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition hover:bg-accent"
-                                    >
-                                        {t('welcome.staff_login')}
-                                    </Link>
-                                    <a
-                                        href="/vendor/login"
-                                        className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                                    >
-                                        {t('welcome.vendor_portal')}
-                                    </a>
-                                </>
+                                <a
+                                    href="/vendor/login"
+                                    className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                                >
+                                    {t('welcome.vendor_portal')}
+                                </a>
                             )}
                         </nav>
                     </div>
@@ -144,24 +140,17 @@ export default function Welcome() {
 
                             <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
                                 {!user && (
-                                    <>
-                                        <Link
-                                            href={login()}
-                                            className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                                        >
-                                            <Lock className="size-4" />
-                                            {t('welcome.staff_login')}
-                                        </Link>
-                                        {/* Vendors are onboarded by MPC admins, so this
-                                            points at sign-in, not registration. */}
-                                        <a
-                                            href="/vendor/login"
-                                            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-sm font-medium transition hover:bg-accent"
-                                        >
-                                            <Building2 className="size-4" />
-                                            {t('welcome.vendor_login')}
-                                        </a>
-                                    </>
+                                    /* Vendors are onboarded by MPC admins, so this
+                                       points at sign-in, not registration. Staff
+                                       sign-in is deliberately not linked here —
+                                       it lives behind STAFF_AUTH_PREFIX. */
+                                    <a
+                                        href="/vendor/login"
+                                        className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                                    >
+                                        <Building2 className="size-4" />
+                                        {t('welcome.vendor_login')}
+                                    </a>
                                 )}
                             </div>
                         </div>

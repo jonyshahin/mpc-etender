@@ -391,7 +391,10 @@ test('the audit trail exposes no way to change itself', function () {
 });
 
 test('a signed-out visitor is turned away', function () {
-    $this->get(route('admin.audit-logs.index'))->assertRedirect('/login');
+    // The portal, not the staff form: staff sign-in sits behind
+    // STAFF_AUTH_PREFIX and redirecting guests to it would publish the
+    // path to anyone who opened a staff URL. See GuestRedirectTest.
+    $this->get(route('admin.audit-logs.index'))->assertRedirect(route('vendor.login'));
 });
 
 test('a user without an admin role is turned away', function () {

@@ -86,7 +86,7 @@ return [
     |
     */
 
-    'prefix' => '',
+    'prefix' => env('STAFF_AUTH_PREFIX', 'staff'),
 
     'domain' => null,
 

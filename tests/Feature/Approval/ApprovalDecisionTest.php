@@ -253,5 +253,5 @@ test('a signed-out visitor cannot decide anything', function () {
     $approval = decidableApproval(Project::factory()->create());
 
     $this->post(route('approvals.approve', $approval), ['comments' => 'Hello.'])
-        ->assertRedirect('/login');
+        ->assertRedirect(route('vendor.login'));
 });

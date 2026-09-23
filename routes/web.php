@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
+// Staff sign-in moved behind STAFF_AUTH_PREFIX, freeing this path. Anyone
+// arriving on it — an old bookmark, a crawler, a vendor told to "log in" —
+// gets the portal, which is the only sign-in this site advertises.
+Route::redirect('login', '/vendor/login');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [Dashboard\DashboardController::class, 'index'])->name('dashboard');
 });
