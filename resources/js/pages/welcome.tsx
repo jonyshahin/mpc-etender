@@ -118,15 +118,7 @@ return;
                             />
                         </div>
                         <div className="flex flex-col items-center text-center md:items-start md:text-start">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
-                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                                </span>
-                                {t('welcome.system_online')}
-                            </div>
-
-                            <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
                                 {t('welcome.hero_line_1')}
                                 <br />
                                 <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
