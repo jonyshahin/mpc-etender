@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -40,8 +39,11 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureActions(): void
     {
+        // No createUsersUsing() or registerView(): registration is off (see the
+        // features list in config/fortify.php) and accounts are made by admins.
+        // The action that used to sit here set no role_id, so re-enabling
+        // registration would have failed on the NOT NULL constraint anyway.
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
         $this->configureAuthentication();
     }
 
@@ -93,8 +95,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
             'status' => $request->session()->get('status'),
         ]));
-
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
