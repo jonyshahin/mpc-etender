@@ -72,6 +72,7 @@ function validTenderPayload(string $projectId, array $overrides = []): array
                 'doc_type' => 'specification',
             ],
         ],
+        'engine_profile' => engineProfilePayload(),
     ], $overrides);
 }
 

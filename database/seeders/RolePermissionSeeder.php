@@ -29,6 +29,7 @@ class RolePermissionSeeder extends Seeder
             'tenders.issue_addenda', 'tenders.answer_clarifications',
             'bids.view', 'bids.open',
             'evaluations.view', 'evaluations.manage_committees', 'evaluations.generate_reports',
+            'evaluations.engine_run',
             'reports.view', 'reports.export', 'reports.generate',
         ];
         $procurement->permissions()->sync(Permission::whereIn('slug', $procurementSlugs)->pluck('id'));

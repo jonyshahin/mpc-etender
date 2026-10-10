@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\EngineContractType;
 use App\Enums\TenderStatus;
 use App\Enums\TenderType;
 use App\Models\BoqItem;
@@ -11,6 +12,7 @@ use App\Models\EvaluationCriterion;
 use App\Models\Project;
 use App\Models\Tender;
 use App\Models\TenderDocument;
+use App\Models\TenderEngineProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -52,6 +54,39 @@ class TenderFactory extends Factory
             'notes_internal' => null,
             'cancelled_reason' => null,
         ];
+    }
+
+    /**
+     * A draft carries its copy of the scoring template, as one created through
+     * TenderService does — with a contract type chosen, so it can be published.
+     * Tenders built past draft get none: like real tenders that opened before
+     * engine scoring existed, they have no locked profile. Use lockedEngine()
+     * for a tender that opened with one.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Tender $tender) {
+            if ($tender->status === TenderStatus::Draft && ! $tender->engineProfile()->exists()) {
+                $profile = TenderEngineProfile::fromTemplate($tender);
+                $profile->contract_type = EngineContractType::Installation;
+                $profile->save();
+            }
+        });
+    }
+
+    /**
+     * A tender that opened with a locked engine profile, as every tender
+     * published after engine scoring shipped does.
+     */
+    public function lockedEngine(): static
+    {
+        return $this->afterCreating(function (Tender $tender) {
+            // A draft got its working copy from configure(); publishing turns
+            // that copy into the locked profile, so replace it.
+            $tender->engineProfile()->whereNull('locked_at')->delete();
+
+            TenderEngineProfile::factory()->locked()->create(['tender_id' => $tender->id]);
+        });
     }
 
     public function published(): static

@@ -7,13 +7,20 @@ use App\Exceptions\TenderPublishException;
 use App\Models\AuditLog;
 use App\Models\BoqItem;
 use App\Models\BoqSection;
+use App\Models\EvaluationCriteriaTemplate;
 use App\Models\EvaluationCriterion;
 use App\Models\Project;
 use App\Models\Tender;
+use App\Models\TenderEngineProfile;
 use App\Models\User;
+use App\Services\DecisionEngine\DecisionEngineException;
+use App\Services\DecisionEngine\EngineProfileService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
+use Throwable;
 
 /**
  * Handles tender lifecycle: creation, publishing, cancellation, and deadline management.
@@ -22,16 +29,29 @@ class TenderService
 {
     public function __construct(
         private FileUploadService $fileUploadService,
+        private EngineProfileService $engineProfiles,
     ) {}
 
     /**
-     * Create a new tender. When $publish is true, the draft is created and
-     * then published within the same DB transaction — if publish() fails,
-     * the whole create rolls back, leaving no orphan draft.
+     * Create a new tender, optionally opening it for bidding straight away.
+     *
+     * With $publish, the publish prerequisites (BOQ, criteria, documents,
+     * deadline, scoring criteria) are checked inside the create transaction, so
+     * a tender that is not ready rolls back as it always has and the wizard
+     * keeps the officer's input. Locking the engine profile happens only after
+     * the draft has committed: it is a network call, and an engine that cannot
+     * be reached must not throw away the officer's uploads with it
+     * (INTEGRATION-DESIGN §3). That failure leaves a saved draft, carried on
+     * the exception, for the officer to retry from.
+     *
+     * @throws TenderPublishException
      */
     public function create(array $data, User $creator, array $documents = [], bool $publish = false): Tender
     {
-        return DB::transaction(function () use ($data, $creator, $documents, $publish) {
+        $engineProfile = $data['engine_profile'] ?? null;
+        unset($data['engine_profile']);
+
+        $tender = DB::transaction(function () use ($data, $creator, $documents, $publish, $engineProfile) {
             $categoryIds = $data['category_ids'] ?? [];
             $boqSections = $data['boq_sections'] ?? [];
             $criteria = $data['evaluation_criteria'] ?? [];
@@ -95,13 +115,46 @@ class TenderService
                 ]);
             }
 
+            $this->createEngineProfile($tender, $engineProfile);
+
             if ($publish) {
-                $this->publish($tender);
-                $tender->refresh();
+                $this->assertPublishPrerequisites($tender);
             }
 
             return $tender;
         });
+
+        if ($publish) {
+            try {
+                $this->openForBidding($tender);
+            } catch (TenderPublishException $e) {
+                throw $e->withSavedDraft($tender);
+            }
+        }
+
+        return $tender->refresh();
+    }
+
+    /**
+     * A new tender's copy of the scoring template, with whatever the wizard
+     * already chose on top. Anything the wizard did not send keeps the
+     * template's value.
+     */
+    private function createEngineProfile(Tender $tender, ?array $chosen): TenderEngineProfile
+    {
+        $profile = TenderEngineProfile::fromTemplate($tender, EvaluationCriteriaTemplate::standard());
+
+        if ($chosen) {
+            $profile->fill(array_intersect_key($chosen, array_flip([
+                'weight_price', 'weight_technical', 'weight_timeline', 'weight_references',
+                'weight_payment_flexibility', 'gate_bank_guarantee', 'gate_mandatory_documents',
+                'margin_below', 'contract_type', 'contract_type_label', 'timeline_formula',
+            ])));
+        }
+
+        $profile->save();
+
+        return $profile;
     }
 
     /**
@@ -132,18 +185,119 @@ class TenderService
     {
         $this->assertPublishPrerequisites($tender);
 
-        $tender->update([
-            'status' => TenderStatus::Published,
-            'publish_date' => now(),
-        ]);
+        $this->openForBidding($tender);
+    }
 
+    /**
+     * Lock the scoring profile in the engine, then open the tender.
+     *
+     * If the lock call fails, the tender does not open (INTEGRATION-DESIGN §3).
+     * Not "open and lock later", not a background retry: a tender accepting
+     * bids against weights that can still change is exactly the hole the lock
+     * closes. The engine call runs before the status changes and outside any
+     * transaction; only once the engine has confirmed the lock does one
+     * transaction record it and open the tender. Publish is the retry, and it
+     * is safe — see EngineProfileService::lock().
+     *
+     * @throws TenderPublishException with the engine's reason
+     */
+    private function openForBidding(Tender $tender): void
+    {
+        try {
+            $lock = $this->engineProfiles->lock($tender, $tender->engineProfile()->firstOrFail());
+        } catch (DecisionEngineException|RuntimeException $e) {
+            $this->recordLockFailure($tender, $e);
+
+            throw new TenderPublishException(__('engine.publish.lock_failed', ['reason' => $e->getMessage()]));
+        }
+
+        DB::transaction(function () use ($tender, $lock) {
+            // Everything below re-reads under a row lock. The engine call above
+            // took seconds, and the tender was an editable draft throughout:
+            // its criteria, BOQ and documents may all have changed since the
+            // checks that preceded the call. EngineProfileController takes the
+            // same lock, so nothing can change between here and the commit.
+            $current = Tender::whereKey($tender->id)->lockForUpdate()->firstOrFail();
+
+            if ($current->status !== TenderStatus::Draft) {
+                // Two officers pressing Publish on the same criteria both get
+                // here — the engine lock is idempotent — and the first opened
+                // it. Anything else (a cancellation, a publish of different
+                // criteria) must not be reported back as this publish working.
+                if ($current->engineProfile()->value('profile_key') === $lock['profile_key']) {
+                    return;
+                }
+
+                throw new TenderPublishException(__('engine.publish.status_changed'));
+            }
+
+            $profile = $current->engineProfile()->lockForUpdate()->firstOrFail();
+
+            // The engine locked what was read before the call. If the criteria
+            // were saved again during it, the row now holds weights the engine
+            // never locked — refuse rather than freeze the two out of step.
+            // The retry locks a new profile built from the current criteria.
+            $expected = ['key' => $lock['profile_key']]
+                + $this->engineProfiles->definition($current, $profile, $lock['schema_version']);
+            if (EngineProfileService::canonical($expected) !== EngineProfileService::canonical($lock['definition'])) {
+                throw new TenderPublishException(__('engine.publish.criteria_changed'));
+            }
+
+            // The same for everything else publishing requires: a BOQ item or
+            // the only document can be deleted while the engine call runs.
+            $this->assertPublishPrerequisites($current);
+
+            $profile->update([
+                'schema_key' => $lock['schema_key'],
+                'schema_version' => $lock['schema_version'],
+                'profile_key' => $lock['profile_key'],
+                'definition' => $lock['definition'],
+                'locked_at' => Carbon::parse($lock['locked_at']),
+                'locked_by' => auth()->id(),
+            ]);
+
+            $current->update([
+                'status' => TenderStatus::Published,
+                'publish_date' => now(),
+            ]);
+
+            AuditLog::create([
+                'user_id' => auth()->id(),
+                'auditable_type' => Tender::class,
+                'auditable_id' => $tender->id,
+                'action' => 'published',
+                'old_values' => ['status' => 'draft'],
+                'new_values' => [
+                    'status' => 'published',
+                    'engine_profile_key' => $lock['profile_key'],
+                    'engine_profile_locked_at' => $lock['locked_at'],
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'created_at' => now(),
+            ]);
+        });
+
+        $tender->refresh();
+    }
+
+    /**
+     * Record a refused or failed lock. The audit trail should show that an
+     * officer tried to open the tender and why it stayed closed, not only the
+     * eventual success.
+     */
+    private function recordLockFailure(Tender $tender, Throwable $e): void
+    {
         AuditLog::create([
             'user_id' => auth()->id(),
             'auditable_type' => Tender::class,
             'auditable_id' => $tender->id,
-            'action' => 'published',
-            'old_values' => ['status' => 'draft'],
-            'new_values' => ['status' => 'published'],
+            'action' => 'engine_lock_failed',
+            'old_values' => null,
+            'new_values' => [
+                'reason' => $e->getMessage(),
+                'engine_unreachable' => $e instanceof DecisionEngineException && $e->unavailable,
+            ],
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'created_at' => now(),
@@ -151,7 +305,7 @@ class TenderService
     }
 
     /**
-     * Enforce the four preconditions for publishing. Each failure throws a
+     * Enforce the preconditions for publishing. Each failure throws a
      * TenderPublishException with a translation key the controller wraps in
      * messages.tender_publish_failed.
      *
@@ -205,6 +359,17 @@ class TenderService
         // tender with no specs/drawings/contract terms attached. BUG-22 fix.
         if ($tender->documents()->where('is_current', true)->count() === 0) {
             throw new TenderPublishException(__('messages.publish_reason_no_documents'));
+        }
+
+        // 6. Engine scoring criteria complete. Drafts that predate engine
+        // scoring got their copy of the template when it shipped; a contract
+        // type is the one thing the template cannot supply.
+        $profile = $tender->engineProfile()->first();
+        if ($profile === null) {
+            throw new TenderPublishException(__('engine.publish.no_profile'));
+        }
+        if ($reason = $profile->incompleteReason()) {
+            throw new TenderPublishException($reason);
         }
     }
 

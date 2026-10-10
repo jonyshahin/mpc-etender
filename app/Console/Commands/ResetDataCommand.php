@@ -58,6 +58,11 @@ class ResetDataCommand extends Command
         // Evaluation artefacts — reference bids, criteria and committees.
         'evaluation_scores',
         'evaluation_reports',
+        // Engine scoring for a tender: its evaluations reference its profile,
+        // and assessments reference bids, so all three precede bids and tenders.
+        'engine_evaluations',
+        'engine_bid_assessments',
+        'tender_engine_profiles',
         // Awards reference bids AND tenders, so they must precede both.
         'awards',
         'bids',
@@ -119,7 +124,16 @@ class ResetDataCommand extends Command
         'system_settings',
         'notification_templates',
         'users',
+        'evaluation_criteria_templates',
     ];
+
+    /**
+     * Kept, but not reference data: never seeded, so not checked for being
+     * empty. decision_engine_schemas records which Decision Engine version
+     * holds eTender's schema; dropping it would only make the next publish
+     * register an identical version again.
+     */
+    private const ENGINE_STATE_TABLES = ['decision_engine_schemas'];
 
     /** Tables whose rows point at an uploaded file: table => path column. */
     private const FILE_COLUMNS = [

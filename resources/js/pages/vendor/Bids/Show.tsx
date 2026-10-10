@@ -54,6 +54,8 @@ type Props = {
         status_label_key: string;
         total_amount: string | null;
         currency: string;
+        /** Completion period committed to, in days. Sealed with the price. */
+        duration_days: number | null;
         technical_notes: string | null;
         submitted_at: string | null;
         is_sealed: boolean;
@@ -72,6 +74,8 @@ type Props = {
         submission_deadline: string | null;
         opening_date: string | null;
         is_two_envelope: boolean;
+        /** The tender scores completion time, so the bid must state it. */
+        requires_duration: boolean;
         boq_sections: BoqSection[];
     };
     boqPrices: Record<string, BoqPriceEntry>;
@@ -148,6 +152,7 @@ export default function Show({
     });
 
     const [technicalNotes, setTechnicalNotes] = useState(bid.technical_notes ?? '');
+    const [durationDays, setDurationDays] = useState(bid.duration_days === null ? '' : String(bid.duration_days));
     const [saving, setSaving] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [withdrawing, setWithdrawing] = useState(false);
@@ -207,7 +212,11 @@ export default function Show({
                 total_price: entry.total_price,
             }));
 
-        return { boq_prices, technical_notes: technicalNotes };
+        return {
+            boq_prices,
+            technical_notes: technicalNotes,
+            duration_days: durationDays === '' ? null : Number(durationDays),
+        };
     }
 
     function saveDraft() {
@@ -509,6 +518,33 @@ export default function Show({
                         </div>
                     ) : null;
 
+                    // Sealed with the price, so it sits with the price.
+                    const durationField = !tender.requires_duration ? null : canEdit ? (
+                        <div className="max-w-xs space-y-2">
+                            <Label htmlFor="duration_days">{t('engine.bid.duration')}</Label>
+                            <Input
+                                id="duration_days"
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={3650}
+                                step={1}
+                                value={durationDays}
+                                onChange={(e) => setDurationDays(e.target.value)}
+                                className="tabular-nums"
+                                required
+                            />
+                            <p className="text-xs text-muted-foreground">{t('engine.bid.duration_hint')}</p>
+                        </div>
+                    ) : bid.duration_days !== null ? (
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">{t('engine.bid.duration')}</p>
+                            <p className="text-sm tabular-nums">
+                                {t('engine.bid.duration_days', { days: bid.duration_days })}
+                            </p>
+                        </div>
+                    ) : null;
+
                     if (tender.is_two_envelope) {
                         return (
                             <>
@@ -549,6 +585,7 @@ export default function Show({
                                             renderBoqSectionTable(section),
                                         )}
                                         {grandTotalRow}
+                                        {durationField}
                                         <FileUpload
                                             bidId={bid.id}
                                             envelope="financial"
@@ -582,7 +619,10 @@ export default function Show({
                                 </Card>
                             ))}
                             <Card>
-                                <CardContent className="py-4">{grandTotalRow}</CardContent>
+                                <CardContent className="space-y-4 py-4">
+                                    {grandTotalRow}
+                                    {durationField}
+                                </CardContent>
                             </Card>
                             {technicalNotesField && (
                                 <Card>

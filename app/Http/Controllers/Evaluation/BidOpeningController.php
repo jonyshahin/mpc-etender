@@ -31,7 +31,7 @@ class BidOpeningController extends Controller
             // currency travels with the amount. Without it the screen printed
             // a bare number and left the reader to assume which currency an
             // award of 750,000 was in.
-            ->select('id', 'vendor_id', 'bid_reference', 'status', 'total_amount', 'currency', 'is_sealed', 'submitted_at', 'opened_at')
+            ->select('id', 'vendor_id', 'bid_reference', 'status', 'total_amount', 'currency', 'duration_days', 'is_sealed', 'submitted_at', 'opened_at')
             ->where('status', '!=', 'withdrawn')
             // Ordering by amount ranked the bids cheapest-first on screen, which
             // gave away the commercial standings before the ceremony even
@@ -46,7 +46,9 @@ class BidOpeningController extends Controller
         // the sealing is meant to prevent.
         $bids->each(function ($bid) {
             if (! $bid->is_sealed) {
-                $bid->makeVisible('total_amount');
+                // The committed duration is sealed with the price and opened
+                // with it (INTEGRATION-DESIGN §1.2).
+                $bid->makeVisible(['total_amount', 'duration_days']);
             }
         });
 

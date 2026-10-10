@@ -30,6 +30,7 @@ class BidSubmissionRequest extends FormRequest
             'boq_prices.*.unit_price' => ['required_with:boq_prices', 'numeric', 'gt:0'],
             'boq_prices.*.total_price' => ['required_with:boq_prices', 'numeric', 'gte:0'],
             'technical_notes' => ['nullable', 'string'],
+            'duration_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
         ];
     }
 

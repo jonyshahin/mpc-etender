@@ -10,11 +10,14 @@ import {
     Eye,
     AlertCircle,
     CheckCircle2,
+    Lock,
 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { EngineCriteriaFields } from '@/components/engine-criteria-fields';
+import type { EngineCriteria, EngineOptions } from '@/components/engine-criteria-fields';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -134,9 +137,106 @@ type Props = {
     canViewEvaluationReport: boolean;
     canPublish: boolean;
     canCancel: boolean;
+    /** Engine scoring criteria; null on tenders that opened before engine scoring. */
+    engineProfile:
+        | (EngineCriteria & { locked_at: string | null; locked_by: string | null; profile_key: string | null })
+        | null;
+    engineOptions: EngineOptions;
+    canViewEngineEvaluation: boolean;
 };
 
 const TABS = ['Overview', 'BOQ', 'Documents', 'Addenda', 'Clarifications', 'Evaluation'] as const;
+
+/**
+ * The tender's engine scoring criteria. Editable while the tender is a draft;
+ * once it opens they are locked in the engine and shown read-only, with when
+ * and by whom — they can no longer change (INTEGRATION-DESIGN §3).
+ */
+function EngineCriteriaCard({
+    tenderId,
+    profile,
+    options,
+    editable,
+}: {
+    tenderId: string;
+    profile: Props['engineProfile'];
+    options: EngineOptions;
+    editable: boolean;
+}) {
+    const { t, locale } = useTranslation();
+    const errors = (usePage().props.errors ?? {}) as Record<string, string>;
+    const form = useForm<EngineCriteria>(
+        profile ?? {
+            weight_price: 40,
+            weight_technical: 20,
+            weight_timeline: 20,
+            weight_references: 10,
+            weight_payment_flexibility: 10,
+            gate_bank_guarantee: true,
+            gate_mandatory_documents: true,
+            margin_below: 2,
+            contract_type: null,
+            contract_type_label: null,
+            timeline_formula: null,
+        },
+    );
+    const locked = Boolean(profile?.locked_at);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                    {locked ? <Lock className="size-4 text-muted-foreground" aria-hidden="true" /> : null}
+                    {t('engine.criteria.title')}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                    {locked && profile?.locked_at
+                        ? t('engine.criteria.locked', {
+                              date: formatDateTime(profile.locked_at, locale),
+                              name: profile.locked_by ?? '—',
+                          })
+                        : t('engine.criteria.description')}
+                </p>
+            </CardHeader>
+            <CardContent>
+                {profile === null && !editable ? (
+                    <p className="text-sm text-muted-foreground">{t('engine.criteria.none')}</p>
+                ) : (
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            form.put(`/tenders/${tenderId}/engine-profile`, { preserveScroll: true });
+                        }}
+                        className="space-y-4"
+                    >
+                        <EngineCriteriaFields
+                            // Locked: what the engine locked, from the server —
+                            // never edits still sitting in this form.
+                            value={locked && profile ? profile : form.data}
+                            onChange={(patch) => form.setData({ ...form.data, ...patch })}
+                            options={options}
+                            errors={errors}
+                            disabled={!editable || locked}
+                        />
+                        {editable && !locked ? (
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Button type="submit" disabled={form.processing || !form.isDirty}>
+                                    {t('engine.criteria.save')}
+                                </Button>
+                                {form.isDirty ? (
+                                    // Publish sends the saved criteria, not these.
+                                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                                        {t('engine.criteria.unsaved')}
+                                    </p>
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </form>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 
 function formatFileSize(bytes: number) {
@@ -153,6 +253,9 @@ export default function Show({
     canIssueAddendum,
     canScore,
     canViewEvaluationReport,
+    engineProfile,
+    engineOptions,
+    canViewEngineEvaluation,
 }: Props) {
     const { t } = useTranslation();
 
@@ -171,6 +274,11 @@ export default function Show({
             : []),
         ...(canViewEvaluationReport
             ? [{ href: `/tenders/${tender.id}/evaluation-report`, label: t('eval.report') }]
+            : []),
+        // Shadow-mode engine scoring sits beside the existing report. Shown
+        // only for tenders that opened with a locked profile.
+        ...(canViewEngineEvaluation && pastSubmission && engineProfile?.locked_at
+            ? [{ href: `/tenders/${tender.id}/engine-evaluation`, label: t('eval.engine_scoring') }]
             : []),
     ];
     const [activeTab, setActiveTab] = useState('Overview');
@@ -1172,6 +1280,15 @@ export default function Show({
                 {/* Evaluation Tab */}
                 {activeTab === 'Evaluation' && (
                     <div className="space-y-4">
+                        <EngineCriteriaCard
+                            // Remount when the lock lands, so the form starts
+                            // from the locked values rather than old edits.
+                            key={engineProfile?.locked_at ?? 'draft'}
+                            tenderId={tender.id}
+                            profile={engineProfile}
+                            options={engineOptions}
+                            editable={canEdit}
+                        />
                         {(['technical', 'financial'] as const).map((envelope) => {
                             const envelopeCriteria =
                                 tender.evaluation_criteria?.filter(

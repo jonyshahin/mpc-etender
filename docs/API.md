@@ -81,6 +81,35 @@ All routes require `auth` + `verified` middleware. Project-scoped via user assig
 | GET | `/tenders/{tender}/evaluation-report/pdf` | `tenders.report.pdf` | Download report PDF |
 | POST | `/tenders/{tender}/request-approval` | `tenders.request-approval` | Submit for approval |
 
+## Decision Engine scoring — shadow mode
+
+Stage A of the Decision Engine integration (`INTEGRATION-DESIGN-etender.md`). The
+engine's ranking is shown beside the existing evaluation and **never** feeds the
+evaluation report, the approval chain or the award.
+
+| Method | URI | Name | Description |
+|--------|-----|------|-------------|
+| PUT | `/tenders/{tender}/engine-profile` | `tenders.engine-profile.update` | Edit a **draft** tender's scoring criteria (weights summing to 100, contract type, timeline formula, gates, margin). `TenderPolicy::update` — refused once the tender has opened |
+| GET | `/tenders/{tender}/engine-evaluation` | `tenders.engine-evaluation.show` | Scores entry, run, results and side-by-side comparison. `TenderPolicy::viewEngineEvaluation` (`evaluations.view` + project) |
+| PUT | `/tenders/{tender}/engine-evaluation/bids/{bid}` | `tenders.engine-evaluation.assessments.update` | Save one bid's officer scores (0–100) and gate attestations; each attestation records who and when. `evaluations.engine_run` |
+| POST | `/tenders/{tender}/engine-evaluation` | `tenders.engine-evaluation.run` | Submit all opened bids as one batch. Only at `under_evaluation`; refused while a batch is unfinished or any bid lacks scores, duration or gate checks. Nothing is recorded unless the engine accepts the batch. `evaluations.engine_run` |
+| GET | `/tenders/{tender}/engine-evaluation/{evaluation}/status` | `tenders.engine-evaluation.status` | JSON, polled by the page: `{status, final, stuck, batchId, submittedAt, unreachable}`. Fetches from the engine until the batch finalises, then keeps the result; `stuck` after `DECISION_ENGINE_STUCK_AFTER` seconds (default 120) |
+
+**Publishing now locks the profile.** `POST /tenders/{tender}/publish` (and the
+create wizard's "publish now") creates the tender's profile in the engine and
+locks it **before** the tender opens. If the engine cannot be reached or refuses,
+the tender stays a draft and the officer sees the reason; Publish is the retry.
+
+**Vendor bids** carry `duration_days` (completion period), sealed with the price —
+hidden like `total_amount` until opening, and required at submission on tenders
+that opened with a locked profile. `PUT /vendor/bids/{bid}` and
+`POST /vendor/bids/{bid}/submit` accept it.
+
+Configuration: `DECISION_ENGINE_URL`, `DECISION_ENGINE_TOKEN` (Laravel Cloud
+secrets only — never in the repository or `.env.example`), and optionally
+`DECISION_ENGINE_TIMEOUT`, `DECISION_ENGINE_CONNECT_TIMEOUT`,
+`DECISION_ENGINE_STUCK_AFTER`.
+
 ## Evaluation Scoring (prefix: `/evaluations`)
 
 | Method | URI | Name | Description |

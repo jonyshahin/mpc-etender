@@ -112,6 +112,16 @@ class BidService
             }
         }
 
+        // A tender that opened with a locked engine profile scores timeline
+        // from the completion period each vendor commits to. It must come with
+        // the bid and be sealed with the price — an officer entering it after
+        // opening would be setting a relative input while seeing every price
+        // (INTEGRATION-DESIGN §1.2). Tenders that opened before engine scoring
+        // have no profile and do not ask for it.
+        if ($tender->engineProfile()->whereNotNull('locked_at')->exists() && ! $bid->duration_days) {
+            throw new \RuntimeException(__('engine.bid.duration_required'));
+        }
+
         $this->sealingService->sealBid($bid);
     }
 

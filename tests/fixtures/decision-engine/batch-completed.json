@@ -1,0 +1,475 @@
+{
+    "batch_id": "bat_01m4kjavazgfx8fn8er7qmnbs2",
+    "status": "completed",
+    "schema": {
+        "key": "etender_bid_evaluation",
+        "version": 1
+    },
+    "profile": {
+        "key": "PRJ-T001-abc123",
+        "locked_at": "2026-10-10T18:48:46Z"
+    },
+    "supersedes": null,
+    "superseded_by": [],
+    "baseline": {
+        "included": [
+            "BID-1",
+            "BID-2",
+            "BID-3"
+        ],
+        "excluded": [
+            "BID-4"
+        ],
+        "price": {
+            "best": 14250,
+            "formula": "relative_to_best",
+            "direction": "lower_is_better",
+            "field": "bid_amount",
+            "floor": 0
+        },
+        "timeline": {
+            "best": 14,
+            "formula": "relative_to_best",
+            "direction": "lower_is_better",
+            "field": "duration_days",
+            "floor": 0
+        }
+    },
+    "decisions": [
+        {
+            "id": "dec_01m4kjavb91jmhpnma3fmxprrq",
+            "status": "completed",
+            "batch_id": "bat_01m4kjavazgfx8fn8er7qmnbs2",
+            "schema": {
+                "key": "etender_bid_evaluation",
+                "version": 1
+            },
+            "profile": {
+                "key": "PRJ-T001-abc123",
+                "locked_at": "2026-10-10T18:48:46Z",
+                "resolved": {
+                    "price": 0.4,
+                    "technical": 0.2,
+                    "timeline": 0.2,
+                    "references": 0.1,
+                    "payment_flexibility": 0.1
+                }
+            },
+            "reference": "BID-1",
+            "decision": {
+                "value": "shortlist",
+                "confidence": null
+            },
+            "gates": [
+                {
+                    "key": "submission_deadline",
+                    "passed": true,
+                    "source": "platform"
+                },
+                {
+                    "key": "bank_guarantee",
+                    "passed": true,
+                    "source": "caller"
+                },
+                {
+                    "key": "mandatory_documents",
+                    "passed": true,
+                    "source": "caller"
+                }
+            ],
+            "criteria": [
+                {
+                    "key": "price",
+                    "scope": "batch",
+                    "score": 94.7368,
+                    "normalised": 0.9474,
+                    "weight": 0.4,
+                    "weighted": 37.89,
+                    "source": "engine",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": [],
+                    "formula": "relative_to_best"
+                },
+                {
+                    "key": "technical",
+                    "scope": "item",
+                    "score": 89,
+                    "normalised": 0.89,
+                    "weight": 0.2,
+                    "weighted": 17.8,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                },
+                {
+                    "key": "timeline",
+                    "scope": "batch",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.2,
+                    "weighted": 20,
+                    "source": "engine",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": [],
+                    "formula": "relative_to_best"
+                },
+                {
+                    "key": "references",
+                    "scope": "item",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.1,
+                    "weighted": 10,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                },
+                {
+                    "key": "payment_flexibility",
+                    "scope": "item",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.1,
+                    "weighted": 10,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                }
+            ],
+            "weighted_score": 95.69,
+            "missing_criteria": [],
+            "needs_human_review": false,
+            "review_reasons": [],
+            "error": null,
+            "model": {
+                "adapter": "none",
+                "version": null
+            },
+            "created_at": "2026-10-10T18:48:46Z",
+            "completed_at": "2026-10-10T18:48:48Z"
+        },
+        {
+            "id": "dec_01m4kjavbherkwcr32dpncbvpz",
+            "status": "completed",
+            "batch_id": "bat_01m4kjavazgfx8fn8er7qmnbs2",
+            "schema": {
+                "key": "etender_bid_evaluation",
+                "version": 1
+            },
+            "profile": {
+                "key": "PRJ-T001-abc123",
+                "locked_at": "2026-10-10T18:48:46Z",
+                "resolved": {
+                    "price": 0.4,
+                    "technical": 0.2,
+                    "timeline": 0.2,
+                    "references": 0.1,
+                    "payment_flexibility": 0.1
+                }
+            },
+            "reference": "BID-2",
+            "decision": {
+                "value": "shortlist",
+                "confidence": null
+            },
+            "gates": [
+                {
+                    "key": "submission_deadline",
+                    "passed": true,
+                    "source": "platform"
+                },
+                {
+                    "key": "bank_guarantee",
+                    "passed": true,
+                    "source": "caller"
+                },
+                {
+                    "key": "mandatory_documents",
+                    "passed": true,
+                    "source": "caller"
+                }
+            ],
+            "criteria": [
+                {
+                    "key": "price",
+                    "scope": "batch",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.4,
+                    "weighted": 40,
+                    "source": "engine",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": [],
+                    "formula": "relative_to_best"
+                },
+                {
+                    "key": "technical",
+                    "scope": "item",
+                    "score": 71,
+                    "normalised": 0.71,
+                    "weight": 0.2,
+                    "weighted": 14.2,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                },
+                {
+                    "key": "timeline",
+                    "scope": "batch",
+                    "score": 85.7143,
+                    "normalised": 0.8571,
+                    "weight": 0.2,
+                    "weighted": 17.14,
+                    "source": "engine",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": [],
+                    "formula": "relative_to_best"
+                },
+                {
+                    "key": "references",
+                    "scope": "item",
+                    "score": 75,
+                    "normalised": 0.75,
+                    "weight": 0.1,
+                    "weighted": 7.5,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                },
+                {
+                    "key": "payment_flexibility",
+                    "scope": "item",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.1,
+                    "weighted": 10,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                }
+            ],
+            "weighted_score": 88.84,
+            "missing_criteria": [],
+            "needs_human_review": false,
+            "review_reasons": [],
+            "error": null,
+            "model": {
+                "adapter": "none",
+                "version": null
+            },
+            "created_at": "2026-10-10T18:48:46Z",
+            "completed_at": "2026-10-10T18:48:48Z"
+        },
+        {
+            "id": "dec_01m4kjavbpgfa0k0jsnr3e96nr",
+            "status": "completed",
+            "batch_id": "bat_01m4kjavazgfx8fn8er7qmnbs2",
+            "schema": {
+                "key": "etender_bid_evaluation",
+                "version": 1
+            },
+            "profile": {
+                "key": "PRJ-T001-abc123",
+                "locked_at": "2026-10-10T18:48:46Z",
+                "resolved": {
+                    "price": 0.4,
+                    "technical": 0.2,
+                    "timeline": 0.2,
+                    "references": 0.1,
+                    "payment_flexibility": 0.1
+                }
+            },
+            "reference": "BID-3",
+            "decision": {
+                "value": "shortlist",
+                "confidence": null
+            },
+            "gates": [
+                {
+                    "key": "submission_deadline",
+                    "passed": true,
+                    "source": "platform"
+                },
+                {
+                    "key": "bank_guarantee",
+                    "passed": true,
+                    "source": "caller"
+                },
+                {
+                    "key": "mandatory_documents",
+                    "passed": true,
+                    "source": "caller"
+                }
+            ],
+            "criteria": [
+                {
+                    "key": "price",
+                    "scope": "batch",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.4,
+                    "weighted": 40,
+                    "source": "engine",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": [],
+                    "formula": "relative_to_best"
+                },
+                {
+                    "key": "technical",
+                    "scope": "item",
+                    "score": 82,
+                    "normalised": 0.82,
+                    "weight": 0.2,
+                    "weighted": 16.4,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                },
+                {
+                    "key": "timeline",
+                    "scope": "batch",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.2,
+                    "weighted": 20,
+                    "source": "engine",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": [],
+                    "formula": "relative_to_best"
+                },
+                {
+                    "key": "references",
+                    "scope": "item",
+                    "score": 85,
+                    "normalised": 0.85,
+                    "weight": 0.1,
+                    "weighted": 8.5,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                },
+                {
+                    "key": "payment_flexibility",
+                    "scope": "item",
+                    "score": 100,
+                    "normalised": 1,
+                    "weight": 0.1,
+                    "weighted": 10,
+                    "source": "caller",
+                    "confidence": null,
+                    "justification": null,
+                    "evidence": []
+                }
+            ],
+            "weighted_score": 94.9,
+            "missing_criteria": [],
+            "needs_human_review": false,
+            "review_reasons": [],
+            "error": null,
+            "model": {
+                "adapter": "none",
+                "version": null
+            },
+            "created_at": "2026-10-10T18:48:46Z",
+            "completed_at": "2026-10-10T18:48:48Z"
+        },
+        {
+            "id": "dec_01m4kjavbvk25t6r8jns39xwq3",
+            "status": "completed",
+            "batch_id": "bat_01m4kjavazgfx8fn8er7qmnbs2",
+            "schema": {
+                "key": "etender_bid_evaluation",
+                "version": 1
+            },
+            "profile": {
+                "key": "PRJ-T001-abc123",
+                "locked_at": "2026-10-10T18:48:46Z",
+                "resolved": {
+                    "price": 0.4,
+                    "technical": 0.2,
+                    "timeline": 0.2,
+                    "references": 0.1,
+                    "payment_flexibility": 0.1
+                }
+            },
+            "reference": "BID-4",
+            "decision": {
+                "value": "reject",
+                "confidence": null
+            },
+            "gates": [
+                {
+                    "key": "submission_deadline",
+                    "passed": true,
+                    "source": "platform"
+                },
+                {
+                    "key": "bank_guarantee",
+                    "passed": false,
+                    "source": "caller"
+                },
+                {
+                    "key": "mandatory_documents",
+                    "passed": true,
+                    "source": "caller"
+                }
+            ],
+            "criteria": [],
+            "weighted_score": null,
+            "missing_criteria": [],
+            "needs_human_review": false,
+            "review_reasons": [],
+            "error": null,
+            "model": {
+                "adapter": "none",
+                "version": null
+            },
+            "created_at": "2026-10-10T18:48:46Z",
+            "completed_at": "2026-10-10T18:48:48Z"
+        }
+    ],
+    "ranking": {
+        "provisional": false,
+        "order": [
+            {
+                "reference": "BID-1",
+                "weighted_total": 95.69,
+                "rank": 1,
+                "complete": true
+            },
+            {
+                "reference": "BID-3",
+                "weighted_total": 94.9,
+                "rank": 2,
+                "complete": true
+            },
+            {
+                "reference": "BID-2",
+                "weighted_total": 88.84,
+                "rank": 3,
+                "complete": true
+            }
+        ],
+        "margin": 0.79,
+        "needs_human_review": true,
+        "review_reasons": [
+            "margin_below:2.0"
+        ]
+    },
+    "created_at": "2026-10-10T18:48:46Z",
+    "completed_at": "2026-10-10T18:48:48Z"
+}

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Tender;
 
 use App\Concerns\FiltersLists;
+use App\Enums\EngineContractType;
 use App\Enums\TenderStatus;
+use App\Enums\TimelineFormula;
 use App\Exceptions\TenderPublishException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tender\StoreTenderRequest;
@@ -12,6 +14,7 @@ use App\Models\Category;
 use App\Models\EvaluationReport;
 use App\Models\EvaluationScore;
 use App\Models\Tender;
+use App\Models\TenderEngineProfile;
 use App\Services\TenderService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -136,7 +139,38 @@ class TenderController extends Controller
                 ->with('children:id,name_en,name_ar,parent_id')
                 ->orderBy('sort_order')
                 ->get(['id', 'name_en', 'name_ar', 'parent_id']),
+            // The wizard starts from MPC's standard scoring criteria; the
+            // officer adjusts them and must pick a contract type to publish.
+            'engineTemplate' => $this->engineCriteria(TenderEngineProfile::fromTemplate(new Tender)),
+            'engineOptions' => $this->engineOptions(),
         ]);
+    }
+
+    /** A tender's engine scoring criteria, in the shape the editor works in. */
+    private function engineCriteria(TenderEngineProfile $profile): array
+    {
+        return [
+            'weight_price' => $profile->weight_price,
+            'weight_technical' => $profile->weight_technical,
+            'weight_timeline' => $profile->weight_timeline,
+            'weight_references' => $profile->weight_references,
+            'weight_payment_flexibility' => $profile->weight_payment_flexibility,
+            'gate_bank_guarantee' => $profile->gate_bank_guarantee,
+            'gate_mandatory_documents' => $profile->gate_mandatory_documents,
+            'margin_below' => (float) $profile->margin_below,
+            'contract_type' => $profile->contract_type?->value,
+            'contract_type_label' => $profile->contract_type_label,
+            'timeline_formula' => $profile->timeline_formula?->value,
+        ];
+    }
+
+    /** @return array{contractTypes: array, timelineFormulas: array} */
+    private function engineOptions(): array
+    {
+        return [
+            'contractTypes' => EngineContractType::options(),
+            'timelineFormulas' => TimelineFormula::options(),
+        ];
     }
 
     public function store(StoreTenderRequest $request): RedirectResponse
@@ -175,6 +209,14 @@ class TenderController extends Controller
                 'type' => 'error',
                 'message' => __('messages.tender_publish_failed', ['reason' => $e->getMessage()]),
             ]);
+
+            // The draft was saved and only opening it failed — the engine
+            // could not lock its scoring profile. Send the officer to the
+            // saved draft, where Publish is the retry, rather than back to a
+            // form that would create a second copy.
+            if ($e->savedDraft !== null) {
+                return to_route('tenders.show', $e->savedDraft);
+            }
 
             return back()->withInput();
         }
@@ -239,6 +281,17 @@ class TenderController extends Controller
             // tender's Addenda tab. Mirrors StoreAddendumRequest::authorize.
             'canIssueAddendum' => $request->user()->hasPermission('tenders.issue_addenda')
                 && $tender->status === TenderStatus::Published,
+            // Engine scoring criteria: editable on a draft, frozen once the
+            // tender opens. Null on tenders that opened before engine scoring.
+            'engineProfile' => ($profile = $tender->engineProfile()->with('locker:id,name')->first())
+                ? $this->engineCriteria($profile) + [
+                    'locked_at' => $profile->locked_at?->toIso8601String(),
+                    'locked_by' => $profile->locker?->name,
+                    'profile_key' => $profile->profile_key,
+                ]
+                : null,
+            'engineOptions' => $this->engineOptions(),
+            'canViewEngineEvaluation' => $request->user()->can('viewEngineEvaluation', $tender),
         ]);
     }
 

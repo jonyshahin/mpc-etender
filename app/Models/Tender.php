@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Tender record belonging to a project, with deadlines and envelope configuration.
@@ -129,6 +130,23 @@ class Tender extends Model
     public function bids(): HasMany
     {
         return $this->hasMany(Bid::class);
+    }
+
+    /** Engine scoring criteria. Absent on tenders opened before engine scoring existed. */
+    public function engineProfile(): HasOne
+    {
+        return $this->hasOne(TenderEngineProfile::class);
+    }
+
+    /** Batches submitted to the engine, newest first. Shadow mode: never feeds the award. */
+    public function engineEvaluations(): HasMany
+    {
+        return $this->hasMany(EngineEvaluation::class)->orderByDesc('submitted_at');
+    }
+
+    public function engineBidAssessments(): HasMany
+    {
+        return $this->hasMany(EngineBidAssessment::class);
     }
 
     public function evaluationCriteria(): HasMany

@@ -1,0 +1,115 @@
+{
+  "_comment": "eTender's own tender evaluation schema, registered by eTender in the Decision Engine (INTEGRATION-DESIGN §1.3). Derived from the engine's BEF-based tender_bid_evaluation v1, changed only where eTender's data differs: the two document gates are officer attestations (score_source: caller) because eTender has no bank-guarantee document type to check automatically; technical notes are optional text, as on eTender's bid record; inputs eTender does not hold are omitted. The BEF schema stays untouched for its regression role. Any edit here registers a new schema version on the next publish — versions are immutable once used.",
+
+  "key": "etender_bid_evaluation",
+  "label": "eTender bid evaluation",
+  "input_locales": ["ar", "en", "ku"],
+  "output_locale": "en",
+  "explain": true,
+
+  "input_fields": [
+    { "key": "bidder_name",     "type": "text",    "required": true },
+    { "key": "bid_amount",      "type": "number",  "required": true },
+    { "key": "currency",        "type": "string",  "required": true },
+    { "key": "duration_days",   "type": "integer", "required": true },
+    { "key": "bid_date",        "type": "date",    "required": true },
+    { "key": "technical_notes", "type": "text",    "required": false }
+  ],
+
+  "context_fields": [
+    { "key": "tender_number", "type": "string" },
+    { "key": "contract_type", "type": "string" }
+  ],
+
+  "criteria": [
+    {
+      "key": "submission_deadline",
+      "label": "Bid submitted before closing",
+      "type": "gate",
+      "on_fail": "reject",
+      "enforced_by": "platform",
+      "guidance": "Enforced by eTender: submission closes at the deadline and no later bid can exist. Kept for the audit record."
+    },
+    {
+      "key": "bank_guarantee",
+      "label": "Bank guarantee submitted and valid",
+      "type": "gate",
+      "on_fail": "reject",
+      "score_source": "caller",
+      "guidance": "Attested by a procurement officer, who records who checked it and when. eTender stores the attestation; the engine records the result."
+    },
+    {
+      "key": "mandatory_documents",
+      "label": "All mandatory documents present",
+      "type": "gate",
+      "on_fail": "review",
+      "score_source": "caller",
+      "guidance": "Attested by a procurement officer. A failure routes the bid to review rather than rejecting it, so a person decides."
+    },
+    {
+      "key": "price",
+      "label": "Price competitiveness",
+      "type": "score",
+      "scale": { "min": 0, "max": 100 },
+      "scoring_scope": "batch",
+      "deterministic": true,
+      "formula": { "type": "relative_to_best", "direction": "lower_is_better", "field": "bid_amount", "floor": 0 },
+      "guidance": "Computed arithmetically across the batch: 100 − (value − best) / best × 100, never below 0."
+    },
+    {
+      "key": "technical",
+      "label": "Technical specifications",
+      "type": "score",
+      "scale": { "min": 0, "max": 100 },
+      "scoring_scope": "item",
+      "score_source": "caller",
+      "guidance": "Scored by MPC's evaluators and entered in eTender."
+    },
+    {
+      "key": "timeline",
+      "label": "Project timeline",
+      "type": "score",
+      "scale": { "min": 0, "max": 100 },
+      "scoring_scope": "batch",
+      "deterministic": true,
+      "formula": { "type": "from_profile", "field": "duration_days", "floor": 0 },
+      "guidance": "Formula chosen per tender by contract type. Duration is stated by the vendor on the bid, sealed with the price."
+    },
+    {
+      "key": "references",
+      "label": "References and past performance",
+      "type": "score",
+      "scale": { "min": 0, "max": 100 },
+      "scoring_scope": "item",
+      "score_source": "caller",
+      "guidance": "Scored by MPC's evaluators and entered in eTender."
+    },
+    {
+      "key": "payment_flexibility",
+      "label": "Payment flexibility",
+      "type": "score",
+      "scale": { "min": 0, "max": 100 },
+      "scoring_scope": "item",
+      "score_source": "caller",
+      "guidance": "Scored by MPC's evaluators from the payment terms the bid states."
+    }
+  ],
+
+  "decision": {
+    "type": "choice",
+    "options": ["shortlist", "reject", "review"],
+    "rule": [
+      { "when": "gate_failed",        "value": "from_gate" },
+      { "when": "incomplete",         "value": null },
+      { "when": "needs_human_review", "value": "review" },
+      { "else": true,                 "value": "shortlist" }
+    ]
+  },
+
+  "review_policy": {
+    "confidence_below": 0.70,
+    "any_criterion_below": 40,
+    "always_review_if": [],
+    "margin_below": 2.0
+  }
+}

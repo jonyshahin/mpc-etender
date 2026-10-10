@@ -1,20 +1,25 @@
 <?php
 
 use App\Console\Commands\ResetDataCommand;
+use App\Enums\EngineEvaluationStatus;
 use App\Models\ActivityLog;
 use App\Models\Addendum;
 use App\Models\ApprovalDecision;
 use App\Models\AuditLog;
 use App\Models\Award;
+use App\Models\Bid;
 use App\Models\BidBoqPrice;
 use App\Models\BidDocument;
 use App\Models\Category;
 use App\Models\Clarification;
 use App\Models\CommitteeMember;
 use App\Models\DocumentAccessLog;
+use App\Models\EngineBidAssessment;
+use App\Models\EngineEvaluation;
 use App\Models\EvaluationScore;
 use App\Models\NotificationLog;
 use App\Models\Project;
+use App\Models\Tender;
 use App\Models\TenderDocument;
 use App\Models\User;
 use App\Models\Vendor;
@@ -41,6 +46,7 @@ function purgedTables(): array
 {
     return [
         'bid_boq_prices', 'bid_documents', 'evaluation_scores', 'evaluation_reports',
+        'engine_evaluations', 'engine_bid_assessments', 'tender_engine_profiles',
         'awards', 'bids', 'committee_members', 'evaluation_committees',
         'evaluation_criteria', 'approval_decisions', 'approval_requests',
         'clarifications', 'addenda', 'tender_documents', 'boq_items', 'boq_sections',
@@ -127,6 +133,28 @@ function buildTransactionalGraph(): array
         'uploaded_by_vendor_id' => $vendor->id,
         'created_at' => now(),
         'updated_at' => now(),
+    ]);
+
+    // Engine scoring: a locked profile, an officer's assessment of one bid,
+    // and the evaluation submitted against it.
+    $engineTender = Tender::factory()->lockedEngine()->create();
+    $engineBid = Bid::factory()->create(['tender_id' => $engineTender->id]);
+    $engineProfile = $engineTender->engineProfile;
+
+    EngineBidAssessment::create([
+        'tender_id' => $engineTender->id,
+        'bid_id' => $engineBid->id,
+        'technical_score' => 80,
+    ]);
+
+    EngineEvaluation::create([
+        'tender_id' => $engineTender->id,
+        'tender_engine_profile_id' => $engineProfile->id,
+        'batch_id' => 'bat_reset_fixture',
+        'idempotency_key' => str_repeat('a', 64),
+        'request' => ['items' => []],
+        'status' => EngineEvaluationStatus::Processing,
+        'submitted_at' => now(),
     ]);
 
     return ['tender' => $tender, 'vendor' => $vendor, 'award' => $award];
@@ -299,6 +327,7 @@ test('every table in the schema is classified as purge, keep, project or framewo
         $command->getConstant('PURGE_ORDER'),
         $command->getConstant('PROJECT_TABLES'),
         $command->getConstant('KEEP_TABLES'),
+        $command->getConstant('ENGINE_STATE_TABLES'),
         $framework,
     );
 

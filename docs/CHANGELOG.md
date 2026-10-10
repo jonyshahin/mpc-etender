@@ -1,5 +1,23 @@
 # Changelog
 
+## Decision Engine integration — stage A (2026-10-10)
+
+Shadow-mode scoring through the Decision Engine. See `INTEGRATION-DESIGN-etender.md`.
+
+- **Profile lock on publish.** Each tender carries a copy of MPC's standard criteria
+  (price 40, technical 20, timeline 20, references 10, payment flexibility 10, two
+  officer-attested gates). Publishing creates and locks the profile in the engine
+  first; if the lock fails the tender does not open, and the officer sees why.
+- **eTender's own engine schema**, `etender_bid_evaluation`, registered once per
+  content and reused.
+- **Contract types** installation (`relative_to_best`) and supply (`ratio_to_best`);
+  any other type requires an explicit formula choice.
+- **Vendor completion period** (`duration_days`) on bids, sealed with the price.
+- **Engine scoring screen**: officer scores and attestations, run, polling with a
+  visible stuck state, provisional labelling for partial results, per-criterion
+  breakdown, margin flag, and a side-by-side comparison with the existing ranking.
+- Never feeds the evaluation report, approvals or award.
+
 ## Sprint 5–6 — Notifications, Dashboards, Bilingual Support (2026-04-10)
 
 **3 commits | 21 files changed | 2,215 lines added**

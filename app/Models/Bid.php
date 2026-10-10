@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Vendor submission against a tender. Pricing is encrypted at rest until opened.
@@ -33,6 +34,7 @@ class Bid extends Model
         'encrypted_pricing_data',
         'total_amount',
         'currency',
+        'duration_days',
         'technical_notes',
         'status',
         'is_sealed',
@@ -62,6 +64,9 @@ class Bid extends Model
     protected $hidden = [
         'encrypted_pricing_data',
         'total_amount',
+        // Sealed with the price (INTEGRATION-DESIGN §1.2): the engine scores it
+        // relative to the other bids, so it is as sensitive as the amount.
+        'duration_days',
     ];
 
     protected function casts(): array
@@ -70,6 +75,7 @@ class Bid extends Model
             'envelope_type' => EnvelopeType::class,
             'status' => BidStatus::class,
             'total_amount' => 'decimal:2',
+            'duration_days' => 'integer',
             'is_sealed' => 'boolean',
             'submitted_at' => 'datetime',
             'opened_at' => 'datetime',
@@ -89,6 +95,11 @@ class Bid extends Model
     }
 
     // ── Relationships ──
+
+    public function engineAssessment(): HasOne
+    {
+        return $this->hasOne(EngineBidAssessment::class);
+    }
 
     public function tender(): BelongsTo
     {

@@ -220,13 +220,14 @@ class BidController extends Controller
             'boq_prices.*.total_price' => ['required', 'numeric', 'gte:0'],
             'boq_prices.*.remarks' => ['nullable', 'string'],
             'technical_notes' => ['nullable', 'string'],
+            // The completion period the vendor commits to, in days. Sealed with
+            // the price: Bid hides it like total_amount until opening.
+            'duration_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
         ]);
 
         $this->bidService->updatePricing($bid, $validated['boq_prices']);
 
-        if (array_key_exists('technical_notes', $validated)) {
-            $bid->update(['technical_notes' => $validated['technical_notes']]);
-        }
+        $bid->update(array_intersect_key($validated, array_flip(['technical_notes', 'duration_days'])));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('messages.bid.draft_saved')]);
 
@@ -247,6 +248,10 @@ class BidController extends Controller
             // requests (Save Draft → Submit), so this branch is rarely taken.
             if ($request->has('boq_prices')) {
                 $this->bidService->updatePricing($bid, $request->validated()['boq_prices']);
+            }
+
+            if ($request->filled('duration_days')) {
+                $bid->update(['duration_days' => (int) $request->validated()['duration_days']]);
             }
 
             $this->bidService->submit($bid);
@@ -339,6 +344,9 @@ class BidController extends Controller
                 // BidPolicy::view.
                 'total_amount' => $bid->total_amount,
                 'currency' => $bid->currency,
+                // Same reasoning as total_amount: the vendor's own commitment,
+                // hidden from serialisation by default and stated here on purpose.
+                'duration_days' => $bid->duration_days,
                 'technical_notes' => $bid->technical_notes,
                 'submitted_at' => $bid->submitted_at,
                 'is_sealed' => (bool) $bid->is_sealed,
@@ -356,6 +364,9 @@ class BidController extends Controller
                 'submission_deadline' => $tender->submission_deadline,
                 'opening_date' => $tender->opening_date,
                 'is_two_envelope' => (bool) $tender->is_two_envelope,
+                // Tenders that opened with engine scoring ask for a completion
+                // period; it is required at submission (BidService::submit).
+                'requires_duration' => $tender->engineProfile()->whereNotNull('locked_at')->exists(),
                 'boq_sections' => $tender->boqSections
                     ->sortBy('sort_order')
                     ->values()

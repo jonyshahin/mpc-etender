@@ -27,6 +27,27 @@ class TenderPolicy
             && $user->isAssignedToProject($tender->project_id);
     }
 
+    /**
+     * See the engine's scoring of this tender. Same audience as the existing
+     * evaluation screens: anyone on the project who can view evaluations.
+     */
+    public function viewEngineEvaluation(User $user, Tender $tender): bool
+    {
+        return $user->hasPermission('evaluations.view')
+            && $user->isAssignedToProject($tender->project_id);
+    }
+
+    /**
+     * Enter scores and gate attestations, and run the engine. A separate
+     * permission because attesting a bank guarantee is a signed statement,
+     * not something every evaluation viewer should be able to make.
+     */
+    public function runEngineEvaluation(User $user, Tender $tender): bool
+    {
+        return $user->hasPermission('evaluations.engine_run')
+            && $user->isAssignedToProject($tender->project_id);
+    }
+
     public function create(User $user): bool
     {
         return $user->hasPermission('tenders.create');

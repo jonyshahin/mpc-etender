@@ -63,7 +63,29 @@ function tenderPayload(array $overrides = []): array
         'documents' => [
             ['file' => fakeDoc(), 'title' => 'Default Specification', 'doc_type' => 'specification'],
         ],
+        // Engine scoring criteria, as the wizard's scoring step sends them. A
+        // contract type has no default, so without this the tender cannot be
+        // opened for bidding.
+        'engine_profile' => engineProfilePayload(),
         'publish' => false,
+    ], $overrides);
+}
+
+/** MPC's standard scoring criteria for an installation contract. */
+function engineProfilePayload(array $overrides = []): array
+{
+    return array_merge([
+        'weight_price' => 40,
+        'weight_technical' => 20,
+        'weight_timeline' => 20,
+        'weight_references' => 10,
+        'weight_payment_flexibility' => 10,
+        'gate_bank_guarantee' => true,
+        'gate_mandatory_documents' => true,
+        'margin_below' => 2,
+        'contract_type' => 'installation',
+        'contract_type_label' => null,
+        'timeline_formula' => null,
     ], $overrides);
 }
 

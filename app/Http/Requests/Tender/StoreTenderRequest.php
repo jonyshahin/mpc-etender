@@ -7,6 +7,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTenderRequest extends FormRequest
 {
+    use EngineProfileRules;
+
     public function authorize(): bool
     {
         return $this->user()->hasPermission('tenders.create');
@@ -56,7 +58,16 @@ class StoreTenderRequest extends FormRequest
             'documents.*.doc_type' => ['required', 'in:specification,drawing,contract_terms,boq_template,site_photo,other'],
 
             'publish' => ['sometimes', 'boolean'],
-        ];
+
+            'engine_profile' => ['sometimes', 'array'],
+        ] + ($this->has('engine_profile') ? $this->engineProfileRules('engine_profile.') : []);
+    }
+
+    public function withValidator($validator): void
+    {
+        if ($this->has('engine_profile')) {
+            $this->engineProfileWeightsSumTo100($validator, 'engine_profile.');
+        }
     }
 
     protected function prepareForValidation(): void

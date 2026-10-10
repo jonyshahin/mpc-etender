@@ -2,6 +2,8 @@ import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState, ReactNode } from 'react';
 import { AlertCircle, Check, ChevronDown, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { EngineCriteriaFields } from '@/components/engine-criteria-fields';
+import type { EngineCriteria, EngineOptions } from '@/components/engine-criteria-fields';
 import Heading from '@/components/heading';
 import { useTranslation } from '@/hooks/use-translation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -31,6 +33,9 @@ type Category = {
 type Props = {
     projects: Array<{ id: string; name: string; code: string }>;
     categories: Category[];
+    /** MPC's standard engine scoring criteria, which the officer may adjust. */
+    engineTemplate: EngineCriteria;
+    engineOptions: EngineOptions;
 };
 
 type BoqItem = {
@@ -168,7 +173,7 @@ function CategoryTree({
     return <div className="space-y-2">{categories.map((cat) => renderCategory(cat))}</div>;
 }
 
-export default function Create({ projects, categories }: Props) {
+export default function Create({ projects, categories, engineTemplate, engineOptions }: Props) {
     const { t } = useTranslation();
 
     const STEPS = [
@@ -201,6 +206,7 @@ export default function Create({ projects, categories }: Props) {
     const [documents, setDocuments] = useState<DocEntry[]>([]);
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
     const [criteria, setCriteria] = useState<Criterion[]>([]);
+    const [engineCriteria, setEngineCriteria] = useState<EngineCriteria>(engineTemplate);
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
     // Client-side preflight errors keyed in the same shape as server errors
     // (`documents.{i}.title`, `documents.{i}.file`). Merged into `errors`
@@ -429,6 +435,8 @@ export default function Create({ projects, categories }: Props) {
                     max_score: c.max_score,
                     sort_order: i,
                 })),
+            // Engine scoring criteria, locked in the engine if this publishes.
+            engine_profile: engineCriteria,
             publish: action === 'published' ? 1 : 0,
         };
 
@@ -1046,6 +1054,25 @@ export default function Create({ projects, categories }: Props) {
                         {/* Step 5: Evaluation Criteria */}
                         {currentStep === 4 && (
                             <div className="space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">{t('engine.criteria.title')}</CardTitle>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('engine.criteria.description')}
+                                        </p>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <EngineCriteriaFields
+                                            value={engineCriteria}
+                                            onChange={(patch) =>
+                                                setEngineCriteria((current) => ({ ...current, ...patch }))
+                                            }
+                                            options={engineOptions}
+                                            errors={errors}
+                                            errorPrefix="engine_profile."
+                                        />
+                                    </CardContent>
+                                </Card>
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-medium">{t('tender.evaluation_criteria')}</h3>
                                     <Button

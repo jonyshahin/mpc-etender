@@ -161,6 +161,15 @@ Route::middleware(['auth', 'verified'])->prefix('tenders')->name('tenders.')->gr
     Route::delete('{tender}/open-bids/{openingRequest}', [Evaluation\BidOpeningController::class, 'cancel'])->name('open-bids.cancel');
     Route::get('{tender}/bid-summary', [Evaluation\BidOpeningController::class, 'summary'])->name('bid-summary');
 
+    // Decision Engine scoring, in shadow mode (INTEGRATION-DESIGN-etender.md).
+    // The draft's criteria lock when the tender opens; scoring runs after the
+    // dual-authorised opening and never reaches the award.
+    Route::put('{tender}/engine-profile', [Tender\EngineProfileController::class, 'update'])->name('engine-profile.update');
+    Route::get('{tender}/engine-evaluation', [Evaluation\EngineEvaluationController::class, 'show'])->name('engine-evaluation.show');
+    Route::post('{tender}/engine-evaluation', [Evaluation\EngineEvaluationController::class, 'run'])->name('engine-evaluation.run');
+    Route::put('{tender}/engine-evaluation/bids/{bid}', [Evaluation\EngineEvaluationController::class, 'saveAssessment'])->name('engine-evaluation.assessments.update');
+    Route::get('{tender}/engine-evaluation/{evaluation}/status', [Evaluation\EngineEvaluationController::class, 'status'])->name('engine-evaluation.status');
+
     // Committees
     Route::get('{tender}/committees', [Evaluation\CommitteeController::class, 'index'])->name('committees.index');
     Route::post('{tender}/committees', [Evaluation\CommitteeController::class, 'store'])->name('committees.store');

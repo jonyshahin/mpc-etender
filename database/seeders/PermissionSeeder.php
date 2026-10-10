@@ -41,6 +41,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'Manage Committees', 'slug' => 'evaluations.manage_committees', 'module' => 'evaluations'],
             ['name' => 'Generate Reports', 'slug' => 'evaluations.generate_reports', 'module' => 'evaluations'],
             ['name' => 'Finalize Reports', 'slug' => 'evaluations.finalize_reports', 'module' => 'evaluations'],
+            ['name' => 'Run Engine Evaluations', 'slug' => 'evaluations.engine_run', 'module' => 'evaluations'],
 
             // Reports
             ['name' => 'View Reports', 'slug' => 'reports.view', 'module' => 'reports'],
