@@ -95,7 +95,7 @@ check fails.
 documents into a zip and prints a short-lived download link to it:
 
 ```
-vendors-export-YYYYMMDD-HHMMSS.zip
+vendors-export-YYYYMMDD-HHMMSS-xxxx.zip     (Baghdad time, plus 4 random characters so no two runs share a name)
 ├── vendors.csv          one row per vendor (contact details, status, categories, document count)
 ├── documents.csv        one row per document: the zip and file it went to, or why not
 ├── Acme Steel/
@@ -112,13 +112,13 @@ Excel shows Arabic correctly, and their times are in `MPC_TIMEZONE`
 | Flag | Effect |
 |------|--------|
 | `--by=email` | **Required.** The MPC user taking the export. They must be able to open vendor documents in the app today: active, an `admin` or `super_admin` role, a verified email and `vendors.view`. Every exported file is written to `document_access_logs` (action `exported`) and every vendor gets a `vendor_exported` audit row against this user, both marked as coming from `artisan mpc:export-vendors` |
-| `--dry-run` | Print how many vendors and documents there are, their recorded size, how many zip parts that makes and the local disk it needs; write and record nothing |
-| `--part-size=250` | Largest size of each zip, in MB. A bigger export is split into `…-part1.zip`, `…-part2.zip`, …; extract them all into one folder. A vendor is kept in one part unless it alone is bigger than the limit |
+| `--dry-run` | Print how many vendors and documents there are, their recorded size, the largest document and how many zips that makes; write and record nothing |
+| `--part-size=1024` | Largest size of each zip, in MB, for easier downloads. An export that fits is one zip, `vendors-export-….zip`; a bigger one is split into `…-part1.zip`, `…-part2.zip`, …; extract them all into one folder. A vendor is kept in one part unless it alone is bigger than the limit |
 | `--expires=30` | Minutes the download links stay valid (1–1440) |
-| `--clean` | Delete the export from storage and exit |
+| `--clean` | Delete the export from storage, cancel any upload a stopped run left unfinished, and exit |
 
 ```bash
-# 1. See what it will contain, and check "Local disk needed" against "Local disk free".
+# 1. See what it will contain.
 php artisan mpc:export-vendors --by=you@mpc-group.com --dry-run
 
 # 2. Export, then open the printed link(s) within their lifetime.
@@ -128,17 +128,32 @@ php artisan mpc:export-vendors --by=you@mpc-group.com
 php artisan mpc:export-vendors --clean
 ```
 
-- **It runs on a live web instance, whose local disk is small** (512 MB per GB
-  of RAM on Laravel Cloud). Each part is streamed to local disk, uploaded and
-  deleted before the next starts, so the disk needed is about one part (or the
-  whole export, if smaller) plus two of the largest document — not the whole
-  export. The command refuses to start when the instance has less than that
-  free; lower `--part-size` and run it again.
-- **If Cloud stops it at the 30-minute limit**, nothing is logged and no link is
-  printed. Partly uploaded zips may remain in the bucket and a work folder on
-  the instance; the next run or `--clean` removes both. The run's lock expires
-  35 minutes after it started, so until then a new run (or `--clean`) reports
-  that another export is running.
+- **Nothing is staged on the instance.** The command runs on a live web
+  instance, whose local disk is a small allowance (512 MB per GB of RAM on
+  Laravel Cloud); going over it gets the instance stopped — taking the export
+  with it, silently, and possibly the website's instance too. So each zip
+  streams straight into the bucket as a multipart upload while it is built
+  (`App\Services\Export\MultipartUpload`, 8 MiB parts). The only local copy is
+  the document being read, so local disk peaks at about the largest document
+  (≤ 100 MB by upload policy), whatever the size of the export. Memory peaks
+  around 100 MB; the command raises PHP's limit to 256 MB for itself.
+  (`disk_free_space()` on Cloud reports the node's disk, tens of GB, not the
+  instance's allowance — which is why the earlier version's disk check could
+  not catch this.)
+- **It prints a line per vendor and per uploaded zip**, so if a run is stopped
+  the Commands panel shows how far it got. A run stopped from outside — Cloud's
+  30-minute limit, or PHP running out of memory — ends "Failed" with no message
+  of its own: PHP gives a command no chance to report either. A failure during
+  the export is printed as `The export failed: …`.
+- **If a run is stopped**, nothing is logged and no link is printed, but it can
+  leave things in the bucket: the zip it was uploading, unfinished and
+  invisible, and — for an export split into parts — the parts it had already
+  finished, which are ordinary downloadable zips of vendor documents. Run
+  `--clean` (or a new export, which replaces them) to remove both; R2 also drops
+  unfinished uploads after seven days. The lock expires 35 minutes after the
+  stopped run started, so until then a new run (or `--clean`) reports that
+  another export is running; to clear it sooner, run
+  `php artisan tinker --execute="Cache::lock('mpc:export-vendors')->forceRelease();"`.
 - **The zips stay in the bucket until you remove them.** They sit under
   `exports/vendors/` in the private bucket; the links expiring does not delete
   them. Each run replaces the previous export, and `--clean` removes it.
@@ -149,9 +164,11 @@ php artisan mpc:export-vendors --clean
   non-zero — run it again. A document the vendor deletes while the export runs
   is listed as `deleted during export`.
 - **Logging is all or nothing.** The access and audit rows are written in one
-  transaction, only once every zip is uploaded. If anything fails before that,
-  the zips already uploaded are removed again; if they cannot be, the command
-  names them and says to run `--clean`.
+  transaction, only once every zip is uploaded. If the export fails before
+  that, it cancels the upload in progress and removes the zips it had
+  finished; anything storage refuses to remove is named, with the instruction
+  to run `--clean`. `--clean` itself, and the removal of the previous export
+  after a successful run, likewise name anything storage refused to delete.
 - **Extract with Windows Explorer, `Expand-Archive` or 7-Zip.** Windows'
   built-in `tar.exe` skips any file or folder whose name is not plain English
   (Arabic company names, for instance) — a limitation of that tool, not of the

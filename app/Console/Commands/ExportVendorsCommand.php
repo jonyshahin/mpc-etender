@@ -8,17 +8,18 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorDocument;
+use App\Services\Export\MultipartUpload;
+use App\Services\Export\StorageUpload;
+use Aws\S3\Exception\S3Exception;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
-use Illuminate\Http\File;
+use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File as Filesystem;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 use ZipStream\CompressionMethod;
 use ZipStream\ZipStream;
@@ -36,10 +37,13 @@ use ZipStream\ZipStream;
  * is written to document_access_logs and every vendor gets an audit row, both
  * against the user named in --by.
  *
- * The command runs on a live web instance whose local disk is small, so each
- * zip is streamed straight to a file (no rebuild on close), uploaded, and
- * deleted before the next is started. An export larger than --part-size is
- * split into parts; extracting them all into one folder gives the full tree.
+ * The command runs on a live web instance whose local disk is a small
+ * allowance (512 MB per GB of RAM on Laravel Cloud); going over it gets the
+ * instance stopped, with no error from the command. So nothing is staged
+ * there: each zip streams straight into the bucket as a multipart upload
+ * (StorageUpload), and the only local copy is the document being read. An
+ * export larger than --part-size is split into parts, for easier downloads;
+ * extracting them all into one folder gives the full tree.
  *
  * Each run replaces the previous export; --clean removes it once downloaded.
  *
@@ -65,8 +69,12 @@ class ExportVendorsCommand extends Command
     /** How the export identifies itself in the access and audit logs. */
     private const AGENT = 'artisan mpc:export-vendors';
 
-    /** Headroom on top of the part and the document in flight. */
-    private const DISK_MARGIN = 32 * 1024 * 1024;
+    /**
+     * The command peaks around 100 MB (ZipStream reads in 16 MB chunks, the
+     * upload holds an 8 MB part); PHP's usual 128 MB default leaves too little
+     * room on top of the framework.
+     */
+    private const MEMORY_LIMIT = '256M';
 
     /**
      * How long the export lock lives. A run killed by Laravel Cloud's 30-minute
@@ -77,7 +85,7 @@ class ExportVendorsCommand extends Command
 
     protected $signature = 'mpc:export-vendors
         {--by= : Email of the MPC user taking the export; recorded against every file}
-        {--part-size=250 : Largest size of each zip, in MB (1-10240); bigger exports are split into parts}
+        {--part-size=1024 : Largest size of each zip, in MB (1-10240); bigger exports are split into parts}
         {--expires=30 : Minutes the download links stay valid (1-1440)}
         {--dry-run : Report what would be exported without writing anything}
         {--clean : Delete earlier exports from storage and exit}';
@@ -86,12 +94,12 @@ class ExportVendorsCommand extends Command
 
     private string $stamp;
 
-    private string $workDir;
-
     private int $part = 0;
 
-    /** @var resource|null */
-    private $handle = null;
+    /** Whether the whole export fits one zip, decided up front so it can be named for it. */
+    private bool $single = false;
+
+    private ?StorageUpload $upload = null;
 
     private ?ZipStream $zip = null;
 
@@ -102,12 +110,24 @@ class ExportVendorsCommand extends Command
 
     public function handle(): int
     {
+        $this->raiseMemoryLimit();
+
         if ($this->option('clean')) {
             return $this->locked(function () {
-                $removed = $this->deleteExports();
-                $leftovers = $this->deleteStaleWorkDirs();
+                [$removed, $leftFiles] = $this->deleteExports();
+                [$aborted, $leftUploads] = $this->abortStaleUploads();
+                $left = [...$leftFiles, ...$leftUploads];
 
-                $this->info("Removed {$removed} export file(s) from storage".($leftovers > 0 ? " and {$leftovers} leftover local work folder(s)" : '').'.');
+                $this->info("Removed {$removed} export file(s) from storage".($aborted > 0 ? " and abandoned {$aborted} unfinished upload(s)" : '').'.');
+
+                if ($left !== []) {
+                    $this->error('Storage refused to delete these, so they are still there. Run --clean again; if it keeps failing, delete them in the Laravel Cloud bucket browser:');
+                    foreach ($left as $path) {
+                        $this->line("  - {$path}");
+                    }
+
+                    return self::FAILURE;
+                }
 
                 return self::SUCCESS;
             });
@@ -133,26 +153,20 @@ class ExportVendorsCommand extends Command
         $budget = $partMb * 1024 * 1024;
         $documents = $vendors->flatMap(fn (Vendor $vendor) => $vendor->documents);
         $recorded = (int) $documents->sum('file_size');
-        $largest = (int) $documents->max('file_size');
 
-        // The part on disk: never more than the whole export, and at most one
-        // document over the budget. On top of it, the S3 client buffers the
-        // document it is reading on local disk.
-        $needed = min($budget + $largest, $recorded) + $largest + self::DISK_MARGIN;
-        $free = $this->freeDiskBytes();
-        $reclaimable = $this->staleWorkDirBytes();
+        // Small enough for one zip: then it is written as one, whatever the
+        // per-file overhead adds, and named without a part number.
+        $single = $recorded <= $budget;
 
         $this->table(
-            ['Vendors', 'Documents', 'Recorded size', 'Vendors with no documents', 'Zip parts (about)', 'Local disk needed', 'Local disk free'],
+            ['Vendors', 'Documents', 'Recorded size', 'Largest document', 'Vendors with no documents', 'Zip files (about)'],
             [[
                 $vendors->count(),
                 $documents->count(),
                 $this->formatBytes($recorded),
+                $this->formatBytes((int) $documents->max('file_size')),
                 $vendors->filter(fn (Vendor $vendor) => $vendor->documents->isEmpty())->count(),
-                max(1, (int) ceil($recorded / $budget)),
-                $this->formatBytes($needed),
-                ($free === false ? 'unknown' : $this->formatBytes((int) $free))
-                    .($reclaimable > 0 ? ' (+'.$this->formatBytes($reclaimable).' left by an earlier run, removed first)' : ''),
+                $single ? 1 : (int) ceil($recorded / $budget),
             ]],
         );
 
@@ -162,51 +176,23 @@ class ExportVendorsCommand extends Command
             return self::SUCCESS;
         }
 
-        return $this->locked(function () use ($user, $vendors, $budget, $expires, $needed) {
-            // A run killed by the 30-minute limit leaves its work folder
-            // behind. Clear it before measuring, or it counts against us.
-            $this->deleteStaleWorkDirs();
-            $free = $this->freeDiskBytes();
-
-            if ($free !== false && $free < $needed) {
-                $this->error("This instance has {$this->formatBytes((int) $free)} of free disk and the export needs about {$this->formatBytes($needed)}. Run it again with a smaller --part-size.");
-
-                return self::FAILURE;
-            }
-
-            return $this->export($user, $vendors, $budget, $expires);
-        });
+        return $this->locked(fn () => $this->export($user, $vendors, $budget, $single, $expires));
     }
 
-    /** Free space where the zips are written. Overridable in tests. */
-    protected function freeDiskBytes(): float|false
+    /**
+     * Give the run the memory it needs. Running out kills PHP outright: no
+     * catch or finally runs, and nothing reaches the Commands panel — Laravel's
+     * own fatal-error handler runs out of memory again while rendering, and
+     * takes every later shutdown function down with it. Hence the headroom,
+     * and the progress lines, which at least show how far a run got.
+     */
+    private function raiseMemoryLimit(): void
     {
-        return @disk_free_space(storage_path('app'));
-    }
+        $limit = ini_get('memory_limit');
 
-    /** @return array<int, string> work folders of earlier runs */
-    private function staleWorkDirs(): array
-    {
-        return glob(storage_path('app/private/vendor-export-*'), GLOB_ONLYDIR) ?: [];
-    }
-
-    private function staleWorkDirBytes(): int
-    {
-        return (int) collect($this->staleWorkDirs())
-            ->flatMap(fn (string $dir) => Filesystem::allFiles($dir))
-            ->sum(fn ($file) => $file->getSize());
-    }
-
-    /** Only ever call holding the lock: no other run can own these. */
-    private function deleteStaleWorkDirs(): int
-    {
-        $dirs = $this->staleWorkDirs();
-
-        foreach ($dirs as $dir) {
-            Filesystem::deleteDirectory($dir);
+        if ($limit !== false && $limit !== '-1' && ini_parse_quantity($limit) < ini_parse_quantity(self::MEMORY_LIMIT)) {
+            ini_set('memory_limit', self::MEMORY_LIMIT);
         }
-
-        return count($dirs);
     }
 
     /**
@@ -231,19 +217,33 @@ class ExportVendorsCommand extends Command
     }
 
     /** @param  Collection<int, Vendor>  $vendors */
-    private function export(User $user, Collection $vendors, int $budget, int $expires): int
+    private function export(User $user, Collection $vendors, int $budget, bool $single, int $expires): int
     {
         // Artisan keeps one instance of a command, so a second run in the same
         // process must not inherit the first one's parts.
         $this->part = 0;
-        $this->handle = null;
+        $this->upload = null;
         $this->zip = null;
         $this->uploaded = [];
+        $this->single = $single;
 
-        $this->stamp = now()->timezone(config('mpc.timezone'))->format('Ymd-His');
-        $this->workDir = storage_path('app/private/vendor-export-'.Str::random(12));
-        Filesystem::ensureDirectoryExists($this->workDir);
+        // The time, for people; the random part, so that no two runs — even
+        // in the same second — can share a name, and a failed run's clean-up
+        // can only ever touch its own files.
+        $this->stamp = now()->timezone(config('mpc.timezone'))->format('Ymd-His').'-'.Str::lower(Str::random(4));
         $folders = $this->folderNames($vendors);
+
+        // A run Cloud stopped mid-upload leaves an unfinished multipart upload
+        // behind: invisible, but still stored. Safe to clear: we hold the lock.
+        // Not this run's problem if it cannot be — but worth saying.
+        [, $stuck] = $this->abortStaleUploads();
+
+        if ($stuck !== []) {
+            $this->warn('An earlier run left unfinished uploads that could not be cancelled now; run `php artisan mpc:export-vendors --clean` later:');
+            foreach ($stuck as $what) {
+                $this->line("  - {$what}");
+            }
+        }
 
         try {
             [$outcomes, $parts] = $this->writeParts($vendors, $folders, $budget);
@@ -252,47 +252,157 @@ class ExportVendorsCommand extends Command
             // all of it or none of it.
             DB::transaction(fn () => $this->recordAccess($user, $vendors, $outcomes));
         } catch (Throwable $e) {
-            // Leave nothing behind that the logs do not account for.
-            $this->discardUploads();
+            // Handled here rather than left to Laravel's handler: what was
+            // uploaded must go before anything else happens, and what is said
+            // must match what is actually left behind.
+            $inFlight = $this->upload;
+            $this->upload = null;
+            $left = [...$this->discardInFlight($inFlight), ...$this->discardUploads()];
 
-            throw $e;
-        } finally {
-            if (is_resource($this->handle)) {
-                fclose($this->handle);
+            // A broken log channel must not cost the operator the message.
+            try {
+                report($e);
+            } catch (Throwable) {
             }
-            Filesystem::deleteDirectory($this->workDir);
+
+            $this->error('The export failed: '.$e->getMessage());
+
+            if ($left === []) {
+                $this->line('Nothing was logged as exported, and nothing it uploaded was kept.');
+            } else {
+                $this->error('Nothing was logged as exported, but storage refused to remove these, which hold vendor documents. Run `php artisan mpc:export-vendors --clean`:');
+                foreach ($left as $what) {
+                    $this->line("  - {$what}");
+                }
+            }
+
+            return self::FAILURE;
         }
 
         // Past the point of no return: the export is logged, so failing to
         // tidy away an older one must not take this one down with it.
         try {
-            $this->deleteExports(except: $this->uploaded);
+            [, $left] = $this->deleteExports(except: $this->uploaded);
         } catch (Throwable) {
-            $this->warn('An earlier export could not be removed from storage. Run `php artisan mpc:export-vendors --clean` once you have downloaded this one.');
+            $left = ['(the export folder could not be listed)'];
+        }
+
+        if ($left !== []) {
+            $this->warn('An earlier export could not be removed from storage. Run `php artisan mpc:export-vendors --clean` once you have downloaded this one:');
+            foreach ($left as $path) {
+                $this->line("  - {$path}");
+            }
         }
 
         return $this->report($vendors, $folders, $outcomes, $parts, $expires);
     }
 
-    /** Remove this run's uploads after a failure, and say so if that fails too. */
-    private function discardUploads(): void
+    /**
+     * Get rid of the zip that was being written when the run failed: cancel
+     * its upload, and — if it got as far as finishing — delete its key too,
+     * since storage may have finished it even though the request that did so
+     * reported an error. The key is this run's own: names carry a random part.
+     *
+     * @return array<int, string> what may still be in storage
+     */
+    private function discardInFlight(?StorageUpload $upload): array
     {
-        if ($this->uploaded === []) {
-            return;
+        if ($upload === null) {
+            return [];
+        }
+
+        $left = [];
+
+        if (! $upload->abort()) {
+            $left[] = "an unfinished upload of {$upload->path()}";
+        }
+
+        if (! $upload->mayExist()) {
+            return $left;
         }
 
         try {
-            $removed = Storage::disk('s3')->delete($this->uploaded);
+            $deleted = Storage::disk('s3')->delete($upload->path());
         } catch (Throwable) {
-            $removed = false;
+            $deleted = false;
         }
 
-        if (! $removed) {
-            $this->error('The export failed and these partial uploads could not be removed. They hold vendor documents no log accounts for — run `php artisan mpc:export-vendors --clean`:');
-            foreach ($this->uploaded as $path) {
-                $this->line("  - {$path}");
+        if (! $deleted) {
+            $left[] = $upload->path();
+        }
+
+        return $left;
+    }
+
+    /**
+     * Remove this run's finished zips after a failure.
+     *
+     * @return array<int, string> the ones storage refused to delete
+     */
+    private function discardUploads(): array
+    {
+        $left = [];
+
+        foreach ($this->uploaded as $path) {
+            try {
+                $deleted = Storage::disk('s3')->delete($path);
+            } catch (Throwable) {
+                $deleted = false;
+            }
+
+            if (! $deleted) {
+                $left[] = $path;
             }
         }
+
+        return $left;
+    }
+
+    /**
+     * Abort unfinished multipart uploads under the export folder — what a run
+     * stopped mid-upload leaves. Only call holding the lock, or it could abort
+     * a live run's upload.
+     *
+     * @return array{0: int, 1: array<int, string>} how many were aborted, and what could not be
+     */
+    private function abortStaleUploads(): array
+    {
+        $disk = Storage::disk('s3');
+
+        if (! $disk instanceof AwsS3V3Adapter) {
+            return [0, []];
+        }
+
+        $bucket = $disk->getConfig()['bucket'];
+        $aborted = 0;
+        $left = [];
+
+        try {
+            $uploads = $disk->getClient()->listMultipartUploads([
+                'Bucket' => $bucket,
+                'Prefix' => $disk->path(self::DIRECTORY.'/'),
+            ])['Uploads'] ?? [];
+        } catch (Throwable) {
+            return [0, ['(unfinished uploads could not be listed)']];
+        }
+
+        // Each on its own: one refusal must not leave the rest untried.
+        foreach ($uploads as $upload) {
+            try {
+                $disk->getClient()->abortMultipartUpload([
+                    'Bucket' => $bucket,
+                    'Key' => $upload['Key'],
+                    'UploadId' => $upload['UploadId'],
+                ]);
+                $aborted++;
+            } catch (S3Exception $e) {
+                MultipartUpload::isNoSuchUpload($e) ? $aborted++ : $left[] = "an unfinished upload of {$upload['Key']}";
+            } catch (Throwable) {
+                $left[] = "an unfinished upload of {$upload['Key']}";
+            }
+        }
+
+        return [$aborted, $left];
     }
 
     /**
@@ -311,19 +421,22 @@ class ExportVendorsCommand extends Command
         $outcomes = [];
         $this->openPart();
 
-        foreach ($vendors as $vendor) {
+        foreach ($vendors->values() as $i => $vendor) {
             $folder = $folders[$vendor->id];
             $vendorBytes = (int) $vendor->documents->sum('file_size');
 
-            if ($this->partHasDocuments && $vendorBytes <= $budget && $this->partBytes() + $vendorBytes > $budget) {
+            if (! $this->single && $this->partHasDocuments && $vendorBytes <= $budget && $this->partBytes() + $vendorBytes > $budget) {
                 $this->nextPart();
             }
+
+            // Progress, so a run Cloud stops shows in the panel how far it got.
+            $this->line(sprintf('[%d/%d] %s — %d document(s)', $i + 1, $vendors->count(), $folder, $vendor->documents->count()));
 
             $this->zip->addDirectory($folder, lastModificationDateTime: $this->zoned($vendor->created_at));
             $used = [];
 
             foreach ($vendor->documents as $document) {
-                if ($this->partHasDocuments && $this->partBytes() + (int) $document->file_size > $budget) {
+                if (! $this->single && $this->partHasDocuments && $this->partBytes() + (int) $document->file_size > $budget) {
                     $this->nextPart();
                     $this->zip->addDirectory($folder, lastModificationDateTime: $this->zoned($vendor->created_at));
                 }
@@ -344,6 +457,11 @@ class ExportVendorsCommand extends Command
                         );
                     } finally {
                         fclose($stream);
+                        // The S3 client buffers each document in a temp file
+                        // held by reference cycles; collect them now so that
+                        // file is gone before the next document, not at the end.
+                        unset($stream);
+                        gc_collect_cycles();
                     }
 
                     $this->partHasDocuments = true;
@@ -359,8 +477,7 @@ class ExportVendorsCommand extends Command
         }
 
         $tz = config('mpc.timezone');
-        $parts = $this->part;
-        $partName = fn (int $part) => $part === 0 ? '' : $this->partName($part, $parts === 1);
+        $partName = fn (int $part) => $part === 0 ? '' : $this->partName($part);
 
         $this->zip->addFile(fileName: 'vendors.csv', lastModificationDateTime: $this->zoned(now()), data: $this->csv([
             'Folder', 'Company name', 'Company name (Arabic)', 'Trade licence no.', 'Contact person', 'Email',
@@ -409,22 +526,23 @@ class ExportVendorsCommand extends Command
             ];
         }))->all()));
 
-        $this->closePart(final: true);
+        $this->closePart();
 
         return [$outcomes, $this->uploaded];
     }
 
+    /** Start the next zip, writing straight into storage as it goes. */
     private function openPart(): void
     {
         $this->part++;
-        $this->handle = fopen("{$this->workDir}/part-{$this->part}.zip", 'w+b');
-
-        if ($this->handle === false) {
-            throw new RuntimeException("Could not create part {$this->part} of the export.");
-        }
+        $this->upload = StorageUpload::to(
+            Storage::disk('s3'),
+            self::DIRECTORY.'/'.$this->partName($this->part),
+            'application/zip',
+        );
 
         $this->zip = new ZipStream(
-            outputStream: $this->handle,
+            outputStream: $this->upload->stream(),
             sendHttpHeaders: false,
             // PDFs are already compressed; deflating them costs time and saves nothing.
             defaultCompressionMethod: CompressionMethod::STORE,
@@ -435,42 +553,29 @@ class ExportVendorsCommand extends Command
 
     private function nextPart(): void
     {
-        $this->closePart(final: false);
+        $this->closePart();
         $this->openPart();
     }
 
-    /** Finish the current zip, upload it, and free its local disk. */
-    private function closePart(bool $final): void
+    /** Write the zip's directory and finish its upload. */
+    private function closePart(): void
     {
         $this->zip->finish();
-        fclose($this->handle);
-        $this->handle = null;
-
-        $local = "{$this->workDir}/part-{$this->part}.zip";
-        $path = Storage::disk('s3')->putFileAs(
-            self::DIRECTORY,
-            new File($local),
-            $this->partName($this->part, $final && $this->part === 1),
-        );
-        @unlink($local);
-
-        if ($path === false) {
-            throw new RuntimeException("Part {$this->part} of the export could not be uploaded to storage.");
-        }
-
-        $this->uploaded[] = $path;
+        $this->uploaded[] = $path = $this->upload->complete();
+        $this->line('Uploaded '.basename($path).' ('.$this->formatBytes($this->upload->bytes()).').');
+        $this->upload = null;
     }
 
-    private function partName(int $part, bool $only): string
+    private function partName(int $part): string
     {
-        return $only
+        return $this->single
             ? "vendors-export-{$this->stamp}.zip"
             : "vendors-export-{$this->stamp}-part{$part}.zip";
     }
 
     private function partBytes(): int
     {
-        return (int) fstat($this->handle)['size'];
+        return $this->upload->bytes();
     }
 
     /**
@@ -768,21 +873,20 @@ class ExportVendorsCommand extends Command
     }
 
     /**
-     * Delete exports on the s3 disk, keeping the given ones; returns how many
-     * went. Only ever looks under DIRECTORY.
+     * Delete exports on the s3 disk, keeping the given ones. Only ever looks
+     * under DIRECTORY. The disk does not throw (throw => false): a refused
+     * delete only shows in its return value, so each is checked.
      *
      * @param  array<int, string>  $except
+     * @return array{0: int, 1: array<int, string>} how many went, and the paths storage refused to delete
      */
-    private function deleteExports(array $except = []): int
+    private function deleteExports(array $except = []): array
     {
         $disk = Storage::disk('s3');
         $old = array_values(array_diff($disk->files(self::DIRECTORY), $except));
+        $left = array_values(array_filter($old, fn (string $path) => ! $disk->delete($path)));
 
-        if ($old !== []) {
-            $disk->delete($old);
-        }
-
-        return count($old);
+        return [count($old) - count($left), $left];
     }
 
     private function formatBytes(int $bytes): string
