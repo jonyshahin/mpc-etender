@@ -89,6 +89,74 @@ check fails.
   point at tenders and bids that no longer exist. The `vendor_id` column is
   nulled automatically. Keep them for compliance history, not for traceability.
 
+## Exporting vendors and their documents
+
+`php artisan mpc:export-vendors` packs every vendor and their prequalification
+documents into a zip and prints a short-lived download link to it:
+
+```
+vendors-export-YYYYMMDD-HHMMSS.zip
+├── vendors.csv          one row per vendor (contact details, status, categories, document count)
+├── documents.csv        one row per document: the zip and file it went to, or why not
+├── Acme Steel/
+│   ├── Trade License - Licence 2026.pdf
+│   └── Insurance - Liability cover.pdf
+└── Babylon Concrete/    every vendor gets a folder, even with no documents
+```
+
+Only prequalification documents (`vendor_documents`) are included — not bid
+documents and not category-request evidence. The CSVs are UTF-8 with a BOM so
+Excel shows Arabic correctly, and their times are in `MPC_TIMEZONE`
+(Asia/Baghdad), as the app shows them.
+
+| Flag | Effect |
+|------|--------|
+| `--by=email` | **Required.** The MPC user taking the export. They must be able to open vendor documents in the app today: active, an `admin` or `super_admin` role, a verified email and `vendors.view`. Every exported file is written to `document_access_logs` (action `exported`) and every vendor gets a `vendor_exported` audit row against this user, both marked as coming from `artisan mpc:export-vendors` |
+| `--dry-run` | Print how many vendors and documents there are, their recorded size, how many zip parts that makes and the local disk it needs; write and record nothing |
+| `--part-size=250` | Largest size of each zip, in MB. A bigger export is split into `…-part1.zip`, `…-part2.zip`, …; extract them all into one folder. A vendor is kept in one part unless it alone is bigger than the limit |
+| `--expires=30` | Minutes the download links stay valid (1–1440) |
+| `--clean` | Delete the export from storage and exit |
+
+```bash
+# 1. See what it will contain, and check "Local disk needed" against "Local disk free".
+php artisan mpc:export-vendors --by=you@mpc-group.com --dry-run
+
+# 2. Export, then open the printed link(s) within their lifetime.
+php artisan mpc:export-vendors --by=you@mpc-group.com
+
+# 3. Once downloaded, remove the zips from the bucket.
+php artisan mpc:export-vendors --clean
+```
+
+- **It runs on a live web instance, whose local disk is small** (512 MB per GB
+  of RAM on Laravel Cloud). Each part is streamed to local disk, uploaded and
+  deleted before the next starts, so the disk needed is about one part (or the
+  whole export, if smaller) plus two of the largest document — not the whole
+  export. The command refuses to start when the instance has less than that
+  free; lower `--part-size` and run it again.
+- **If Cloud stops it at the 30-minute limit**, nothing is logged and no link is
+  printed. Partly uploaded zips may remain in the bucket and a work folder on
+  the instance; the next run or `--clean` removes both. The run's lock expires
+  35 minutes after it started, so until then a new run (or `--clean`) reports
+  that another export is running.
+- **The zips stay in the bucket until you remove them.** They sit under
+  `exports/vendors/` in the private bucket; the links expiring does not delete
+  them. Each run replaces the previous export, and `--clean` removes it.
+- **A document whose file is gone from storage does not stop the export.** It is
+  listed as `missing` in `documents.csv`, named in the command's output, and not
+  logged as exported. A file that is there but **cannot be read** (permissions,
+  network) is listed as `read error` instead and makes the command exit
+  non-zero — run it again. A document the vendor deletes while the export runs
+  is listed as `deleted during export`.
+- **Logging is all or nothing.** The access and audit rows are written in one
+  transaction, only once every zip is uploaded. If anything fails before that,
+  the zips already uploaded are removed again; if they cannot be, the command
+  names them and says to run `--clean`.
+- **Extract with Windows Explorer, `Expand-Archive` or 7-Zip.** Windows'
+  built-in `tar.exe` skips any file or folder whose name is not plain English
+  (Arabic company names, for instance) — a limitation of that tool, not of the
+  zip.
+
 ## Upload limits
 
 POLICY-01 caps user-uploaded documents at `App\Rules\PdfFile::MAX_KB` — **100 MB**,

@@ -24,6 +24,7 @@
         "laravel/wayfinder": "^0.1.14",
         "league/flysystem-aws-s3-v3": "^3.0",
         "maatwebsite/excel": "^3.1",
+        "maennchen/zipstream-php": "^3.1",
         "meilisearch/meilisearch-php": "^1.16",
         "owen-it/laravel-auditing": "^14.0",
         "predis/predis": "*"
